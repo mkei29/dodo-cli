@@ -4,72 +4,86 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	"github.com/caarlos0/log"
 	"github.com/spf13/cobra"
 )
 
-func main() {
-	cmd := &cobra.Command{
-		Use:   "dodo",
-		Short: "",
-		Long:  "",
-		Run:   execute,
+type argsOpts struct {
+	file     string // config file path
+	output   string // deprecated: the path to locate the archive file
+	endpoint string // server endpoint to upload
+	debug    bool   // server endpoint to upload
+}
+
+type envOpts struct {
+	apiKey string
+}
+
+func NewEnvOpts() envOpts {
+	return envOpts{
+		apiKey: os.Getenv("DODO_API_KEY"),
 	}
-	cmd.Flags().StringP("file", "f", ".dodo", "config file path")
-	cmd.Flags().StringP("output", "o", "dist/output.zip", "config file path")
-	cmd.Flags().StringP("api-key", "k", "", "api key")
+}
+
+func main() {
+	rootOpts := argsOpts{}
+
+	cmd := &cobra.Command{
+		Use:   "dodo-client",
+		Short: "dodo client which support your documentation",
+		Run:   func(cmd *cobra.Command, args []string) { execute(rootOpts) },
+	}
+
+	cmd.Flags().StringVarP(&rootOpts.file, "file", "f", ".dodo.yaml", "config file path")
+	cmd.Flags().StringVarP(&rootOpts.output, "output", "o", "dist/output.zip", "config file path")
+	cmd.Flags().StringVar(&rootOpts.endpoint, "endpoint", "http://api.test-doc.com/project/upload", "endpoint to upload")
+	cmd.Flags().BoolVar(&rootOpts.debug, "debug", false, "run in debug mode")
 
 	if err := cmd.Execute(); err != nil {
 		log.Fatal("failed to execute command")
 	}
 }
 
-func execute(cmd *cobra.Command, args []string) {
-	configPath, err := cmd.Flags().GetString("file")
-	if err != nil {
-		log.Fatal("internal error: failed to get `file` flag")
-	}
-	outputPath, err := cmd.Flags().GetString("output")
-	if err != nil {
-		log.Fatal("internal error: failed to get config path")
-	}
-	apiKey, err := cmd.Flags().GetString("api-key")
-	if err != nil || apiKey == "" {
-		log.Fatal("internal error: failed to get api key")
-	}
+func execute(args argsOpts) {
+	env := NewEnvOpts()
 
+	if args.debug {
+		log.SetLevel(log.DebugLevel)
+		log.Debug("running in debug mode")
+	}
 	// Read config file
-	configFile, err := os.Open(configPath)
+	log.Debugf("config file: %s", args.file)
+	configFile, err := os.Open(args.file)
 	if err != nil {
 		log.Fatal("internal error: failed to open config file")
 	}
 	defer configFile.Close()
 	config, err := ParseDocumentDefinition(configFile)
 	if err != nil {
-		log.Fatal("internal error: failed to parse config file: %w", err)
+		log.Fatalf("internal error: failed to parse config file: %w", err)
 	}
 
-	pathList := collectFiles(configPath, config)
-	err = archive(outputPath, pathList)
+	pathList := collectFiles(args.file, config)
+	err = archive(args.output, pathList)
 	if err != nil {
-		log.Fatal("internal error: failed to archive: %w", err)
+		log.Fatalf("internal error: failed to archive: %w", err)
 	}
-	fmt.Printf("pathList: %v\n", pathList)
-	log.Printf("successfully archived: %s", outputPath)
+	log.Infof("successfully archived: %s", args.file)
 
-	if err := uploadFile(outputPath, apiKey); err != nil {
-		log.Fatal("internal error: ", err)
+	if err := uploadFile(args.endpoint, args.output, env.apiKey); err != nil {
+		log.Fatalf("internal error: ", err)
 	}
-	log.Printf("successfully uploaded: %s", outputPath)
+	log.Infof("successfully uploaded: %s", args.output)
 }
 
-func uploadFile(path string, apiKey string) error {
-	req, err := newFileUploadRequest("http://api.test-doc.com/project/upload", path, apiKey)
+func uploadFile(uri string, archivePath string, apiKey string) error {
+	log.Debugf("uploading endpoint: %s", uri)
+	req, err := newFileUploadRequest(uri, archivePath, apiKey)
 	if err != nil {
 		return fmt.Errorf("failed to create upload request: %w", err)
 	}

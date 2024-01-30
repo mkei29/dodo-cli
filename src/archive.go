@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/caarlos0/log"
 )
 
 // List all files to be archived
@@ -44,7 +46,7 @@ func addFile(filename string, writer *zip.Writer) error {
 	}
 	defer targetFile.Close()
 
-	fmt.Println(filename)
+	log.Debug(fmt.Sprintf("add %s", filename))
 	w, err := writer.Create(filename)
 	if err != nil {
 		return fmt.Errorf("failed to get zip writer: %w", err)
