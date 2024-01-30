@@ -8,15 +8,14 @@ import (
 	"path/filepath"
 )
 
-func collectFiles() []string {
-	fileList := make([]string, 0, 100)
-	filepath.WalkDir("./docs", func(path string, info os.DirEntry, err error) error {
-		if !isValidMarkdown(path) {
-			return nil
-		}
-		fileList = append(fileList, path)
-		return nil
-	})
+// List all files to be archived
+func collectFiles(configPath string, config *DocumentDefinition) []string {
+	pages := config.ListPageHeader()
+	fileList := make([]string, len(pages)+1)
+	fileList[0] = configPath
+	for idx, page := range pages {
+		fileList[idx+1] = page.Path
+	}
 	return fileList
 }
 
@@ -45,15 +44,8 @@ func addFile(filename string, writer *zip.Writer) error {
 	}
 	defer targetFile.Close()
 
-	stat, err := targetFile.Stat()
-	if err != nil {
-		return fmt.Errorf("failed to get file stat: %w", err)
-	}
-	header, err := zip.FileInfoHeader(stat)
-	if err != nil {
-		return fmt.Errorf("failed to create zip header: %w", err)
-	}
-	w, err := writer.CreateHeader(header)
+	fmt.Println(filename)
+	w, err := writer.Create(filename)
 	if err != nil {
 		return fmt.Errorf("failed to get zip writer: %w", err)
 	}
