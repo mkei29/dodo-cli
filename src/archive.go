@@ -11,8 +11,8 @@ import (
 )
 
 // List all files to be archived
-func collectFiles(configPath string, config *DocumentDefinition) []string {
-	pages := config.ListPageHeader()
+func collectFiles(configPath string, p *Page) []string {
+	pages := p.ListPageHeader()
 	fileList := make([]string, len(pages)+1)
 	fileList[0] = configPath
 	for idx, page := range pages {

@@ -63,12 +63,17 @@ func execute(args argsOpts) {
 		log.Fatal("internal error: failed to open config file")
 	}
 	defer configFile.Close()
-	config, err := ParseDocumentDefinition(configFile)
+	config, err := ParseDocumentConfig(configFile)
 	if err != nil {
 		log.Fatalf("internal error: failed to parse config file: %w", err)
 	}
 
-	pathList := collectFiles(args.file, config)
+	page, err := NewPageFromConfig(*config)
+	if err != nil {
+		log.Fatalf("internal error: failed to convert the config page to the page: %w", err)
+	}
+
+	pathList := collectFiles(args.file, page)
 	err = archive(args.output, pathList)
 	if err != nil {
 		log.Fatalf("internal error: failed to archive: %w", err)
