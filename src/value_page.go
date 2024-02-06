@@ -2,9 +2,13 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/adrg/frontmatter"
 	"github.com/mattn/go-zglob"
+	"gopkg.in/yaml.v3"
 )
 
 type PageSummary struct {
@@ -20,14 +24,33 @@ func NewPageHeader(path string, title string) PageSummary {
 }
 
 type Page struct {
-	Path     string
-	Title    string
+	IsRoot   bool   `json:"is_root"`
+	Title    string `json:"title"`
+	Path     string `json:"path"`
 	Children []Page `json:"children"`
 }
 
+func NewPageFromFrontMatter(path string) (*Page, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	formats := []*frontmatter.Format{
+		frontmatter.NewFormat("---", "---", yaml.Unmarshal),
+	}
+	page := Page{}
+	_, err = frontmatter.Parse(file, &page, formats...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse front matter: %w", err)
+	}
+	return &page, nil
+}
+
 func NewPageFromConfig(config Config, rootDir string) (*Page, error) {
-	children := make([]Page, 0, len(config.Page))
-	for _, c := range config.Page {
+	children := make([]Page, 0, len(config.Pages))
+	for _, c := range config.Pages {
 		var err error
 		children, err = convertToPage(children, c, rootDir)
 		if err != nil {
@@ -35,8 +58,8 @@ func NewPageFromConfig(config Config, rootDir string) (*Page, error) {
 		}
 	}
 	return &Page{
-		Path:     "",
 		Title:    "",
+		Path:     "",
 		Children: children,
 	}, nil
 }
@@ -74,11 +97,11 @@ func convertToPage(slice []Page, c *ConfigPage, rootDir string) ([]Page, error) 
 			return nil, err
 		}
 		for _, m := range matches {
-			slice = append(slice, Page{
-				Path:     m,
-				Title:    "test",
-				Children: []Page{},
-			})
+			page, err := NewPageFromFrontMatter(m)
+			if err != nil {
+				return nil, err
+			}
+			slice = append(slice, *page)
 		}
 		return slice, nil
 	}
@@ -98,4 +121,18 @@ func listPageHeader(list []PageSummary, p *Page) []PageSummary {
 		listPageHeader(list, &c)
 	}
 	return list
+}
+
+func (p *Page) String() string {
+	return p.buildString(0)
+}
+
+func (p *Page) buildString(depth int) string {
+	offset := strings.Repeat("-", depth*2)
+	lines := make([]string, 0, len(p.Children)+1)
+	lines = append(lines, fmt.Sprintf("%sTitle: %s, Path: %s", offset, p.Title, p.Path))
+	for _, c := range p.Children {
+		lines = append(lines, c.buildString(depth+1))
+	}
+	return strings.Join(lines, "\n")
 }

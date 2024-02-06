@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -154,14 +153,87 @@ func TestNewPageFromConfigWithMaliciousFilepath(t *testing.T) {
 		TestCasePageMalicious3,
 		TestCasePageMalicious4,
 	}
-	fmt.Printf("%v\n", cases)
 
 	for _, c := range cases {
-		fmt.Printf("%v\n", c)
 		conf, err := ParseDocumentConfig(strings.NewReader(c))
 		require.NoError(t, err, "should not return error")
 
 		_, err = NewPageFromConfig(*conf, dir)
 		require.Error(t, err, "should return error if malicious config is given")
+	}
+}
+
+const TestCaseReadPageFromFile1 = `
+---
+title: "title"
+path: "path"
+---
+`
+
+const TestCaseReadPageFromFile2 = `
+---
+title: "title"
+---
+`
+
+const TestCaseReadPageFromFile3 = ""
+
+func TestReadPageFromFile(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name        string
+		content     string
+		expectError bool
+		expectPath  string
+		expectTitle string
+	}{
+		{
+			"pass when valid content with path and title was given",
+			TestCaseReadPageFromFile1,
+			false,
+			"path",
+			"title",
+		},
+		{
+			"pass when valid content with only title was given",
+			TestCaseReadPageFromFile2,
+			false,
+			"",
+			"title",
+		},
+		{
+			"pass when empty string was given",
+			TestCaseReadPageFromFile3,
+			false,
+			"",
+			"",
+		},
+	}
+
+	for _, tt := range testCases {
+		c := tt
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			dir, err := os.MkdirTemp("", "test_dir")
+			require.NoError(t, err)
+
+			path := filepath.Join(dir, "README1.md")
+			file, err := os.Create(path)
+			defer file.Close()
+
+			require.NoError(t, err)
+			_, err = file.WriteString(c.content)
+			require.NoError(t, err)
+
+			page, err := NewPageFromFrontMatter(path)
+			if c.expectError {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, c.expectPath, page.Path)
+			assert.Equal(t, c.expectTitle, page.Title)
+		})
 	}
 }

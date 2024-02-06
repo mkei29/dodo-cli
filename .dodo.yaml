@@ -1,4 +1,6 @@
 version: 1
-layout:
-  - path: docs/index.md
+pages:
+  - filepath: docs/index.md
+    name: "/"
     title: "ok"
+  - match: "docs/*.md"

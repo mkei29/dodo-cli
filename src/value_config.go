@@ -10,7 +10,7 @@ import (
 
 type Config struct {
 	Version string        `yaml:"version"`
-	Page    []*ConfigPage `yaml:"page"`
+	Pages   []*ConfigPage `yaml:"pages"`
 }
 
 type ConfigPage struct {

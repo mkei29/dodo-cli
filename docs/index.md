@@ -1,4 +1,7 @@
-
+---
+title: How to use dodo
+path: /index
+---
 ## How to write `.dodo.yaml`
 dodoは`.dodo.yaml`ファイルが配置されているディレクトリをドキュメント用のディレクトリとして認識します。
 

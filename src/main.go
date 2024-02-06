@@ -74,6 +74,7 @@ func execute(args argsOpts) {
 	if err != nil {
 		log.Fatalf("internal error: failed to convert the config page to the page: %w", err)
 	}
+	fmt.Printf("%s\n", page.String())
 
 	pathList := collectFiles(args.file, page)
 	err = archive(args.output, pathList)
