@@ -13,10 +13,9 @@ import (
 // List all files to be archived
 func collectFiles(configPath string, p *Page) []string {
 	pages := p.ListPageHeader()
-	fileList := make([]string, len(pages)+1)
-	fileList[0] = configPath
+	fileList := make([]string, len(pages))
 	for idx, page := range pages {
-		fileList[idx+1] = page.Path
+		fileList[idx] = page.Filepath
 	}
 	return fileList
 }
@@ -46,7 +45,7 @@ func addFile(filename string, writer *zip.Writer) error {
 	}
 	defer targetFile.Close()
 
-	log.Debug(fmt.Sprintf("add %s", filename))
+	log.Debug(fmt.Sprintf("add %s to archive", filename))
 	w, err := writer.Create(filename)
 	if err != nil {
 		return fmt.Errorf("failed to get zip writer: %w", err)

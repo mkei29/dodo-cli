@@ -12,19 +12,26 @@ import (
 )
 
 type PageSummary struct {
-	Path  string `json:"path"`
-	Title string `json:"title"`
+	Filepath string `json:"filepath"`
+	Path     string `json:"path"`
+	Title    string `json:"title"`
 }
 
-func NewPageHeader(path string, title string) PageSummary {
+func NewPageHeader(filepath, path, title string) PageSummary {
 	return PageSummary{
-		Path:  path,
-		Title: title,
+		Filepath: filepath,
+		Path:     path,
+		Title:    title,
 	}
+}
+
+func NewPageHeaderFromPage(p *Page) PageSummary {
+	return NewPageHeader(p.Filepath, p.Path, p.Title)
 }
 
 type Page struct {
 	IsRoot   bool   `json:"is_root"`
+	Filepath string `json:"filepath"`
 	Title    string `json:"title"`
 	Path     string `json:"path"`
 	Children []Page `json:"children"`
@@ -45,6 +52,9 @@ func NewPageFromFrontMatter(path string) (*Page, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse front matter: %w", err)
 	}
+	page.Filepath = path
+	page.IsRoot = false
+	page.Children = []Page{}
 	return &page, nil
 }
 
@@ -58,6 +68,8 @@ func NewPageFromConfig(config Config, rootDir string) (*Page, error) {
 		}
 	}
 	return &Page{
+		IsRoot:   true,
+		Filepath: "",
 		Title:    "",
 		Path:     "",
 		Children: children,
@@ -80,6 +92,8 @@ func convertToPage(slice []Page, c *ConfigPage, rootDir string) ([]Page, error) 
 		}
 
 		slice = append(slice, Page{
+			IsRoot:   false,
+			Filepath: path,
 			Path:     *c.Name,
 			Title:    *c.Title,
 			Children: children,
@@ -116,9 +130,11 @@ func (p *Page) ListPageHeader() []PageSummary {
 }
 
 func listPageHeader(list []PageSummary, p *Page) []PageSummary {
-	list = append(list, NewPageHeader(p.Path, p.Title))
+	if !p.IsRoot {
+		list = append(list, NewPageHeaderFromPage(p))
+	}
 	for _, c := range p.Children {
-		listPageHeader(list, &c)
+		list = listPageHeader(list, &c)
 	}
 	return list
 }
@@ -135,4 +151,16 @@ func (p *Page) buildString(depth int) string {
 		lines = append(lines, c.buildString(depth+1))
 	}
 	return strings.Join(lines, "\n")
+}
+
+func (p *Page) Count() int {
+	return p.buildCount() - 1
+}
+
+func (p *Page) buildCount() int {
+	c := 1
+	for _, child := range p.Children {
+		c += child.buildCount()
+	}
+	return c
 }

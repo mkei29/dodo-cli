@@ -65,6 +65,7 @@ func execute(args argsOpts) {
 		log.Fatal("internal error: failed to open config file")
 	}
 	defer configFile.Close()
+
 	config, err := ParseDocumentConfig(configFile)
 	if err != nil {
 		log.Fatalf("internal error: failed to parse config file: %w", err)
@@ -74,7 +75,7 @@ func execute(args argsOpts) {
 	if err != nil {
 		log.Fatalf("internal error: failed to convert the config page to the page: %w", err)
 	}
-	fmt.Printf("%s\n", page.String())
+	log.Debugf("successfully convert config to page. found %d pages", page.Count())
 
 	pathList := collectFiles(args.file, page)
 	err = archive(args.output, pathList)
