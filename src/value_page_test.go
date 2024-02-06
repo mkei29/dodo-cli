@@ -12,7 +12,7 @@ import (
 
 const TestCasePage1 = `
 version: 1
-page:
+pages:
   - filepath: "README1.md"
     name: "readme1"
     title: "README2"
@@ -35,7 +35,7 @@ func TestNewPageFromConfigOnlySinglePage(t *testing.T) {
 
 const TestCasePage2 = `
 version: 1
-page:
+pages:
   - match: "README*.md"
   - match: "docs/**/*.md"
 `
@@ -67,7 +67,7 @@ func TestNewPageFromConfigWithPattern(t *testing.T) {
 
 const TestCasePage3 = `
 version: 1
-page:
+pages:
   - filepath: "README.md"
     name: "readme1"
     title: "README2"
@@ -105,7 +105,7 @@ func TestNewPageFromConfigWithHybridCase(t *testing.T) {
 
 const TestCasePageMalicious1 = `
 version: 1
-page:
+pages:
   - filepath: "../README.md"
     name: "readme1"
     title: "README2"
@@ -116,7 +116,7 @@ page:
 
 const TestCasePageMalicious2 = `
 version: 1
-page:
+pages:
   - filepath: "README2.md"
     name: "readme1"
     title: "README2"
@@ -127,7 +127,7 @@ page:
 
 const TestCasePageMalicious3 = `
 version: 1
-page:
+pages:
   - filepath: "README2.md"
     name: "readme1"
     title: "README2"
@@ -136,7 +136,7 @@ page:
 
 const TestCasePageMalicious4 = `
 version: 1
-page:
+pages:
   - filepath: "README2.md"
     name: "readme1"
     title: "README2"

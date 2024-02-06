@@ -9,7 +9,7 @@ import (
 
 const TestCaseValid = `
 version: 1
-page:
+pages:
   - filepath: "README.md"
     name: "readme"
     title: "README"
