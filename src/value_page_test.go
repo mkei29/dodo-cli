@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -19,14 +22,146 @@ page:
     title: "README2"
 `
 
-func TestNewPageFromConfig(t *testing.T) {
+func TestNewPageFromConfigOnlySinglePage(t *testing.T) {
 	t.Parallel()
 	conf, err := ParseDocumentConfig(strings.NewReader(TestCasePage1))
 	require.NoError(t, err)
 
-	page, err := NewPageFromConfig(*conf)
+	page, err := NewPageFromConfig(*conf, "./")
 	require.NoError(t, err)
 	assert.Equal(t, page.Path, "")
 	assert.Equal(t, page.Title, "")
 	assert.Len(t, page.Children, 2)
+}
+
+const TestCasePage2 = `
+version: 1
+page:
+  - match: "README*.md"
+  - match: "docs/**/*.md"
+`
+
+func TestNewPageFromConfigWithPattern(t *testing.T) {
+	t.Parallel()
+
+	dir, err := os.MkdirTemp("", "test_dir")
+	require.NoError(t, err)
+
+	// Create files
+	os.Create(filepath.Join(dir, "README1.md"))
+	os.Create(filepath.Join(dir, "README2.md"))
+	os.Create(filepath.Join(dir, "README3.md"))
+
+	os.Mkdir(filepath.Join(dir, "docs"), 0755)
+	os.Create(filepath.Join(dir, "docs", "README1.md"))
+	os.Create(filepath.Join(dir, "docs", "README2.md"))
+
+	conf, err := ParseDocumentConfig(strings.NewReader(TestCasePage2))
+	require.NoError(t, err, "should not return error")
+
+	page, err := NewPageFromConfig(*conf, dir)
+	require.NoError(t, err)
+	assert.Equal(t, page.Path, "")
+	assert.Equal(t, page.Title, "")
+	assert.Len(t, page.Children, 5)
+}
+
+const TestCasePage3 = `
+version: 1
+page:
+  - filepath: "README.md"
+    name: "readme1"
+    title: "README2"
+  - filepath: "README2.md"
+    name: "readme1"
+    title: "README2"
+  - match: "README*.md"
+  - match: "docs/**/*.md"
+`
+
+func TestNewPageFromConfigWithHybridCase(t *testing.T) {
+	t.Parallel()
+
+	dir, err := os.MkdirTemp("", "test_dir")
+	require.NoError(t, err)
+
+	// Create files
+	os.Create(filepath.Join(dir, "README1.md"))
+	os.Create(filepath.Join(dir, "README2.md"))
+	os.Create(filepath.Join(dir, "README3.md"))
+
+	os.Mkdir(filepath.Join(dir, "docs"), 0755)
+	os.Create(filepath.Join(dir, "docs", "README1.md"))
+	os.Create(filepath.Join(dir, "docs", "README2.md"))
+
+	conf, err := ParseDocumentConfig(strings.NewReader(TestCasePage3))
+	require.NoError(t, err, "should not return error")
+
+	page, err := NewPageFromConfig(*conf, dir)
+	require.NoError(t, err)
+	assert.Equal(t, page.Path, "")
+	assert.Equal(t, page.Title, "")
+	assert.Len(t, page.Children, 7)
+}
+
+const TestCasePageMalicious1 = `
+version: 1
+page:
+  - filepath: "../README.md"
+    name: "readme1"
+    title: "README2"
+  - filepath: "README2.md"
+    name: "readme1"
+    title: "README2"
+`
+
+const TestCasePageMalicious2 = `
+version: 1
+page:
+  - filepath: "README2.md"
+    name: "readme1"
+    title: "README2"
+  - filepath: "./dir1/.././../confidential"
+    name: "readme1"
+    title: "README2"
+`
+
+const TestCasePageMalicious3 = `
+version: 1
+page:
+  - filepath: "README2.md"
+    name: "readme1"
+    title: "README2"
+  - match: "../**/*.md"
+`
+
+const TestCasePageMalicious4 = `
+version: 1
+page:
+  - filepath: "README2.md"
+    name: "readme1"
+    title: "README2"
+  - match: "./dir1/../../**/*.md"
+`
+
+func TestNewPageFromConfigWithMaliciousFilepath(t *testing.T) {
+	dir, err := os.MkdirTemp("", "test_dir")
+	require.NoError(t, err)
+
+	cases := []string{
+		TestCasePageMalicious1,
+		TestCasePageMalicious2,
+		TestCasePageMalicious3,
+		TestCasePageMalicious4,
+	}
+	fmt.Printf("%v\n", cases)
+
+	for _, c := range cases {
+		fmt.Printf("%v\n", c)
+		conf, err := ParseDocumentConfig(strings.NewReader(c))
+		require.NoError(t, err, "should not return error")
+
+		_, err = NewPageFromConfig(*conf, dir)
+		require.Error(t, err, "should return error if malicious config is given")
+	}
 }

@@ -51,16 +51,16 @@ func (c *ConfigPage) IsValidSinglePage() bool {
 // 3. The page must not have a title field.
 // 4. The page must not have a name field.
 func (c *ConfigPage) IsValidPatternPage() bool {
-	if c.Filepath == nil {
+	if c.Filepath != nil {
 		return false
 	}
-	if c.Match != nil {
+	if c.Match == nil {
 		return false
 	}
-	if c.Title == nil {
+	if c.Title != nil {
 		return false
 	}
-	if c.Name == nil {
+	if c.Name != nil {
 		return false
 	}
 	return true

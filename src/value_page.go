@@ -1,6 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"path/filepath"
+
+	"github.com/mattn/go-zglob"
+)
 
 type PageSummary struct {
 	Path  string `json:"path"`
@@ -20,11 +25,11 @@ type Page struct {
 	Children []Page `json:"children"`
 }
 
-func NewPageFromConfig(config Config) (*Page, error) {
+func NewPageFromConfig(config Config, rootDir string) (*Page, error) {
 	children := make([]Page, 0, len(config.Page))
 	for _, c := range config.Page {
 		var err error
-		children, err = convertToPage(children, c)
+		children, err = convertToPage(children, c, rootDir)
 		if err != nil {
 			return nil, err
 		}
@@ -36,12 +41,16 @@ func NewPageFromConfig(config Config) (*Page, error) {
 	}, nil
 }
 
-func convertToPage(slice []Page, c *ConfigPage) ([]Page, error) {
+func convertToPage(slice []Page, c *ConfigPage, rootDir string) ([]Page, error) {
 	if c.IsValidSinglePage() {
+		path := filepath.Clean(filepath.Join(rootDir, *c.Filepath))
+		if err := IsUnderRootPath(rootDir, path); err != nil {
+			return nil, fmt.Errorf("path should be under the rootDir: %w", err)
+		}
 		children := make([]Page, 0, len(c.Children))
 		var err error
 		for _, c := range c.Children {
-			children, err = convertToPage(children, c)
+			children, err = convertToPage(children, c, rootDir)
 			if err != nil {
 				return nil, err
 			}
@@ -54,6 +63,26 @@ func convertToPage(slice []Page, c *ConfigPage) ([]Page, error) {
 		})
 		return slice, nil
 	}
+
+	if c.IsValidPatternPage() {
+		path := filepath.Clean(filepath.Join(rootDir, *c.Match))
+		if err := IsUnderRootPath(rootDir, path); err != nil {
+			return nil, fmt.Errorf("path should be under the rootDir: %w", err)
+		}
+		matches, err := zglob.Glob(path)
+		if err != nil {
+			return nil, err
+		}
+		for _, m := range matches {
+			slice = append(slice, Page{
+				Path:     m,
+				Title:    "test",
+				Children: []Page{},
+			})
+		}
+		return slice, nil
+	}
+
 	return nil, fmt.Errorf("passed ConfigPage doesn't match any pattern")
 }
 

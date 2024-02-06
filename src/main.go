@@ -18,6 +18,7 @@ type argsOpts struct {
 	output   string // deprecated: the path to locate the archive file
 	endpoint string // server endpoint to upload
 	debug    bool   // server endpoint to upload
+	rootPath string // root path of the project
 }
 
 type envOpts struct {
@@ -43,6 +44,7 @@ func main() {
 	cmd.Flags().StringVarP(&rootOpts.output, "output", "o", "dist/output.zip", "config file path")
 	cmd.Flags().StringVar(&rootOpts.endpoint, "endpoint", "http://api.test-doc.com/project/upload", "endpoint to upload")
 	cmd.Flags().BoolVar(&rootOpts.debug, "debug", false, "run in debug mode")
+	cmd.Flags().StringVarP(&rootOpts.rootPath, "root", "r", ".", "root path of the project")
 
 	if err := cmd.Execute(); err != nil {
 		log.Fatal("failed to execute command")
@@ -68,7 +70,7 @@ func execute(args argsOpts) {
 		log.Fatalf("internal error: failed to parse config file: %w", err)
 	}
 
-	page, err := NewPageFromConfig(*config)
+	page, err := NewPageFromConfig(*config, args.rootPath)
 	if err != nil {
 		log.Fatalf("internal error: failed to convert the config page to the page: %w", err)
 	}
