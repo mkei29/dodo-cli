@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/adrg/frontmatter"
+	"github.com/caarlos0/log"
 	"github.com/mattn/go-zglob"
 	"gopkg.in/yaml.v3"
 )
@@ -94,7 +95,7 @@ func convertToPage(slice []Page, c *ConfigPage, rootDir string) ([]Page, error) 
 		slice = append(slice, Page{
 			IsRoot:   false,
 			Filepath: path,
-			Path:     *c.Name,
+			Path:     *c.Path,
 			Title:    *c.Title,
 			Children: children,
 		})
@@ -123,6 +124,7 @@ func convertToPage(slice []Page, c *ConfigPage, rootDir string) ([]Page, error) 
 	return nil, fmt.Errorf("passed ConfigPage doesn't match any pattern")
 }
 
+// List PageSummary of the page includes.
 func (p *Page) ListPageHeader() []PageSummary {
 	list := make([]PageSummary, 0, len(p.Children))
 	list = listPageHeader(list, p)
@@ -139,6 +141,56 @@ func listPageHeader(list []PageSummary, p *Page) []PageSummary {
 	return list
 }
 
+// Check if the page is valid.
+// This function checks the following conditions:
+// 1. all page have necessary fields.
+// 2. There are no duplicated paths.
+func (p *Page) IsValid() bool {
+	if !p.isValid(true) {
+		return false
+	}
+
+	pathMap := make(map[string]int)
+	p.duplicationCount(pathMap)
+	for _, value := range pathMap {
+		if value > 1 {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *Page) isValid(isRoot bool) bool {
+	if isRoot && !p.IsRoot {
+		log.Debug("IsRoot of root page should be true")
+		return false
+	}
+	if !isRoot && p.IsRoot {
+		log.Debug("IsRoot field of child page should be false")
+		return false
+	}
+	if !isRoot && p.Path == "" {
+		log.Debugf("Path field of child page should not be empty: %s", p.Filepath)
+		return false
+	}
+
+	for _, c := range p.Children {
+		ok := c.isValid(false)
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *Page) duplicationCount(pathMap map[string]int) {
+	pathMap[p.Path]++
+	for _, c := range p.Children {
+		c.duplicationCount(pathMap)
+	}
+}
+
+// Generate a string representation of the page.
 func (p *Page) String() string {
 	return p.buildString(0)
 }
@@ -153,6 +205,7 @@ func (p *Page) buildString(depth int) string {
 	return strings.Join(lines, "\n")
 }
 
+// Count number of pages.
 func (p *Page) Count() int {
 	return p.buildCount() - 1
 }
@@ -163,4 +216,9 @@ func (p *Page) buildCount() int {
 		c += child.buildCount()
 	}
 	return c
+}
+
+// Add a child page.
+func (p *Page) Add(page Page) {
+	p.Children = append(p.Children, page)
 }

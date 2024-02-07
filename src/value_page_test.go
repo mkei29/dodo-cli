@@ -14,10 +14,10 @@ const TestCasePage1 = `
 version: 1
 pages:
   - filepath: "README1.md"
-    name: "readme1"
+    path: "readme1"
     title: "README2"
   - filepath: "README2.md"
-    name: "readme1"
+    path: "readme1"
     title: "README2"
 `
 
@@ -69,10 +69,10 @@ const TestCasePage3 = `
 version: 1
 pages:
   - filepath: "README.md"
-    name: "readme1"
+    path: "readme1"
     title: "README2"
   - filepath: "README2.md"
-    name: "readme1"
+    path: "readme1"
     title: "README2"
   - match: "README*.md"
   - match: "docs/**/*.md"
@@ -107,10 +107,10 @@ const TestCasePageMalicious1 = `
 version: 1
 pages:
   - filepath: "../README.md"
-    name: "readme1"
+    path: "readme1"
     title: "README2"
   - filepath: "README2.md"
-    name: "readme1"
+    path: "readme1"
     title: "README2"
 `
 
@@ -118,10 +118,10 @@ const TestCasePageMalicious2 = `
 version: 1
 pages:
   - filepath: "README2.md"
-    name: "readme1"
+    path: "readme1"
     title: "README2"
   - filepath: "./dir1/.././../confidential"
-    name: "readme1"
+    path: "readme1"
     title: "README2"
 `
 
@@ -129,7 +129,7 @@ const TestCasePageMalicious3 = `
 version: 1
 pages:
   - filepath: "README2.md"
-    name: "readme1"
+    path: "readme1"
     title: "README2"
   - match: "../**/*.md"
 `
@@ -138,7 +138,7 @@ const TestCasePageMalicious4 = `
 version: 1
 pages:
   - filepath: "README2.md"
-    name: "readme1"
+    path: "readme1"
     title: "README2"
   - match: "./dir1/../../**/*.md"
 `
@@ -234,6 +234,74 @@ func TestReadPageFromFile(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, c.expectPath, page.Path)
 			assert.Equal(t, c.expectTitle, page.Title)
+		})
+	}
+}
+
+const TestCasePageValid1 = `
+version: 1
+pages:
+  - filepath: "README1.md"
+    path: "readme1"
+    title: "README1"
+  - filepath: "README2.md"
+    path: "readme2"
+    title: "README2"
+`
+
+const TestCasePageInvalid1 = `
+version: 1
+pages:
+  - filepath: "README1.md"
+    path: "readme1"
+    title: "README1"
+  - filepath: "README1.md"
+    path: "readme1"
+    title: "README1"
+`
+
+const TestCasePageInvalid2 = `
+version: 1
+pages:
+  - filepath: "README1.md"
+    title: "README1"
+  - filepath: "README1.md"
+    path: "readme1"
+    title: "README1"
+`
+
+func TestIsValid(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name    string
+		content string
+		isValid bool
+	}{
+		{
+			"pass when valid content was given",
+			TestCasePageValid1,
+			true,
+		},
+		{
+			"pass when page has duplicated path",
+			TestCasePageInvalid1,
+			false,
+		},
+		{
+			"pass when some page doesn't have necessary fields",
+			TestCasePageInvalid1,
+			false,
+		},
+	}
+	for _, tt := range testCases {
+		c := tt
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			conf, err := ParseDocumentConfig(strings.NewReader(c.content))
+			require.NoError(t, err, "should not return error")
+			page, err := NewPageFromConfig(*conf, "")
+			require.NoError(t, err, "should return error if malicious config is given")
+			assert.Equal(t, c.isValid, page.IsValid())
 		})
 	}
 }

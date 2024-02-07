@@ -11,7 +11,7 @@ const TestCaseValid = `
 version: 1
 pages:
   - filepath: "README.md"
-    name: "readme"
+    path: "readme"
     title: "README"
   - match: "docs/*.md"
   - match: "docs/**.md"
@@ -24,6 +24,6 @@ func TestValidCase(t *testing.T) {
 	// conf := src.ParseDocumentConfig(TestCase1)
 	require.Equal(t, conf.Version, "1")
 	require.Equal(t, *conf.Pages[0].Filepath, "README.md")
-	require.Equal(t, *conf.Pages[0].Name, "readme")
+	require.Equal(t, *conf.Pages[0].Path, "readme")
 	require.Equal(t, *conf.Pages[0].Title, "README")
 }

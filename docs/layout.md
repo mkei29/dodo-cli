@@ -1,3 +1,7 @@
+---
+title: How to use dodo
+path: /how_to_use_dodo
+---
 
 
 ## 構造の設定

@@ -77,6 +77,10 @@ func execute(args argsOpts) {
 	}
 	log.Debugf("successfully convert config to page. found %d pages", page.Count())
 
+	if !page.IsValid() {
+		log.Fatal("invalid page was found")
+	}
+
 	pathList := collectFiles(args.file, page)
 	err = archive(args.output, pathList)
 	if err != nil {

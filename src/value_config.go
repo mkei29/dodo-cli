@@ -18,7 +18,7 @@ type ConfigPage struct {
 	Match    *string       `yaml:"match"`
 	IsDir    *bool         `yaml:"is_dir"`
 	Title    *string       `yaml:"title"`
-	Name     *string       `yaml:"name"`
+	Path     *string       `yaml:"path"`
 	Children []*ConfigPage `yaml:"children"`
 }
 
@@ -38,7 +38,7 @@ func (c *ConfigPage) IsValidSinglePage() bool {
 	if c.Title == nil {
 		return false
 	}
-	if c.Name == nil {
+	if c.Path == nil {
 		return false
 	}
 	return true
@@ -60,7 +60,7 @@ func (c *ConfigPage) IsValidPatternPage() bool {
 	if c.Title != nil {
 		return false
 	}
-	if c.Name != nil {
+	if c.Path != nil {
 		return false
 	}
 	return true

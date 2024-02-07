@@ -1,6 +1,6 @@
 version: 1
 pages:
   - filepath: docs/index.md
-    name: "/"
+    name: "/test"
     title: "ok"
   - match: "docs/*.md"
