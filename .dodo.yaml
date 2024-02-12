@@ -1,6 +1,16 @@
 version: 1
+project:
+  name: dodo
+  description: test project
+  version: 0.0.1
 pages:
   - filepath: docs/index.md
-    name: "/test"
+    path: "/test"
     title: "ok"
   - match: "docs/*.md"
+  - filepath: docs/index.md
+    path: "/directory"
+    title: "ok"
+    children:
+      - match: docs/usage/*.md
+ 

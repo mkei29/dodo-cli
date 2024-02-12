@@ -103,6 +103,33 @@ func TestNewPageFromConfigWithHybridCase(t *testing.T) {
 	assert.Len(t, page.Children, 7)
 }
 
+const TestCasePage4 = `
+version: 1
+pages:
+  - filepath: "dir1.md"
+    path: "dir1"
+    title: "dir1"
+    children:
+      - filepath: "README1.md"
+        path: "readme1"
+        title: "README1"
+`
+
+func TestNewPageFromConfigLayeredCase(t *testing.T) {
+	t.Parallel()
+	conf, err := ParseDocumentConfig(strings.NewReader(TestCasePage4))
+	require.NoError(t, err)
+
+	page, err := NewPageFromConfig(*conf, "./")
+	require.NoError(t, err)
+	assert.Equal(t, page.Path, "")
+	assert.Equal(t, page.Title, "")
+	assert.Len(t, page.Children, 1)
+
+	assert.Equal(t, page.Children[0].Path, "dir1")
+	assert.Equal(t, page.Children[0].Children[0].Path, "dir1/readme1")
+}
+
 const TestCasePageMalicious1 = `
 version: 1
 pages:
@@ -226,7 +253,7 @@ func TestReadPageFromFile(t *testing.T) {
 			_, err = file.WriteString(c.content)
 			require.NoError(t, err)
 
-			page, err := NewPageFromFrontMatter(path)
+			page, err := NewPageFromFrontMatter(path, "")
 			if c.expectError {
 				require.Error(t, err)
 				return

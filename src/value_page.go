@@ -38,8 +38,8 @@ type Page struct {
 	Children []Page `json:"children"`
 }
 
-func NewPageFromFrontMatter(path string) (*Page, error) {
-	file, err := os.Open(path)
+func NewPageFromFrontMatter(filePath, parentPath string) (*Page, error) {
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
@@ -53,7 +53,8 @@ func NewPageFromFrontMatter(path string) (*Page, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse front matter: %w", err)
 	}
-	page.Filepath = path
+	page.Path = filepath.Join(parentPath, page.Path)
+	page.Filepath = filePath
 	page.IsRoot = false
 	page.Children = []Page{}
 	return &page, nil
@@ -63,7 +64,7 @@ func NewPageFromConfig(config Config, rootDir string) (*Page, error) {
 	children := make([]Page, 0, len(config.Pages))
 	for _, c := range config.Pages {
 		var err error
-		children, err = convertToPage(children, c, rootDir)
+		children, err = convertToPage(children, c, rootDir, "")
 		if err != nil {
 			return nil, err
 		}
@@ -77,8 +78,9 @@ func NewPageFromConfig(config Config, rootDir string) (*Page, error) {
 	}, nil
 }
 
-func convertToPage(slice []Page, c *ConfigPage, rootDir string) ([]Page, error) {
+func convertToPage(slice []Page, c *ConfigPage, rootDir string, parentPath string) ([]Page, error) {
 	if c.IsValidSinglePage() {
+		joinedPath := filepath.Join(parentPath, *c.Path)
 		path := filepath.Clean(filepath.Join(rootDir, *c.Filepath))
 		if err := IsUnderRootPath(rootDir, path); err != nil {
 			return nil, fmt.Errorf("path should be under the rootDir: %w", err)
@@ -86,7 +88,7 @@ func convertToPage(slice []Page, c *ConfigPage, rootDir string) ([]Page, error) 
 		children := make([]Page, 0, len(c.Children))
 		var err error
 		for _, c := range c.Children {
-			children, err = convertToPage(children, c, rootDir)
+			children, err = convertToPage(children, c, rootDir, joinedPath)
 			if err != nil {
 				return nil, err
 			}
@@ -95,7 +97,7 @@ func convertToPage(slice []Page, c *ConfigPage, rootDir string) ([]Page, error) 
 		slice = append(slice, Page{
 			IsRoot:   false,
 			Filepath: path,
-			Path:     *c.Path,
+			Path:     joinedPath,
 			Title:    *c.Title,
 			Children: children,
 		})
@@ -109,10 +111,11 @@ func convertToPage(slice []Page, c *ConfigPage, rootDir string) ([]Page, error) 
 		}
 		matches, err := zglob.Glob(path)
 		if err != nil {
+			log.Info(fmt.Sprintf("error %s not found", path))
 			return nil, err
 		}
 		for _, m := range matches {
-			page, err := NewPageFromFrontMatter(m)
+			page, err := NewPageFromFrontMatter(m, parentPath)
 			if err != nil {
 				return nil, err
 			}

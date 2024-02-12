@@ -9,8 +9,15 @@ import (
 )
 
 type Config struct {
-	Version string        `yaml:"version"`
-	Pages   []*ConfigPage `yaml:"pages"`
+	Version string         `yaml:"version"`
+	Project *ConfigProject `yaml:"project"`
+	Pages   []*ConfigPage  `yaml:"pages"`
+}
+
+type ConfigProject struct {
+	Name        *string `yaml:"name"`
+	Description *string `yaml:"description"`
+	Version     *string `yaml:"version"`
 }
 
 type ConfigPage struct {

@@ -71,6 +71,7 @@ func execute(args argsOpts) {
 		log.Fatalf("internal error: failed to parse config file: %w", err)
 	}
 
+	// Convert config to
 	page, err := NewPageFromConfig(*config, args.rootPath)
 	if err != nil {
 		log.Fatalf("internal error: failed to convert the config page to the page: %w", err)
@@ -81,6 +82,14 @@ func execute(args argsOpts) {
 		log.Fatal("invalid page was found")
 	}
 
+	project := NewMetadataProjectFromConfig(config)
+
+	metadata := Metadata{
+		Version: "1",
+		Project: project,
+		Page:    *page,
+	}
+
 	pathList := collectFiles(args.file, page)
 	err = archive(args.output, pathList)
 	if err != nil {
@@ -88,15 +97,15 @@ func execute(args argsOpts) {
 	}
 	log.Infof("successfully archived: %s", args.file)
 
-	if err := uploadFile(args.endpoint, args.output, env.apiKey); err != nil {
+	if err := uploadFile(args.endpoint, metadata, args.output, env.apiKey); err != nil {
 		log.Fatalf("internal error: ", err)
 	}
 	log.Infof("successfully uploaded: %s", args.output)
 }
 
-func uploadFile(uri string, archivePath string, apiKey string) error {
-	log.Debugf("uploading endpoint: %s", uri)
-	req, err := newFileUploadRequest(uri, archivePath, apiKey)
+func uploadFile(uri string, metadata Metadata, archivePath string, apiKey string) error {
+	log.Infof("uploading endpoint: %s", uri)
+	req, err := newFileUploadRequest(uri, metadata, archivePath, apiKey)
 	if err != nil {
 		return fmt.Errorf("failed to create upload request: %w", err)
 	}
@@ -111,7 +120,7 @@ func uploadFile(uri string, archivePath string, apiKey string) error {
 	return nil
 }
 
-func newFileUploadRequest(uri string, path string, apiKey string) (*http.Request, error) {
+func newFileUploadRequest(uri string, metadata Metadata, path string, apiKey string) (*http.Request, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -120,11 +129,24 @@ func newFileUploadRequest(uri string, path string, apiKey string) (*http.Request
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("archive", filepath.Base(path))
+
+	// Write metadata
+	serialized, err := metadata.Serialize()
 	if err != nil {
 		return nil, err
 	}
-	_, err = io.Copy(part, file)
+	metadataPart, err := writer.CreateFormField("metadata")
+	if err != nil {
+		return nil, err
+	}
+	metadataPart.Write(serialized)
+
+	// Write archived documents
+	filePart, err := writer.CreateFormFile("archive", filepath.Base(path))
+	if err != nil {
+		return nil, err
+	}
+	_, err = io.Copy(filePart, file)
 	err = writer.Close()
 	if err != nil {
 		return nil, err
