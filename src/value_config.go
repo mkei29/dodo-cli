@@ -21,12 +21,13 @@ type ConfigProject struct {
 }
 
 type ConfigPage struct {
-	Filepath *string       `yaml:"filepath"`
-	Match    *string       `yaml:"match"`
-	IsDir    *bool         `yaml:"is_dir"`
-	Title    *string       `yaml:"title"`
-	Path     *string       `yaml:"path"`
-	Children []*ConfigPage `yaml:"children"`
+	Filepath    *string       `yaml:"filepath"`
+	Match       *string       `yaml:"match"`
+	IsDir       *bool         `yaml:"is_dir"`
+	Title       *string       `yaml:"title"`
+	Path        *string       `yaml:"path"`
+	Description *string       `yaml:"description"`
+	Children    []*ConfigPage `yaml:"children"`
 }
 
 // Check if the page is a valid single page.

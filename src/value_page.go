@@ -13,9 +13,10 @@ import (
 )
 
 type PageSummary struct {
-	Filepath string `json:"filepath"`
-	Path     string `json:"path"`
-	Title    string `json:"title"`
+	Filepath    string `json:"filepath"`
+	Path        string `json:"path"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
 }
 
 func NewPageHeader(filepath, path, title string) PageSummary {
@@ -31,11 +32,12 @@ func NewPageHeaderFromPage(p *Page) PageSummary {
 }
 
 type Page struct {
-	IsRoot   bool   `json:"is_root"`
-	Filepath string `json:"filepath"`
-	Title    string `json:"title"`
-	Path     string `json:"path"`
-	Children []Page `json:"children"`
+	IsRoot      bool   `json:"is_root"`
+	Filepath    string `json:"filepath"`
+	Path        string `json:"path"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Children    []Page `json:"children"`
 }
 
 func NewPageFromFrontMatter(filePath, parentPath string) (*Page, error) {
@@ -70,11 +72,12 @@ func NewPageFromConfig(config Config, rootDir string) (*Page, error) {
 		}
 	}
 	return &Page{
-		IsRoot:   true,
-		Filepath: "",
-		Title:    "",
-		Path:     "",
-		Children: children,
+		IsRoot:      true,
+		Filepath:    "",
+		Title:       "",
+		Path:        "",
+		Description: "",
+		Children:    children,
 	}, nil
 }
 
@@ -93,13 +96,18 @@ func convertToPage(slice []Page, c *ConfigPage, rootDir string, parentPath strin
 				return nil, err
 			}
 		}
+		description := ""
+		if c.Description != nil {
+			description = *c.Description
+		}
 
 		slice = append(slice, Page{
-			IsRoot:   false,
-			Filepath: path,
-			Path:     joinedPath,
-			Title:    *c.Title,
-			Children: children,
+			IsRoot:      false,
+			Filepath:    path,
+			Path:        joinedPath,
+			Title:       *c.Title,
+			Description: description,
+			Children:    children,
 		})
 		return slice, nil
 	}

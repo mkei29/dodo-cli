@@ -6,7 +6,7 @@ project:
 pages:
   - filepath: docs/index.md
     path: "/test"
-    title: "ok"
+    title: "What is dodo"
   - match: "docs/*.md"
   - filepath: docs/index.md
     path: "/directory"
