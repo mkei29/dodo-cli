@@ -72,7 +72,7 @@ func execute(args argsOpts) {
 	}
 
 	// Convert config to
-	page, err := NewPageFromConfig(*config, args.rootPath)
+	page, err := CreatePageTree(*config, args.rootPath)
 	if err != nil {
 		log.Fatalf("internal error: failed to convert the config page to the page: %w", err)
 	}

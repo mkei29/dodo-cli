@@ -62,7 +62,7 @@ func NewPageFromFrontMatter(filePath, parentPath string) (*Page, error) {
 	return &page, nil
 }
 
-func NewPageFromConfig(config Config, rootDir string) (*Page, error) {
+func CreatePageTree(config Config, rootDir string) (*Page, error) {
 	children := make([]Page, 0, len(config.Pages))
 	for _, c := range config.Pages {
 		var err error

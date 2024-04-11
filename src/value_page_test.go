@@ -21,12 +21,12 @@ pages:
     title: "README2"
 `
 
-func TestNewPageFromConfigOnlySinglePage(t *testing.T) {
+func TestCreatePageTreeOnlySinglePage(t *testing.T) {
 	t.Parallel()
 	conf, err := ParseDocumentConfig(strings.NewReader(TestCasePage1))
 	require.NoError(t, err)
 
-	page, err := NewPageFromConfig(*conf, "./")
+	page, err := CreatePageTree(*conf, "./")
 	require.NoError(t, err)
 	assert.Equal(t, page.Path, "")
 	assert.Equal(t, page.Title, "")
@@ -40,7 +40,7 @@ pages:
   - match: "docs/**/*.md"
 `
 
-func TestNewPageFromConfigWithPattern(t *testing.T) {
+func TestCreatePageTreeWithPattern(t *testing.T) {
 	t.Parallel()
 
 	dir, err := os.MkdirTemp("", "test_dir")
@@ -58,7 +58,7 @@ func TestNewPageFromConfigWithPattern(t *testing.T) {
 	conf, err := ParseDocumentConfig(strings.NewReader(TestCasePage2))
 	require.NoError(t, err, "should not return error")
 
-	page, err := NewPageFromConfig(*conf, dir)
+	page, err := CreatePageTree(*conf, dir)
 	require.NoError(t, err)
 	assert.Equal(t, page.Path, "")
 	assert.Equal(t, page.Title, "")
@@ -78,7 +78,7 @@ pages:
   - match: "docs/**/*.md"
 `
 
-func TestNewPageFromConfigWithHybridCase(t *testing.T) {
+func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	t.Parallel()
 
 	dir, err := os.MkdirTemp("", "test_dir")
@@ -96,7 +96,7 @@ func TestNewPageFromConfigWithHybridCase(t *testing.T) {
 	conf, err := ParseDocumentConfig(strings.NewReader(TestCasePage3))
 	require.NoError(t, err, "should not return error")
 
-	page, err := NewPageFromConfig(*conf, dir)
+	page, err := CreatePageTree(*conf, dir)
 	require.NoError(t, err)
 	assert.Equal(t, page.Path, "")
 	assert.Equal(t, page.Title, "")
@@ -115,12 +115,12 @@ pages:
         title: "README1"
 `
 
-func TestNewPageFromConfigLayeredCase(t *testing.T) {
+func TestCreatePageTreeLayeredCase(t *testing.T) {
 	t.Parallel()
 	conf, err := ParseDocumentConfig(strings.NewReader(TestCasePage4))
 	require.NoError(t, err)
 
-	page, err := NewPageFromConfig(*conf, "./")
+	page, err := CreatePageTree(*conf, "./")
 	require.NoError(t, err)
 	assert.Equal(t, page.Path, "")
 	assert.Equal(t, page.Title, "")
@@ -170,7 +170,7 @@ pages:
   - match: "./dir1/../../**/*.md"
 `
 
-func TestNewPageFromConfigWithMaliciousFilepath(t *testing.T) {
+func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {
 	dir, err := os.MkdirTemp("", "test_dir")
 	require.NoError(t, err)
 
@@ -185,7 +185,7 @@ func TestNewPageFromConfigWithMaliciousFilepath(t *testing.T) {
 		conf, err := ParseDocumentConfig(strings.NewReader(c))
 		require.NoError(t, err, "should not return error")
 
-		_, err = NewPageFromConfig(*conf, dir)
+		_, err = CreatePageTree(*conf, dir)
 		require.Error(t, err, "should return error if malicious config is given")
 	}
 }
@@ -326,7 +326,7 @@ func TestIsValid(t *testing.T) {
 			t.Parallel()
 			conf, err := ParseDocumentConfig(strings.NewReader(c.content))
 			require.NoError(t, err, "should not return error")
-			page, err := NewPageFromConfig(*conf, "")
+			page, err := CreatePageTree(*conf, "")
 			require.NoError(t, err, "should return error if malicious config is given")
 			assert.Equal(t, c.isValid, page.IsValid())
 		})
