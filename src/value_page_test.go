@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,8 +27,8 @@ func TestCreatePageTreeOnlySinglePage(t *testing.T) {
 	conf, err := ParseDocumentConfig(strings.NewReader(TestCasePage1))
 	require.NoError(t, err)
 
-	page, err := CreatePageTree(*conf, "./")
-	require.NoError(t, err)
+	page, es := CreatePageTree(*conf, "./")
+	require.False(t, es.HasError())
 	assert.Equal(t, page.Path, "")
 	assert.Equal(t, page.Title, "")
 	assert.Len(t, page.Children, 2)
@@ -58,8 +59,8 @@ func TestCreatePageTreeWithPattern(t *testing.T) {
 	conf, err := ParseDocumentConfig(strings.NewReader(TestCasePage2))
 	require.NoError(t, err, "should not return error")
 
-	page, err := CreatePageTree(*conf, dir)
-	require.NoError(t, err)
+	page, es := CreatePageTree(*conf, dir)
+	require.False(t, es.HasError())
 	assert.Equal(t, page.Path, "")
 	assert.Equal(t, page.Title, "")
 	assert.Len(t, page.Children, 5)
@@ -96,8 +97,8 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	conf, err := ParseDocumentConfig(strings.NewReader(TestCasePage3))
 	require.NoError(t, err, "should not return error")
 
-	page, err := CreatePageTree(*conf, dir)
-	require.NoError(t, err)
+	page, es := CreatePageTree(*conf, dir)
+	require.False(t, es.HasError())
 	assert.Equal(t, page.Path, "")
 	assert.Equal(t, page.Title, "")
 	assert.Len(t, page.Children, 7)
@@ -120,8 +121,8 @@ func TestCreatePageTreeLayeredCase(t *testing.T) {
 	conf, err := ParseDocumentConfig(strings.NewReader(TestCasePage4))
 	require.NoError(t, err)
 
-	page, err := CreatePageTree(*conf, "./")
-	require.NoError(t, err)
+	page, es := CreatePageTree(*conf, "./")
+	require.False(t, es.HasError())
 	assert.Equal(t, page.Path, "")
 	assert.Equal(t, page.Title, "")
 	assert.Len(t, page.Children, 1)
@@ -181,12 +182,18 @@ func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {
 		TestCasePageMalicious4,
 	}
 
-	for _, c := range cases {
-		conf, err := ParseDocumentConfig(strings.NewReader(c))
-		require.NoError(t, err, "should not return error")
+	for i, c := range cases {
+		testID := i + 1
+		testCase := c
+		t.Run(fmt.Sprintf("pass when malicious filepath was given. ID: %d", testID), func(t *testing.T) {
+			conf, err := ParseDocumentConfig(strings.NewReader(testCase))
+			require.NoError(t, err, "should not return error")
 
-		_, err = CreatePageTree(*conf, dir)
-		require.Error(t, err, "should return error if malicious config is given")
+			_, es := CreatePageTree(*conf, dir)
+			es.Summary()
+			assert.True(t, es.HasError(), "should fail when malicious filepath was given")
+		})
+
 	}
 }
 
@@ -326,9 +333,11 @@ func TestIsValid(t *testing.T) {
 			t.Parallel()
 			conf, err := ParseDocumentConfig(strings.NewReader(c.content))
 			require.NoError(t, err, "should not return error")
-			page, err := CreatePageTree(*conf, "")
-			require.NoError(t, err, "should return error if malicious config is given")
-			assert.Equal(t, c.isValid, page.IsValid())
+			page, es := CreatePageTree(*conf, "")
+			require.False(t, es.HasError(), "should not return error if valid config is given")
+
+			es = page.IsValid()
+			assert.Equal(t, c.isValid, !es.HasError())
 		})
 	}
 }

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/adrg/frontmatter"
-	"github.com/caarlos0/log"
 	"github.com/mattn/go-zglob"
 	"gopkg.in/yaml.v3"
 )
@@ -62,14 +61,11 @@ func NewPageFromFrontMatter(filePath, parentPath string) (*Page, error) {
 	return &page, nil
 }
 
-func CreatePageTree(config Config, rootDir string) (*Page, error) {
+func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
 	children := make([]Page, 0, len(config.Pages))
+	errorSet := NewErrorSet()
 	for _, c := range config.Pages {
-		var err error
-		children, err = convertToPage(children, c, rootDir, "")
-		if err != nil {
-			return nil, err
-		}
+		children = convertToPage(errorSet, children, c, rootDir, "")
 	}
 	return &Page{
 		IsRoot:      true,
@@ -78,24 +74,24 @@ func CreatePageTree(config Config, rootDir string) (*Page, error) {
 		Path:        "",
 		Description: "",
 		Children:    children,
-	}, nil
+	}, errorSet
 }
 
-func convertToPage(slice []Page, c *ConfigPage, rootDir string, parentPath string) ([]Page, error) {
+func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string, parentPath string) []Page {
 	if c.IsValidSinglePage() {
 		joinedPath := filepath.Join(parentPath, *c.Path)
 		path := filepath.Clean(filepath.Join(rootDir, *c.Filepath))
 		if err := IsUnderRootPath(rootDir, path); err != nil {
-			return nil, fmt.Errorf("path should be under the rootDir: %w", err)
+			errorSet.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", path)))
+			return nil
 		}
 		children := make([]Page, 0, len(c.Children))
-		var err error
+
 		for _, c := range c.Children {
-			children, err = convertToPage(children, c, rootDir, joinedPath)
-			if err != nil {
-				return nil, err
-			}
+			child := convertToPage(errorSet, children, c, rootDir, joinedPath)
+			children = append(children, child...)
 		}
+
 		description := ""
 		if c.Description != nil {
 			description = *c.Description
@@ -109,30 +105,30 @@ func convertToPage(slice []Page, c *ConfigPage, rootDir string, parentPath strin
 			Description: description,
 			Children:    children,
 		})
-		return slice, nil
+		return slice
 	}
 
 	if c.IsValidPatternPage() {
 		path := filepath.Clean(filepath.Join(rootDir, *c.Match))
 		if err := IsUnderRootPath(rootDir, path); err != nil {
-			return nil, fmt.Errorf("path should be under the rootDir: %w", err)
+			errorSet.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", path)))
+			return nil
 		}
 		matches, err := zglob.Glob(path)
 		if err != nil {
-			log.Info(fmt.Sprintf("error %s not found", path))
-			return nil, err
+			errorSet.Add(NewAppError(fmt.Sprintf("error %s not found", path)))
+			return nil
 		}
 		for _, m := range matches {
 			page, err := NewPageFromFrontMatter(m, parentPath)
 			if err != nil {
-				return nil, err
+				errorSet.Add(NewAppError(fmt.Sprintf("failed to read file. path: %s", path)))
 			}
 			slice = append(slice, *page)
 		}
-		return slice, nil
+		return slice
 	}
-
-	return nil, fmt.Errorf("passed ConfigPage doesn't match any pattern")
+	return nil
 }
 
 // List PageSummary of the page includes.
@@ -156,42 +152,40 @@ func listPageHeader(list []PageSummary, p *Page) []PageSummary {
 // This function checks the following conditions:
 // 1. all page have necessary fields.
 // 2. There are no duplicated paths.
-func (p *Page) IsValid() bool {
-	if !p.isValid(true) {
-		return false
+func (p *Page) IsValid() *ErrorSet {
+
+	errorSet := NewErrorSet()
+	p.isValid(true, errorSet)
+	if errorSet.HasError() {
+		return errorSet
 	}
 
 	pathMap := make(map[string]int)
 	p.duplicationCount(pathMap)
 	for _, value := range pathMap {
 		if value > 1 {
-			return false
+			errorSet.Add(NewAppError("duplicated path was found"))
 		}
 	}
-	return true
+	return errorSet
 }
 
-func (p *Page) isValid(isRoot bool) bool {
+func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
+
 	if isRoot && !p.IsRoot {
-		log.Debug("IsRoot of root page should be true")
-		return false
+		errorSet.Add(NewAppError("IsRoot field in root page should be true"))
+		return
 	}
 	if !isRoot && p.IsRoot {
-		log.Debug("IsRoot field of child page should be false")
-		return false
+		errorSet.Add(NewAppError("IsRoot field in child page should be false"))
+		return
 	}
 	if !isRoot && p.Path == "" {
-		log.Debugf("Path field of child page should not be empty: %s", p.Filepath)
-		return false
+		errorSet.Add(NewAppError("Path field of child page should not be empty"))
 	}
-
 	for _, c := range p.Children {
-		ok := c.isValid(false)
-		if !ok {
-			return false
-		}
+		c.isValid(false, errorSet)
 	}
-	return true
 }
 
 func (p *Page) duplicationCount(pathMap map[string]int) {

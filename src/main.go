@@ -72,13 +72,16 @@ func execute(args argsOpts) {
 	}
 
 	// Convert config to
-	page, err := CreatePageTree(*config, args.rootPath)
-	if err != nil {
+	page, es := CreatePageTree(*config, args.rootPath)
+	if es.HasError() {
+		es.Summary()
 		log.Fatalf("internal error: failed to convert the config page to the page: %w", err)
 	}
 	log.Debugf("successfully convert config to page. found %d pages", page.Count())
 
-	if !page.IsValid() {
+	es = page.IsValid()
+	if es.HasError() {
+		es.Summary()
 		log.Fatal("invalid page was found")
 	}
 
