@@ -41,8 +41,8 @@ func main() {
 	}
 
 	cmd.Flags().StringVarP(&rootOpts.file, "file", "f", ".dodo.yaml", "config file path")
-	cmd.Flags().StringVarP(&rootOpts.output, "output", "o", "dist/output.zip", "config file path")
-	cmd.Flags().StringVar(&rootOpts.endpoint, "endpoint", "http://api.test-doc.com/project/upload", "endpoint to upload")
+	cmd.Flags().StringVarP(&rootOpts.output, "output", "o", "./output.zip", "archive file path")
+	cmd.Flags().StringVar(&rootOpts.endpoint, "endpoint", "http://api.dodo-doc.com/project/upload", "endpoint to upload")
 	cmd.Flags().BoolVar(&rootOpts.debug, "debug", false, "run in debug mode")
 	cmd.Flags().StringVarP(&rootOpts.rootPath, "root", "r", ".", "root path of the project")
 
@@ -58,6 +58,12 @@ func execute(args argsOpts) {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("running in debug mode")
 	}
+
+	err := CheckArgsAndEnv(args, env)
+	if err != nil {
+		log.Fatalf("%w", err)
+	}
+
 	// Read config file
 	log.Debugf("config file: %s", args.file)
 	configFile, err := os.Open(args.file)
@@ -104,6 +110,42 @@ func execute(args argsOpts) {
 		log.Fatalf("internal error: ", err)
 	}
 	log.Infof("successfully uploaded: %s", args.output)
+}
+
+func CheckArgsAndEnv(args argsOpts, env envOpts) error {
+	// Check if `file` is valid
+	_, err := os.Stat(args.file)
+	if err != nil && os.IsNotExist(err) {
+		return fmt.Errorf("specified `file` argument is invalid. please check the file exist. path: %s", args.file)
+	}
+	if err != nil {
+		return fmt.Errorf("specified `file` argument is invalid. path: %s", args.file)
+	}
+
+	// Check if the output path is valid
+	parentDir := filepath.Dir(args.output)
+	_, err = os.Stat(parentDir)
+	if err != nil && os.IsNotExist(err) {
+		return fmt.Errorf("specified output path is invalid. please check parent directory exist. path: %s", args.output)
+	}
+	if err != nil {
+		return fmt.Errorf("the provided output path is invalid. path: %s", args.output)
+	}
+
+	// Check if `root` is valid
+	_, err = os.Stat(args.rootPath)
+	if err != nil && os.IsNotExist(err) {
+		return fmt.Errorf("specified `root` argument is invalid. please check the directory exist. path: %s", args.rootPath)
+	}
+	if err != nil {
+		return fmt.Errorf("the provided `root` argument is invalid. path: %s", args.rootPath)
+	}
+
+	// Check if the api key exists
+	if env.apiKey == "" {
+		return fmt.Errorf("The API key is empty. Please set the environment variable DODO_API_KEY")
+	}
+	return nil
 }
 
 func uploadFile(uri string, metadata Metadata, archivePath string, apiKey string) error {

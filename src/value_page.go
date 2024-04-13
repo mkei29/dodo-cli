@@ -162,9 +162,9 @@ func (p *Page) IsValid() *ErrorSet {
 
 	pathMap := make(map[string]int)
 	p.duplicationCount(pathMap)
-	for _, value := range pathMap {
+	for path, value := range pathMap {
 		if value > 1 {
-			errorSet.Add(NewAppError("duplicated path was found"))
+			errorSet.Add(NewAppError(fmt.Sprintf("duplicated path was found. path: %s", path)))
 		}
 	}
 	return errorSet
@@ -181,7 +181,7 @@ func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
 		return
 	}
 	if !isRoot && p.Path == "" {
-		errorSet.Add(NewAppError("Path field of child page should not be empty"))
+		errorSet.Add(NewAppError(fmt.Sprintf("%s Path field of child page should not be empty", p.Filepath)))
 	}
 	for _, c := range p.Children {
 		c.isValid(false, errorSet)
