@@ -77,18 +77,23 @@ func execute(args argsOpts) {
 		log.Fatalf("internal error: failed to parse config file: %w", err)
 	}
 
-	// Convert config to
+	// Create Page structs from config.
 	page, es := CreatePageTree(*config, args.rootPath)
 	if es.HasError() {
-		es.Summary()
-		log.Fatalf("internal error: failed to convert the config page to the page: %w", err)
+		for _, e := range es.Errors() {
+			log.Errorf(e.Error())
+		}
+		return
 	}
 	log.Debugf("successfully convert config to page. found %d pages", page.Count())
+	log.Debugf(page.String())
 
 	es = page.IsValid()
 	if es.HasError() {
-		es.Summary()
-		log.Fatal("invalid page was found")
+		for _, e := range es.Errors() {
+			log.Errorf(e.Error())
+		}
+		return
 	}
 
 	project := NewMetadataProjectFromConfig(config)
@@ -99,7 +104,7 @@ func execute(args argsOpts) {
 		Page:    *page,
 	}
 
-	pathList := collectFiles(args.file, page)
+	pathList := collectFiles(page)
 	err = archive(args.output, pathList)
 	if err != nil {
 		log.Fatalf("internal error: failed to archive: %w", err)
@@ -149,7 +154,6 @@ func CheckArgsAndEnv(args argsOpts, env envOpts) error {
 }
 
 func uploadFile(uri string, metadata Metadata, archivePath string, apiKey string) error {
-	log.Infof("uploading endpoint: %s", uri)
 	req, err := newFileUploadRequest(uri, metadata, archivePath, apiKey)
 	if err != nil {
 		return fmt.Errorf("failed to create upload request: %w", err)

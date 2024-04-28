@@ -24,6 +24,10 @@ func NewErrorSet() *ErrorSet {
 	}
 }
 
+func (e *ErrorSet) Errors() []error {
+	return e.errors
+}
+
 func (e *ErrorSet) Add(err error) {
 	e.errors = append(e.errors, err)
 }

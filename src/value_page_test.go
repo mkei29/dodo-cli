@@ -38,7 +38,9 @@ const TestCasePage2 = `
 version: 1
 pages:
   - match: "README*.md"
+    title: "section1"
   - match: "docs/**/*.md"
+    title: "section1"
 `
 
 func TestCreatePageTreeWithPattern(t *testing.T) {
@@ -76,7 +78,9 @@ pages:
     path: "readme1"
     title: "README2"
   - match: "README*.md"
+    title: "section"
   - match: "docs/**/*.md"
+    title: "section"
 `
 
 func TestCreatePageTreeWithHybridCase(t *testing.T) {
@@ -160,6 +164,7 @@ pages:
     path: "readme1"
     title: "README2"
   - match: "../**/*.md"
+    title: "section"
 `
 
 const TestCasePageMalicious4 = `
@@ -169,6 +174,7 @@ pages:
     path: "readme1"
     title: "README2"
   - match: "./dir1/../../**/*.md"
+    title: "section"
 `
 
 func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {

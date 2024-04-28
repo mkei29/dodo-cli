@@ -12,13 +12,15 @@ import (
 )
 
 type PageSummary struct {
+	IsRoot      bool   `json:"is_root"`
+	IsDirectory bool   `json:"is_directory"`
 	Filepath    string `json:"filepath"`
 	Path        string `json:"path"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 }
 
-func NewPageHeader(filepath, path, title string) PageSummary {
+func NewPageSummary(filepath, path, title string) PageSummary {
 	return PageSummary{
 		Filepath: filepath,
 		Path:     path,
@@ -27,11 +29,19 @@ func NewPageHeader(filepath, path, title string) PageSummary {
 }
 
 func NewPageHeaderFromPage(p *Page) PageSummary {
-	return NewPageHeader(p.Filepath, p.Path, p.Title)
+	return PageSummary{
+		IsRoot:      p.IsRoot,
+		IsDirectory: p.IsDirectory,
+		Filepath:    p.Filepath,
+		Path:        p.Path,
+		Title:       p.Title,
+		Description: p.Description,
+	}
 }
 
 type Page struct {
 	IsRoot      bool   `json:"is_root"`
+	IsDirectory bool   `json:"is_directory"`
 	Filepath    string `json:"filepath"`
 	Path        string `json:"path"`
 	Title       string `json:"title"`
@@ -69,6 +79,7 @@ func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
 	}
 	return &Page{
 		IsRoot:      true,
+		IsDirectory: true,
 		Filepath:    "",
 		Title:       "",
 		Path:        "",
@@ -85,11 +96,13 @@ func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir stri
 			errorSet.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", path)))
 			return nil
 		}
-		children := make([]Page, 0, len(c.Children))
 
+		children := make([]Page, 0, len(c.Children))
 		for _, c := range c.Children {
 			child := convertToPage(errorSet, children, c, rootDir, joinedPath)
-			children = append(children, child...)
+			if child != nil {
+				children = append(children, child...)
+			}
 		}
 
 		description := ""
@@ -99,6 +112,7 @@ func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir stri
 
 		slice = append(slice, Page{
 			IsRoot:      false,
+			IsDirectory: false,
 			Filepath:    path,
 			Path:        joinedPath,
 			Title:       *c.Title,
@@ -108,26 +122,40 @@ func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir stri
 		return slice
 	}
 
-	if c.IsValidPatternPage() {
+	if c.IsValidMatchDirectory() {
 		path := filepath.Clean(filepath.Join(rootDir, *c.Match))
 		if err := IsUnderRootPath(rootDir, path); err != nil {
-			errorSet.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", path)))
+			errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: path should be under the rootDir: path: %s", path)))
 			return nil
 		}
 		matches, err := zglob.Glob(path)
 		if err != nil {
-			errorSet.Add(NewAppError(fmt.Sprintf("error %s not found", path)))
+			errorSet.Add(NewAppError(fmt.Sprintf("internal error:  error raised during globbing %s", path)))
 			return nil
 		}
+
+		children := make([]Page, 0, len(matches))
 		for _, m := range matches {
 			page, err := NewPageFromFrontMatter(m, parentPath)
 			if err != nil {
-				errorSet.Add(NewAppError(fmt.Sprintf("failed to read file. path: %s", path)))
+				errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: cannot read a file: path %s", path)))
 			}
-			slice = append(slice, *page)
+			children = append(children, *page)
 		}
+
+		slice = append(slice, Page{
+			IsRoot:      false,
+			IsDirectory: true,
+			Filepath:    "",
+			Path:        "",
+			Title:       *c.Title,
+			Description: "",
+			Children:    children,
+		})
 		return slice
 	}
+
+	errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: doesn't match any pattern")))
 	return nil
 }
 
@@ -164,7 +192,7 @@ func (p *Page) IsValid() *ErrorSet {
 	p.duplicationCount(pathMap)
 	for path, value := range pathMap {
 		if value > 1 {
-			errorSet.Add(NewAppError(fmt.Sprintf("duplicated path was found. path: %s", path)))
+			errorSet.Add(NewAppError(fmt.Sprintf("duplicated path was found. path: `%s`", path)))
 		}
 	}
 	return errorSet
@@ -180,7 +208,7 @@ func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
 		errorSet.Add(NewAppError("IsRoot field in child page should be false"))
 		return
 	}
-	if !isRoot && p.Path == "" {
+	if !isRoot && !p.IsDirectory && p.Path == "" {
 		errorSet.Add(NewAppError(fmt.Sprintf("%s Path field of child page should not be empty", p.Filepath)))
 	}
 	for _, c := range p.Children {
@@ -189,7 +217,9 @@ func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
 }
 
 func (p *Page) duplicationCount(pathMap map[string]int) {
-	pathMap[p.Path]++
+	if p.Path != "" {
+		pathMap[p.Path]++
+	}
 	for _, c := range p.Children {
 		c.duplicationCount(pathMap)
 	}

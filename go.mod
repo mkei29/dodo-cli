@@ -8,6 +8,7 @@ require (
 	github.com/mattn/go-zglob v0.0.4
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
+	go.uber.org/multierr v1.11.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
