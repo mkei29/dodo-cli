@@ -11,9 +11,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	PageTypeRootNode        = "RootNode"
+	PageTypeLeafNode        = "LeafNode"
+	PageTypeDirNode         = "DirNodeWithoutPage"
+	PageTypeDirNodeWithPage = "DirNodeWithPage"
+)
+
 type PageSummary struct {
-	IsRoot      bool   `json:"is_root"`
-	IsDirectory bool   `json:"is_directory"`
+	Type        string
 	Filepath    string `json:"filepath"`
 	Path        string `json:"path"`
 	Title       string `json:"title"`
@@ -30,8 +36,7 @@ func NewPageSummary(filepath, path, title string) PageSummary {
 
 func NewPageHeaderFromPage(p *Page) PageSummary {
 	return PageSummary{
-		IsRoot:      p.IsRoot,
-		IsDirectory: p.IsDirectory,
+		Type:        p.Type,
 		Filepath:    p.Filepath,
 		Path:        p.Path,
 		Title:       p.Title,
@@ -40,8 +45,7 @@ func NewPageHeaderFromPage(p *Page) PageSummary {
 }
 
 type Page struct {
-	IsRoot      bool   `json:"is_root"`
-	IsDirectory bool   `json:"is_directory"`
+	Type        string
 	Filepath    string `json:"filepath"`
 	Path        string `json:"path"`
 	Title       string `json:"title"`
@@ -64,9 +68,9 @@ func NewPageFromFrontMatter(filePath, parentPath string) (*Page, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse front matter: %w", err)
 	}
+	page.Type = PageTypeLeafNode
 	page.Path = filepath.Join(parentPath, page.Path)
 	page.Filepath = filePath
-	page.IsRoot = false
 	page.Children = []Page{}
 	return &page, nil
 }
@@ -78,8 +82,7 @@ func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
 		children = convertToPage(errorSet, children, c, rootDir, "")
 	}
 	return &Page{
-		IsRoot:      true,
-		IsDirectory: true,
+		Type:        PageTypeRootNode,
 		Filepath:    "",
 		Title:       "",
 		Path:        "",
@@ -111,8 +114,7 @@ func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir stri
 		}
 
 		slice = append(slice, Page{
-			IsRoot:      false,
-			IsDirectory: false,
+			Type:        PageTypeLeafNode,
 			Filepath:    path,
 			Path:        joinedPath,
 			Title:       *c.Title,
@@ -144,18 +146,14 @@ func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir stri
 		}
 
 		slice = append(slice, Page{
-			IsRoot:      false,
-			IsDirectory: true,
-			Filepath:    "",
-			Path:        "",
-			Title:       *c.Title,
-			Description: "",
-			Children:    children,
+			Type:     PageTypeDirNodeWithPage,
+			Title:    *c.Title,
+			Children: children,
 		})
 		return slice
 	}
 
-	errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: doesn't match any pattern")))
+	errorSet.Add(NewAppError("invalid configuration: doesn't match any pattern"))
 	return nil
 }
 
@@ -167,7 +165,7 @@ func (p *Page) ListPageHeader() []PageSummary {
 }
 
 func listPageHeader(list []PageSummary, p *Page) []PageSummary {
-	if !p.IsRoot {
+	if p.Type != PageTypeRootNode {
 		list = append(list, NewPageHeaderFromPage(p))
 	}
 	for _, c := range p.Children {
@@ -200,15 +198,15 @@ func (p *Page) IsValid() *ErrorSet {
 
 func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
 
-	if isRoot && !p.IsRoot {
-		errorSet.Add(NewAppError("IsRoot field in root page should be true"))
+	if isRoot && p.Type != PageTypeRootNode {
+		errorSet.Add(NewAppError("Type for root node should be Root"))
 		return
 	}
-	if !isRoot && p.IsRoot {
-		errorSet.Add(NewAppError("IsRoot field in child page should be false"))
+	if !isRoot && p.Type == PageTypeRootNode {
+		errorSet.Add(NewAppError("Type for non-root node should not be Root"))
 		return
 	}
-	if !isRoot && !p.IsDirectory && p.Path == "" {
+	if p.Type == PageTypeLeafNode && p.Path == "" {
 		errorSet.Add(NewAppError(fmt.Sprintf("%s Path field of child page should not be empty", p.Filepath)))
 	}
 	for _, c := range p.Children {

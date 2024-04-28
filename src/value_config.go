@@ -92,13 +92,16 @@ func ParseDocumentConfig(reader io.Reader) (*Config, error) {
 	var definition Config
 
 	buf := new(bytes.Buffer)
-	io.Copy(buf, reader)
-	err := yaml.Unmarshal(buf.Bytes(), &definition)
+	_, err := io.Copy(buf, reader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse document definition: %w", err)
+		return nil, fmt.Errorf("failed to read a document config: %w", err)
+	}
+	err = yaml.Unmarshal(buf.Bytes(), &definition)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse a document config: %w", err)
 	}
 	if err := validateDocumentDefinition(&definition); err != nil {
-		return nil, fmt.Errorf("invalid document definition: %w", err)
+		return nil, fmt.Errorf("invalid document config: %w", err)
 	}
 	return &definition, nil
 }

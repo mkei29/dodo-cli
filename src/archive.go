@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 
 	"github.com/caarlos0/log"
 	"go.uber.org/multierr"
@@ -13,13 +12,14 @@ import (
 
 // List all files to be archived
 func collectFiles(p *Page) []string {
+	log.Debug("enter collectFiles")
 	pages := p.ListPageHeader()
-	fileList := make([]string, len(pages))
-	for idx, page := range pages {
-		if page.IsDirectory {
+	fileList := make([]string, 0, len(pages))
+	for _, page := range pages {
+		if page.Type != PageTypeLeafNode {
 			continue
 		}
-		fileList[idx] = page.Filepath
+		fileList = append(fileList, page.Filepath)
 	}
 	return fileList
 }
@@ -37,7 +37,7 @@ func archive(output string, pathList []string) error {
 	var merr error
 	for _, path := range pathList {
 		if err := addFile(path, zipWriter); err != nil {
-			multierr.Append(merr, fmt.Errorf("failed to add %s to archive", path))
+			merr = multierr.Append(merr, fmt.Errorf("failed to add %s to archive", path))
 		}
 	}
 	return merr
@@ -60,17 +60,4 @@ func addFile(filename string, writer *zip.Writer) error {
 		return fmt.Errorf("failed to write file into zip archive: %w", err)
 	}
 	return nil
-}
-
-func isValidMarkdown(path string) bool {
-	ext := filepath.Ext(path)
-	if ext != ".md" {
-		return false
-	}
-
-	_, err := os.ReadFile(path)
-	if err != nil {
-		return false
-	}
-	return true
 }

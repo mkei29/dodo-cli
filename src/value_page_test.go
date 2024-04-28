@@ -260,6 +260,9 @@ func TestReadPageFromFile(t *testing.T) {
 
 			path := filepath.Join(dir, "README1.md")
 			file, err := os.Create(path)
+			if err != nil {
+				t.Fatalf("failed to create file: %v", err)
+			}
 			defer file.Close()
 
 			require.NoError(t, err)

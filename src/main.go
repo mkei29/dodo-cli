@@ -11,6 +11,7 @@ import (
 
 	"github.com/caarlos0/log"
 	"github.com/spf13/cobra"
+	"go.uber.org/multierr"
 )
 
 type argsOpts struct {
@@ -106,8 +107,11 @@ func execute(args argsOpts) {
 
 	pathList := collectFiles(page)
 	err = archive(args.output, pathList)
-	if err != nil {
-		log.Fatalf("internal error: failed to archive: %w", err)
+	if multierr.Errors(err) != nil {
+		for _, e := range multierr.Errors(err) {
+			log.Fatalf("internal error: failed to archive: %w", e)
+		}
+		return
 	}
 	log.Infof("successfully archived: %s", args.file)
 
@@ -178,6 +182,7 @@ func newFileUploadRequest(uri string, metadata Metadata, path string, apiKey str
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
+	defer writer.Close()
 
 	// Write metadata
 	serialized, err := metadata.Serialize()
@@ -188,7 +193,10 @@ func newFileUploadRequest(uri string, metadata Metadata, path string, apiKey str
 	if err != nil {
 		return nil, err
 	}
-	metadataPart.Write(serialized)
+	_, err = metadataPart.Write(serialized)
+	if err != nil {
+		return nil, err
+	}
 
 	// Write archived documents
 	filePart, err := writer.CreateFormFile("archive", filepath.Base(path))
@@ -196,7 +204,6 @@ func newFileUploadRequest(uri string, metadata Metadata, path string, apiKey str
 		return nil, err
 	}
 	_, err = io.Copy(filePart, file)
-	err = writer.Close()
 	if err != nil {
 		return nil, err
 	}
