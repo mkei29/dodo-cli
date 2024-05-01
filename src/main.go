@@ -22,13 +22,13 @@ type argsOpts struct {
 	rootPath string // root path of the project
 }
 
-type envOpts struct {
-	apiKey string
+type EnvOpts struct {
+	APIKey string
 }
 
-func NewEnvOpts() envOpts {
-	return envOpts{
-		apiKey: os.Getenv("DODO_API_KEY"),
+func NewEnvOpts() EnvOpts {
+	return EnvOpts{
+		APIKey: os.Getenv("DODO_API_KEY"),
 	}
 }
 
@@ -52,7 +52,7 @@ func main() {
 	}
 }
 
-func execute(args argsOpts) {
+func execute(args argsOpts) { //nolint: funlen, cyclop
 	env := NewEnvOpts()
 
 	if args.debug {
@@ -75,7 +75,8 @@ func execute(args argsOpts) {
 
 	config, err := ParseDocumentConfig(configFile)
 	if err != nil {
-		log.Fatalf("internal error: failed to parse config file: %w", err)
+		log.Errorf("internal error: failed to parse config file: %w", err)
+		return
 	}
 
 	// Create Page structs from config.
@@ -109,19 +110,20 @@ func execute(args argsOpts) {
 	err = archive(args.output, pathList)
 	if multierr.Errors(err) != nil {
 		for _, e := range multierr.Errors(err) {
-			log.Fatalf("internal error: failed to archive: %w", e)
+			log.Errorf("internal error: failed to archive: %w", e)
 		}
 		return
 	}
 	log.Infof("successfully archived: %s", args.file)
 
-	if err := uploadFile(args.endpoint, metadata, args.output, env.apiKey); err != nil {
-		log.Fatalf("internal error: ", err)
+	if err := uploadFile(args.endpoint, metadata, args.output, env.APIKey); err != nil {
+		log.Errorf("internal error: ", err)
+		return
 	}
 	log.Infof("successfully uploaded: %s", args.output)
 }
 
-func CheckArgsAndEnv(args argsOpts, env envOpts) error {
+func CheckArgsAndEnv(args argsOpts, env EnvOpts) error { //nolint: cyclop
 	// Check if `file` is valid
 	_, err := os.Stat(args.file)
 	if err != nil && os.IsNotExist(err) {
@@ -151,8 +153,8 @@ func CheckArgsAndEnv(args argsOpts, env envOpts) error {
 	}
 
 	// Check if the api key exists
-	if env.apiKey == "" {
-		return fmt.Errorf("The API key is empty. Please set the environment variable DODO_API_KEY")
+	if env.APIKey == "" {
+		return fmt.Errorf("the API key is empty. Please set the environment variable DODO_API_KEY")
 	}
 	return nil
 }
@@ -167,6 +169,8 @@ func uploadFile(uri string, metadata Metadata, archivePath string, apiKey string
 	if err != nil {
 		return fmt.Errorf("error raised during communicating to the server: %w", err)
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to upload file: %d", resp.StatusCode)
 	}
@@ -174,7 +178,6 @@ func uploadFile(uri string, metadata Metadata, archivePath string, apiKey string
 }
 
 func newFileUploadRequest(uri string, metadata Metadata, zipPath string, apiKey string) (*http.Request, error) {
-
 	body := &bytes.Buffer{}
 	// Try to create a new multipart writer in a closure.
 	// This is to ensure that the multipart writer is closed properly.
@@ -187,30 +190,30 @@ func newFileUploadRequest(uri string, metadata Metadata, zipPath string, apiKey 
 		// Write metadata
 		serialized, err := metadata.Serialize()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to serialize metadata: %w", err)
 		}
 		metadataPart, err := writer.CreateFormField("metadata")
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to create a multipart section: %w", err)
 		}
 		_, err = metadataPart.Write(serialized)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to write metadata to a multipart section: %w", err)
 		}
 
 		// Write archived documents
 		filePart, err := writer.CreateFormFile("archive", filepath.Base(zipPath))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to a multipart section: %w", err)
 		}
 		file, err := os.Open(zipPath)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to open archive file: %w", err)
 		}
 		defer file.Close()
 		_, err = io.Copy(filePart, file)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to copy archive file content to writer: %w", err)
 		}
 		return writer, nil
 	}()
@@ -219,9 +222,12 @@ func newFileUploadRequest(uri string, metadata Metadata, zipPath string, apiKey 
 	}
 
 	log.Debugf("contents size %d\n", body.Len())
-	req, err := http.NewRequest("POST", uri, body)
+	req, err := http.NewRequest(http.MethodPost, uri, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create a new upload request from body: %w", err)
+	}
 	bearer := fmt.Sprintf("Bearer %s", apiKey)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("Authorization", bearer)
-	return req, err
+	return req, nil
 }

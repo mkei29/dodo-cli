@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 type Metadata struct {
@@ -12,7 +13,10 @@ type Metadata struct {
 
 func (m *Metadata) Serialize() ([]byte, error) {
 	s, err := json.Marshal(m)
-	return s, err
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize metadata: %w", err)
+	}
+	return s, nil
 }
 
 type MetadataProject struct {

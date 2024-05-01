@@ -22,8 +22,8 @@ func TestValidCase(t *testing.T) {
 	conf, err := ParseDocumentConfig(strings.NewReader(TestCaseValid))
 	require.NoError(t, err)
 	// conf := src.ParseDocumentConfig(TestCase1)
-	require.Equal(t, conf.Version, "1")
-	require.Equal(t, *conf.Pages[0].Filepath, "README.md")
-	require.Equal(t, *conf.Pages[0].Path, "readme")
-	require.Equal(t, *conf.Pages[0].Title, "README")
+	require.Equal(t, "1", conf.Version)
+	require.Equal(t, "README.md", *conf.Pages[0].Filepath)
+	require.Equal(t, "readme", *conf.Pages[0].Path)
+	require.Equal(t, "README", *conf.Pages[0].Title)
 }

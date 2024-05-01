@@ -10,7 +10,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-// List all files to be archived
+// List all files to be archived.
 func collectFiles(p *Page) []string {
 	log.Debug("enter collectFiles")
 	pages := p.ListPageHeader()
@@ -34,13 +34,14 @@ func archive(output string, pathList []string) error {
 	zipWriter := zip.NewWriter(zipFile)
 	defer zipWriter.Close()
 
+	// TODO: replace mutierr with error set
 	var merr error
 	for _, path := range pathList {
 		if err := addFile(path, zipWriter); err != nil {
 			merr = multierr.Append(merr, fmt.Errorf("failed to add %s to archive", path))
 		}
 	}
-	return merr
+	return merr //nolint: wrapcheck
 }
 
 func addFile(filename string, writer *zip.Writer) error {

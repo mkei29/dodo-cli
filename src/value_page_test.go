@@ -29,8 +29,8 @@ func TestCreatePageTreeOnlySinglePage(t *testing.T) {
 
 	page, es := CreatePageTree(*conf, "./")
 	require.False(t, es.HasError())
-	assert.Equal(t, page.Path, "")
-	assert.Equal(t, page.Title, "")
+	assert.Equal(t, "", page.Path)
+	assert.Equal(t, "", page.Title)
 	assert.Len(t, page.Children, 2)
 }
 
@@ -54,7 +54,7 @@ func TestCreatePageTreeWithPattern(t *testing.T) {
 	os.Create(filepath.Join(dir, "README2.md"))
 	os.Create(filepath.Join(dir, "README3.md"))
 
-	os.Mkdir(filepath.Join(dir, "docs"), 0755)
+	os.Mkdir(filepath.Join(dir, "docs"), 0o755)
 	os.Create(filepath.Join(dir, "docs", "README1.md"))
 	os.Create(filepath.Join(dir, "docs", "README2.md"))
 
@@ -63,8 +63,8 @@ func TestCreatePageTreeWithPattern(t *testing.T) {
 
 	page, es := CreatePageTree(*conf, dir)
 	require.False(t, es.HasError())
-	assert.Equal(t, page.Path, "")
-	assert.Equal(t, page.Title, "")
+	assert.Equal(t, "", page.Path)
+	assert.Equal(t, "", page.Title)
 	assert.Len(t, page.Children, 5)
 }
 
@@ -94,7 +94,7 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	os.Create(filepath.Join(dir, "README2.md"))
 	os.Create(filepath.Join(dir, "README3.md"))
 
-	os.Mkdir(filepath.Join(dir, "docs"), 0755)
+	os.Mkdir(filepath.Join(dir, "docs"), 0o755)
 	os.Create(filepath.Join(dir, "docs", "README1.md"))
 	os.Create(filepath.Join(dir, "docs", "README2.md"))
 
@@ -103,8 +103,8 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 
 	page, es := CreatePageTree(*conf, dir)
 	require.False(t, es.HasError())
-	assert.Equal(t, page.Path, "")
-	assert.Equal(t, page.Title, "")
+	assert.Equal(t, "", page.Path)
+	assert.Equal(t, "", page.Title)
 	assert.Len(t, page.Children, 7)
 }
 
@@ -127,12 +127,12 @@ func TestCreatePageTreeLayeredCase(t *testing.T) {
 
 	page, es := CreatePageTree(*conf, "./")
 	require.False(t, es.HasError())
-	assert.Equal(t, page.Path, "")
-	assert.Equal(t, page.Title, "")
+	assert.Equal(t, "", page.Path)
+	assert.Equal(t, "", page.Title)
 	assert.Len(t, page.Children, 1)
 
-	assert.Equal(t, page.Children[0].Path, "dir1")
-	assert.Equal(t, page.Children[0].Children[0].Path, "dir1/readme1")
+	assert.Equal(t, "dir1", page.Children[0].Path)
+	assert.Equal(t, "dir1/readme1", page.Children[0].Children[0].Path)
 }
 
 const TestCasePageMalicious1 = `
@@ -199,7 +199,6 @@ func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {
 			es.Summary()
 			assert.True(t, es.HasError(), "should fail when malicious filepath was given")
 		})
-
 	}
 }
 

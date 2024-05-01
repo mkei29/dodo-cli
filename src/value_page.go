@@ -45,7 +45,7 @@ func NewPageHeaderFromPage(p *Page) PageSummary {
 }
 
 type Page struct {
-	Type        string
+	Type        string `json:"type"`
 	Filepath    string `json:"filepath"`
 	Path        string `json:"path"`
 	Title       string `json:"title"`
@@ -90,7 +90,7 @@ func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
 	}, errorSet
 }
 
-func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string) []Page {
+func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string) []Page { //nolint: funlen, cyclop
 	if c.IsValidSinglePage() {
 		filepath := filepath.Clean(filepath.Join(rootDir, *c.Filepath))
 		if err := IsUnderRootPath(rootDir, filepath); err != nil {
@@ -166,8 +166,8 @@ func listPageHeader(list []PageSummary, p *Page) []PageSummary {
 	if p.Type != PageTypeRootNode {
 		list = append(list, NewPageHeaderFromPage(p))
 	}
-	for _, c := range p.Children {
-		list = listPageHeader(list, &c)
+	for idx := range p.Children {
+		list = listPageHeader(list, &p.Children[idx])
 	}
 	return list
 }
@@ -177,7 +177,6 @@ func listPageHeader(list []PageSummary, p *Page) []PageSummary {
 // 1. all page have necessary fields.
 // 2. There are no duplicated paths.
 func (p *Page) IsValid() *ErrorSet {
-
 	errorSet := NewErrorSet()
 	p.isValid(true, errorSet)
 	if errorSet.HasError() {
@@ -195,7 +194,6 @@ func (p *Page) IsValid() *ErrorSet {
 }
 
 func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
-
 	if isRoot && p.Type != PageTypeRootNode {
 		errorSet.Add(NewAppError("Type for root node should be Root"))
 		return

@@ -1,5 +1,7 @@
 package main
 
+import "github.com/caarlos0/log"
+
 type AppError struct {
 	message string
 }
@@ -42,6 +44,6 @@ func (e *ErrorSet) Length() int {
 
 func (e *ErrorSet) Summary() {
 	for _, err := range e.errors {
-		println(err.Error())
+		log.Debug(err.Error())
 	}
 }
