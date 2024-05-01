@@ -53,7 +53,7 @@ type Page struct {
 	Children    []Page `json:"children"`
 }
 
-func NewPageFromFrontMatter(filePath, parentPath string) (*Page, error) {
+func NewPageFromFrontMatter(filePath string) (*Page, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
@@ -69,7 +69,6 @@ func NewPageFromFrontMatter(filePath, parentPath string) (*Page, error) {
 		return nil, fmt.Errorf("failed to parse front matter: %w", err)
 	}
 	page.Type = PageTypeLeafNode
-	page.Path = filepath.Join(parentPath, page.Path)
 	page.Filepath = filePath
 	page.Children = []Page{}
 	return &page, nil
@@ -79,7 +78,7 @@ func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
 	children := make([]Page, 0, len(config.Pages))
 	errorSet := NewErrorSet()
 	for _, c := range config.Pages {
-		children = convertToPage(errorSet, children, c, rootDir, "")
+		children = convertToPage(errorSet, children, c, rootDir)
 	}
 	return &Page{
 		Type:        PageTypeRootNode,
@@ -91,18 +90,17 @@ func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
 	}, errorSet
 }
 
-func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string, parentPath string) []Page {
+func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string) []Page {
 	if c.IsValidSinglePage() {
-		joinedPath := filepath.Join(parentPath, *c.Path)
-		path := filepath.Clean(filepath.Join(rootDir, *c.Filepath))
-		if err := IsUnderRootPath(rootDir, path); err != nil {
-			errorSet.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", path)))
+		filepath := filepath.Clean(filepath.Join(rootDir, *c.Filepath))
+		if err := IsUnderRootPath(rootDir, filepath); err != nil {
+			errorSet.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", filepath)))
 			return nil
 		}
 
 		children := make([]Page, 0, len(c.Children))
 		for _, c := range c.Children {
-			child := convertToPage(errorSet, children, c, rootDir, joinedPath)
+			child := convertToPage(errorSet, children, c, rootDir)
 			if child != nil {
 				children = append(children, child...)
 			}
@@ -115,8 +113,8 @@ func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir stri
 
 		slice = append(slice, Page{
 			Type:        PageTypeLeafNode,
-			Filepath:    path,
-			Path:        joinedPath,
+			Filepath:    filepath,
+			Path:        *c.Path,
 			Title:       *c.Title,
 			Description: description,
 			Children:    children,
@@ -125,22 +123,22 @@ func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir stri
 	}
 
 	if c.IsValidMatchDirectory() {
-		path := filepath.Clean(filepath.Join(rootDir, *c.Match))
-		if err := IsUnderRootPath(rootDir, path); err != nil {
-			errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: path should be under the rootDir: path: %s", path)))
+		dirPath := filepath.Clean(filepath.Join(rootDir, *c.Match))
+		if err := IsUnderRootPath(rootDir, dirPath); err != nil {
+			errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: path should be under the rootDir: path: %s", dirPath)))
 			return nil
 		}
-		matches, err := zglob.Glob(path)
+		matches, err := zglob.Glob(dirPath)
 		if err != nil {
-			errorSet.Add(NewAppError(fmt.Sprintf("internal error:  error raised during globbing %s", path)))
+			errorSet.Add(NewAppError(fmt.Sprintf("internal error:  error raised during globbing %s", dirPath)))
 			return nil
 		}
 
 		children := make([]Page, 0, len(matches))
 		for _, m := range matches {
-			page, err := NewPageFromFrontMatter(m, parentPath)
+			page, err := NewPageFromFrontMatter(m)
 			if err != nil {
-				errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: cannot read a file: path %s", path)))
+				errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: cannot read a file: path %s", dirPath)))
 			}
 			children = append(children, *page)
 		}

@@ -173,41 +173,52 @@ func uploadFile(uri string, metadata Metadata, archivePath string, apiKey string
 	return nil
 }
 
-func newFileUploadRequest(uri string, metadata Metadata, path string, apiKey string) (*http.Request, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
+func newFileUploadRequest(uri string, metadata Metadata, zipPath string, apiKey string) (*http.Request, error) {
 
 	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	defer writer.Close()
+	// Try to create a new multipart writer in a closure.
+	// This is to ensure that the multipart writer is closed properly.
+	// writer.Close() must be called before pass it to http.NewRequest.
+	// If we break this rule, the request will not be sent properly.
+	writer, err := func() (*multipart.Writer, error) {
+		writer := multipart.NewWriter(body)
+		defer writer.Close()
 
-	// Write metadata
-	serialized, err := metadata.Serialize()
-	if err != nil {
-		return nil, err
-	}
-	metadataPart, err := writer.CreateFormField("metadata")
-	if err != nil {
-		return nil, err
-	}
-	_, err = metadataPart.Write(serialized)
+		// Write metadata
+		serialized, err := metadata.Serialize()
+		if err != nil {
+			return nil, err
+		}
+		metadataPart, err := writer.CreateFormField("metadata")
+		if err != nil {
+			return nil, err
+		}
+		_, err = metadataPart.Write(serialized)
+		if err != nil {
+			return nil, err
+		}
+
+		// Write archived documents
+		filePart, err := writer.CreateFormFile("archive", filepath.Base(zipPath))
+		if err != nil {
+			return nil, err
+		}
+		file, err := os.Open(zipPath)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+		_, err = io.Copy(filePart, file)
+		if err != nil {
+			return nil, err
+		}
+		return writer, nil
+	}()
 	if err != nil {
 		return nil, err
 	}
 
-	// Write archived documents
-	filePart, err := writer.CreateFormFile("archive", filepath.Base(path))
-	if err != nil {
-		return nil, err
-	}
-	_, err = io.Copy(filePart, file)
-	if err != nil {
-		return nil, err
-	}
-
+	log.Debugf("contents size %d\n", body.Len())
 	req, err := http.NewRequest("POST", uri, body)
 	bearer := fmt.Sprintf("Bearer %s", apiKey)
 	req.Header.Set("Content-Type", writer.FormDataContentType())

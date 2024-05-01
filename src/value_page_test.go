@@ -269,7 +269,7 @@ func TestReadPageFromFile(t *testing.T) {
 			_, err = file.WriteString(c.content)
 			require.NoError(t, err)
 
-			page, err := NewPageFromFrontMatter(path, "")
+			page, err := NewPageFromFrontMatter(path)
 			if c.expectError {
 				require.Error(t, err)
 				return
