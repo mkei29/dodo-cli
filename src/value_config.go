@@ -26,6 +26,8 @@ type ConfigPage struct {
 	Title       *string       `yaml:"title"`
 	Path        *string       `yaml:"path"`
 	Description *string       `yaml:"description"`
+	SortKey     *string       `yaml:"sort_key"`
+	SortOrder   *string       `yaml:"sort_order"`
 	Children    []*ConfigPage `yaml:"children"`
 }
 
@@ -35,7 +37,7 @@ type ConfigPage struct {
 // 2. The page must not have a match field.
 // 3. The page must have a title field.
 // 4. The page must have a name field.
-func (c *ConfigPage) IsValidSinglePage() bool {
+func (c *ConfigPage) MatchLeafNode() bool {
 	if c.Filepath == nil {
 		return false
 	}
@@ -46,6 +48,14 @@ func (c *ConfigPage) IsValidSinglePage() bool {
 		return false
 	}
 	if c.Path == nil {
+		return false
+	}
+
+	// Cannot use sort key and sort order for leaf node.
+	if c.SortKey != nil {
+		return false
+	}
+	if c.SortOrder != nil {
 		return false
 	}
 	return true
@@ -69,10 +79,8 @@ func (c *ConfigPage) IsValidMatchPage() bool {
 
 // Check if the page consist of multiple pages.
 // A valid single page should satisfy the following conditions:
-// 1. The page must not have a filepath field.
-// 2. The page must have a match field.
-// 4. The page must not have a name field.
-func (c *ConfigPage) IsValidMatchDirectory() bool {
+// 1. The page must have a match field.
+func (c *ConfigPage) MatchDirNode() bool {
 	if c.Filepath != nil {
 		return false
 	}

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/adrg/frontmatter"
@@ -91,69 +92,82 @@ func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
 	}, errorSet
 }
 
-func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string) []Page { //nolint: funlen, cyclop
-	if c.IsValidSinglePage() {
-		filepath := filepath.Clean(filepath.Join(rootDir, *c.Filepath))
-		if err := IsUnderRootPath(rootDir, filepath); err != nil {
-			errorSet.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", filepath)))
-			return nil
-		}
-
-		children := make([]Page, 0, len(c.Children))
-		for _, child := range c.Children {
-			child := convertToPage(errorSet, children, child, rootDir)
-			if child != nil {
-				children = append(children, child...)
-			}
-		}
-
-		description := ""
-		if c.Description != nil {
-			description = *c.Description
-		}
-		slice = append(slice, Page{
-			Type:        PageTypeLeafNode,
-			Filepath:    filepath,
-			Path:        *c.Path,
-			Title:       *c.Title,
-			Description: description,
-			Children:    children,
-		})
-		return slice
+func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string) []Page {
+	if c.MatchLeafNode() {
+		return convertToLeafNode(errorSet, slice, c, rootDir)
 	}
-
-	if c.IsValidMatchDirectory() {
-		dirPath := filepath.Clean(filepath.Join(rootDir, *c.Match))
-		if err := IsUnderRootPath(rootDir, dirPath); err != nil {
-			errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: path should be under the rootDir: path: %s", dirPath)))
-			return nil
-		}
-		matches, err := zglob.Glob(dirPath)
-		if err != nil {
-			errorSet.Add(NewAppError(fmt.Sprintf("internal error:  error raised during globbing %s", dirPath)))
-			return nil
-		}
-
-		children := make([]Page, 0, len(matches))
-		for _, m := range matches {
-			page, err := NewPageFromFrontMatter(m)
-			if err != nil {
-				errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: cannot read a file: path %s", dirPath)))
-			}
-			children = append(children, *page)
-		}
-
-		slice = append(slice, Page{
-			Type:     PageTypeDirNodeWithPage,
-			Path:     *c.Path,
-			Title:    *c.Title,
-			Children: children,
-		})
-		return slice
+	if c.MatchDirNode() {
+		return convertToDirNode(errorSet, slice, c, rootDir)
 	}
-
 	errorSet.Add(NewAppError("invalid configuration: doesn't match any pattern"))
 	return nil
+}
+
+// TODO: This function can process leaf node and dir node with page for now.
+func convertToLeafNode(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string) []Page {
+	filepath := filepath.Clean(filepath.Join(rootDir, *c.Filepath))
+	if err := IsUnderRootPath(rootDir, filepath); err != nil {
+		errorSet.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", filepath)))
+		return nil
+	}
+
+	children := make([]Page, 0, len(c.Children))
+	for _, child := range c.Children {
+		child := convertToPage(errorSet, children, child, rootDir)
+		if child != nil {
+			children = append(children, child...)
+		}
+	}
+
+	description := ""
+	if c.Description != nil {
+		description = *c.Description
+	}
+	slice = append(slice, Page{
+		Type:        PageTypeLeafNode,
+		Filepath:    filepath,
+		Path:        *c.Path,
+		Title:       *c.Title,
+		Description: description,
+		Children:    children,
+	})
+	return slice
+}
+
+func convertToDirNode(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string) []Page {
+	dirPath := filepath.Clean(filepath.Join(rootDir, *c.Match))
+	if err := IsUnderRootPath(rootDir, dirPath); err != nil {
+		errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: path should be under the rootDir: path: %s", dirPath)))
+		return nil
+	}
+	matches, err := zglob.Glob(dirPath)
+	if err != nil {
+		errorSet.Add(NewAppError(fmt.Sprintf("internal error:  error raised during globbing %s", dirPath)))
+		return nil
+	}
+
+	// Add matched files to the children.
+	children := make([]Page, 0, len(matches))
+	for _, m := range matches {
+		page, err := NewPageFromFrontMatter(m)
+		if err != nil {
+			errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: cannot read a file: path %s", dirPath)))
+		}
+		children = append(children, *page)
+	}
+
+	if err := SortPageSlice(c.SortKey, c.SortOrder, children); err != nil {
+		errorSet.Add(NewAppError(fmt.Sprintf("failed to sort pages: %v", err)))
+		return nil
+	}
+
+	slice = append(slice, Page{
+		Type:     PageTypeDirNodeWithPage,
+		Path:     *c.Path,
+		Title:    *c.Title,
+		Children: children,
+	})
+	return slice
 }
 
 // List PageSummary of the page includes.
@@ -260,4 +274,32 @@ func (p *Page) buildCount() int {
 // Add a child page.
 func (p *Page) Add(page Page) {
 	p.Children = append(p.Children, page)
+}
+
+func SortPageSlice(sortKey, sortOrder *string, pages []Page) error {
+	if sortKey == nil && sortOrder == nil {
+		return nil
+	}
+	if sortKey == nil {
+		return fmt.Errorf("sort key is not provided")
+	}
+	// Check sortOrder
+	isASC := true
+	if sortOrder != nil {
+		switch strings.ToLower(*sortOrder) {
+		case "asc":
+			break
+		case "desc":
+			isASC = false
+		default:
+			return fmt.Errorf("invalid sort order: %s", *sortOrder)
+		}
+	}
+	if *sortKey == "title" {
+		sort.Slice(pages, func(i, j int) bool {
+			return (pages[i].Title < pages[j].Title) == isASC
+		})
+		return nil
+	}
+	return fmt.Errorf("invalid sort key: %s", *sortKey)
 }
