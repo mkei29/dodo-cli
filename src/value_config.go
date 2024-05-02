@@ -82,7 +82,7 @@ func (c *ConfigPage) IsValidMatchDirectory() bool {
 	if c.Title == nil {
 		return false
 	}
-	if c.Path != nil {
+	if c.Path == nil {
 		return false
 	}
 	return true

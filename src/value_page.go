@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/adrg/frontmatter"
@@ -99,8 +100,8 @@ func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir stri
 		}
 
 		children := make([]Page, 0, len(c.Children))
-		for _, c := range c.Children {
-			child := convertToPage(errorSet, children, c, rootDir)
+		for _, child := range c.Children {
+			child := convertToPage(errorSet, children, child, rootDir)
 			if child != nil {
 				children = append(children, child...)
 			}
@@ -110,7 +111,6 @@ func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir stri
 		if c.Description != nil {
 			description = *c.Description
 		}
-
 		slice = append(slice, Page{
 			Type:        PageTypeLeafNode,
 			Filepath:    filepath,
@@ -145,6 +145,7 @@ func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir stri
 
 		slice = append(slice, Page{
 			Type:     PageTypeDirNodeWithPage,
+			Path:     *c.Path,
 			Title:    *c.Title,
 			Children: children,
 		})
@@ -184,7 +185,7 @@ func (p *Page) IsValid() *ErrorSet {
 	}
 
 	pathMap := make(map[string]int)
-	p.duplicationCount(pathMap)
+	p.duplicationCount(pathMap, "")
 	for path, value := range pathMap {
 		if value > 1 {
 			errorSet.Add(NewAppError(fmt.Sprintf("duplicated path was found. path: `%s`", path)))
@@ -193,7 +194,7 @@ func (p *Page) IsValid() *ErrorSet {
 	return errorSet
 }
 
-func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
+func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) { //nolint: cyclop
 	if isRoot && p.Type != PageTypeRootNode {
 		errorSet.Add(NewAppError("Type for root node should be Root"))
 		return
@@ -205,17 +206,26 @@ func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
 	if p.Type == PageTypeLeafNode && p.Path == "" {
 		errorSet.Add(NewAppError(fmt.Sprintf("%s Path field of child page should not be empty", p.Filepath)))
 	}
+	if p.Type == PageTypeDirNode && p.Path == "" {
+		errorSet.Add(NewAppError(fmt.Sprintf("%s Path field of child page should not be empty", p.Filepath)))
+	}
+
+	matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", p.Path)
+	if err != nil || !matched {
+		errorSet.Add(NewAppError(fmt.Sprintf("The file path `%s` contains invalid characters. File paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", p.Filepath)))
+	}
 	for _, c := range p.Children {
 		c.isValid(false, errorSet)
 	}
 }
 
-func (p *Page) duplicationCount(pathMap map[string]int) {
+func (p *Page) duplicationCount(pathMap map[string]int, parentPath string) {
+	path := filepath.Join(parentPath, p.Path)
 	if p.Path != "" {
-		pathMap[p.Path]++
+		pathMap[path]++
 	}
 	for _, c := range p.Children {
-		c.duplicationCount(pathMap)
+		c.duplicationCount(pathMap, path)
 	}
 }
 

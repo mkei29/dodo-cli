@@ -88,7 +88,6 @@ func execute(args argsOpts) { //nolint: funlen, cyclop
 		return
 	}
 	log.Debugf("successfully convert config to page. found %d pages", page.Count())
-	log.Debugf(page.String())
 
 	es = page.IsValid()
 	if es.HasError() {
@@ -221,7 +220,7 @@ func newFileUploadRequest(uri string, metadata Metadata, zipPath string, apiKey 
 		return nil, err
 	}
 
-	log.Debugf("contents size %d\n", body.Len())
+	log.Debugf("contents size %d", body.Len())
 	req, err := http.NewRequest(http.MethodPost, uri, body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a new upload request from body: %w", err)

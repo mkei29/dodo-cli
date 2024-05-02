@@ -39,8 +39,10 @@ version: 1
 pages:
   - match: "README*.md"
     title: "section1"
+    path: "section1"
   - match: "docs/**/*.md"
-    title: "section1"
+    title: "section2"
+    path: "section2"
 `
 
 func TestCreatePageTreeWithPattern(t *testing.T) {
@@ -62,10 +64,14 @@ func TestCreatePageTreeWithPattern(t *testing.T) {
 	require.NoError(t, err, "should not return error")
 
 	page, es := CreatePageTree(*conf, dir)
-	require.False(t, es.HasError())
+	require.False(t, es.HasError(), "should not return error when valid config is given")
 	assert.Equal(t, "", page.Path)
 	assert.Equal(t, "", page.Title)
-	assert.Len(t, page.Children, 5)
+
+	// Root node should have 2 children
+	assert.Len(t, page.Children, 2, "root node should have 2 children")
+	assert.Len(t, page.Children[0].Children, 3, "first child should have 3 children")
+	assert.Len(t, page.Children[1].Children, 2, "second child should have 3 children")
 }
 
 const TestCasePage3 = `
@@ -78,9 +84,11 @@ pages:
     path: "readme1"
     title: "README2"
   - match: "README*.md"
-    title: "section"
+    title: "section1"
+    path: "section1"
   - match: "docs/**/*.md"
-    title: "section"
+    title: "section2"
+    path: "section2"
 `
 
 func TestCreatePageTreeWithHybridCase(t *testing.T) {
@@ -105,7 +113,13 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	require.False(t, es.HasError())
 	assert.Equal(t, "", page.Path)
 	assert.Equal(t, "", page.Title)
-	assert.Len(t, page.Children, 7)
+
+	// Root node should have 4 children
+	assert.Len(t, page.Children, 4, "root node should have 4 children")
+	assert.Empty(t, page.Children[0].Children, "first child should have no children")
+	assert.Empty(t, page.Children[1].Children, "second child should have no children")
+	assert.Len(t, page.Children[2].Children, 3, "third child should have 3 children")
+	assert.Len(t, page.Children[3].Children, 2, "fourth child should have 2 children")
 }
 
 const TestCasePage4 = `
@@ -132,7 +146,7 @@ func TestCreatePageTreeLayeredCase(t *testing.T) {
 	assert.Len(t, page.Children, 1)
 
 	assert.Equal(t, "dir1", page.Children[0].Path)
-	assert.Equal(t, "dir1/readme1", page.Children[0].Children[0].Path)
+	assert.Equal(t, "readme1", page.Children[0].Children[0].Path)
 }
 
 const TestCasePageMalicious1 = `
@@ -280,6 +294,7 @@ func TestReadPageFromFile(t *testing.T) {
 	}
 }
 
+// Valid case.
 const TestCasePageValid1 = `
 version: 1
 pages:
@@ -291,6 +306,27 @@ pages:
     title: "README2"
 `
 
+// Valid case. There are same paths, but parent path is different.
+const TestCasePageValid2 = `
+version: 1
+pages:
+  - filepath: "DIR1.md"
+    path: "dir1"
+    title: "Dir1"
+    children:
+      - filepath: "README1.md"
+        path: "readme1"
+        title: "README1"
+  - filepath: "DIR2.md"
+    path: "dir2"
+    title: "DIR2"
+    children:
+      - filepath: "README1.md"
+        path: "readme1"
+        title: "README1"
+`
+
+// Duplicated path.
 const TestCasePageInvalid1 = `
 version: 1
 pages:
@@ -302,14 +338,29 @@ pages:
     title: "README1"
 `
 
+// Duplicated path under the same parent.
 const TestCasePageInvalid2 = `
 version: 1
 pages:
+  - filepath: "DIR1.md"
+    title: "dir1"
+    path: "dir1"
+    children:
+      - filepath: "README1.md"
+        path: "readme1"
+        title: "README1"
+      - filepath: "README1.md"
+        path: "readme1"
+        title: "README1"
+`
+
+// Path field is invalid.
+const TestCasePageInvalid3 = `
+version: 1
+pages:
   - filepath: "README1.md"
-    title: "README1"
-  - filepath: "README1.md"
-    path: "readme1"
-    title: "README1"
+    path: "test/readme1"
+    title: "README1"	
 `
 
 func TestIsValid(t *testing.T) {
@@ -320,18 +371,28 @@ func TestIsValid(t *testing.T) {
 		isValid bool
 	}{
 		{
-			"pass when valid content was given",
+			"valid content",
 			TestCasePageValid1,
 			true,
 		},
 		{
-			"pass when page has duplicated path",
+			"valid content with same path but different parent",
+			TestCasePageValid2,
+			true,
+		},
+		{
+			"page has duplicated paths",
 			TestCasePageInvalid1,
 			false,
 		},
 		{
-			"pass when some page doesn't have necessary fields",
-			TestCasePageInvalid1,
+			"some pages doesn't have necessary fields",
+			TestCasePageInvalid2,
+			false,
+		},
+		{
+			"path field is invalid",
+			TestCasePageInvalid3,
 			false,
 		},
 	}

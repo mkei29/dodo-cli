@@ -9,10 +9,12 @@ pages:
     title: "What is dodo"
   - match: "docs/*.md"
     title: "test"
+    path": "/test"
   - filepath: docs/index.md
     path: "/directory"
     title: "ok"
     children:
       - match: docs/usage/*.md
         title: "test2"
+        path: "/directory"
  
