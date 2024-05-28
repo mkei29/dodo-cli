@@ -11,12 +11,47 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Valid Case.
+const TestCaseParseDocumentConfig1 = `
+version: 1
+pages:
+  - filepath: "README2.md"
+    path: "readme1"
+    title: "README2"
+`
+
+// Invalid Case with unknown date format.
+const TestCaseParseDocumentConfig2 = `
+version: 1
+pages:
+  - filepath: "README2.md"
+    path: "readme1"
+    title: "README2"
+		created_at: "23/1/2024
+`
+
+func TestParseDocumentConfig(t *testing.T) {
+	t.Parallel()
+
+	t.Run("should not return error when valid config was given", func(t *testing.T) {
+		t.Parallel()
+		_, err := ParseDocumentConfig(strings.NewReader(TestCasePage1))
+		require.NoError(t, err)
+	})
+	t.Run("should return error when invalid config was given", func(t *testing.T) {
+		t.Parallel()
+		_, err := ParseDocumentConfig(strings.NewReader(TestCaseParseDocumentConfig2))
+		require.Error(t, err)
+	})
+}
+
 const TestCasePage1 = `
 version: 1
 pages:
   - filepath: "README1.md"
     path: "readme1"
     title: "README2"
+    created_at: "2021-01-01T00:00:00Z"
   - filepath: "README2.md"
     path: "readme1"
     title: "README2"
@@ -32,6 +67,10 @@ func TestCreatePageTreeOnlySinglePage(t *testing.T) {
 	assert.Equal(t, "", page.Path)
 	assert.Equal(t, "", page.Title)
 	assert.Len(t, page.Children, 2)
+
+	assert.Equal(t, "readme1", page.Children[0].Path)
+	assert.Equal(t, "README2", page.Children[0].Title)
+	assert.Equal(t, "2021-01-01T00:00:00Z", page.Children[0].CreatedAt.String())
 }
 
 const TestCasePage2 = `

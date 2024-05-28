@@ -25,6 +25,7 @@ type PageSummary struct {
 	Filepath    string `json:"filepath"`
 	Path        string `json:"path"`
 	Title       string `json:"title"`
+	CreatedAt   string `json:"created_at"`
 	Description string `json:"description"`
 }
 
@@ -47,12 +48,13 @@ func NewPageHeaderFromPage(p *Page) PageSummary {
 }
 
 type Page struct {
-	Type        string `json:"type"`
-	Filepath    string `json:"filepath"`
-	Path        string `json:"path"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Children    []Page `json:"children"`
+	Type        string           `json:"type"`
+	Filepath    string           `json:"filepath"`
+	Path        string           `json:"path"`
+	Title       string           `json:"title"`
+	Description string           `json:"description"`
+	CreatedAt   SerializableTime `json:"created_at"`
+	Children    []Page           `json:"children"`
 }
 
 func NewPageFromFrontMatter(filePath string) (*Page, error) {
@@ -70,6 +72,7 @@ func NewPageFromFrontMatter(filePath string) (*Page, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse front matter: %w", err)
 	}
+
 	page.Type = PageTypeLeafNode
 	page.Filepath = filePath
 	page.Children = []Page{}
@@ -104,6 +107,7 @@ func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir stri
 }
 
 // TODO: This function can process leaf node and dir node with page for now.
+// TODO: Should fill the page value from front matter.
 func convertToLeafNode(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string) []Page {
 	filepath := filepath.Clean(filepath.Join(rootDir, *c.Filepath))
 	if err := IsUnderRootPath(rootDir, filepath); err != nil {
@@ -123,14 +127,19 @@ func convertToLeafNode(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir 
 	if c.Description != nil {
 		description = *c.Description
 	}
-	slice = append(slice, Page{
+
+	newPage := Page{
 		Type:        PageTypeLeafNode,
 		Filepath:    filepath,
 		Path:        *c.Path,
 		Title:       *c.Title,
 		Description: description,
 		Children:    children,
-	})
+	}
+	if c.CreatedAt != nil {
+		newPage.CreatedAt = *c.CreatedAt
+	}
+	slice = append(slice, newPage)
 	return slice
 }
 
@@ -161,12 +170,16 @@ func convertToDirNode(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir s
 		return nil
 	}
 
-	slice = append(slice, Page{
-		Type:     PageTypeDirNodeWithPage,
+	newPage := Page{
+		Type:     PageTypeDirNode,
 		Path:     *c.Path,
 		Title:    *c.Title,
 		Children: children,
-	})
+	}
+	if c.CreatedAt != nil {
+		newPage.CreatedAt = *c.CreatedAt
+	}
+	slice = append(slice, newPage)
 	return slice
 }
 

@@ -21,14 +21,15 @@ type ConfigProject struct {
 }
 
 type ConfigPage struct {
-	Filepath    *string       `yaml:"filepath"`
-	Match       *string       `yaml:"match"`
-	Title       *string       `yaml:"title"`
-	Path        *string       `yaml:"path"`
-	Description *string       `yaml:"description"`
-	SortKey     *string       `yaml:"sort_key"`
-	SortOrder   *string       `yaml:"sort_order"`
-	Children    []*ConfigPage `yaml:"children"`
+	Filepath    *string           `yaml:"filepath"`
+	Match       *string           `yaml:"match"`
+	Title       *string           `yaml:"title"`
+	Path        *string           `yaml:"path"`
+	Description *string           `yaml:"description"`
+	SortKey     *string           `yaml:"sort_key"`
+	SortOrder   *string           `yaml:"sort_order"`
+	CreatedAt   *SerializableTime `yaml:"created_at"`
+	Children    []*ConfigPage     `yaml:"children"`
 }
 
 // Check if the page is a valid single page.
