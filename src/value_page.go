@@ -82,17 +82,50 @@ func NewPageFromFrontMatter(filePath string) (*Page, error) {
 func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
 	children := make([]Page, 0, len(config.Pages))
 	errorSet := NewErrorSet()
+
+	root := createRootPage(errorSet, config)
+	if errorSet.HasError() {
+		return nil, errorSet
+	}
+
 	for _, c := range config.Pages {
 		children = convertToPage(errorSet, children, c, rootDir)
 	}
-	return &Page{
+
+	root.Children = children
+	return root, errorSet
+}
+
+func createRootPage(errorSet *ErrorSet, config Config) *Page {
+	if config.Index == nil {
+		errorSet.Add(NewAppError("invalid configuration: index field is missing"))
+		return nil
+	}
+	if config.Index.Filepath == nil {
+		errorSet.Add(NewAppError("invalid configuration: index.filepath field is missing"))
+		return nil
+	}
+	// Path should be empty for the root node.
+	// If the path is not empty, backend server will refuse the request.
+	root := Page{
 		Type:        PageTypeRootNode,
-		Filepath:    "",
+		Filepath:    *config.Index.Filepath,
 		Title:       "",
 		Path:        "",
 		Description: "",
-		Children:    children,
-	}, errorSet
+		Children:    []Page{},
+	}
+
+	if config.Index.Title != nil {
+		root.Title = *config.Index.Title
+	}
+	if config.Index.Description != nil {
+		root.Description = *config.Index.Description
+	}
+	if config.Index.CreatedAt != nil {
+		root.CreatedAt = *config.Index.CreatedAt
+	}
+	return &root
 }
 
 func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string) []Page {
@@ -191,9 +224,7 @@ func (p *Page) ListPageHeader() []PageSummary {
 }
 
 func listPageHeader(list []PageSummary, p *Page) []PageSummary {
-	if p.Type != PageTypeRootNode {
-		list = append(list, NewPageHeaderFromPage(p))
-	}
+	list = append(list, NewPageHeaderFromPage(p))
 	for idx := range p.Children {
 		list = listPageHeader(list, &p.Children[idx])
 	}
@@ -239,7 +270,7 @@ func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) { //nolint: cyclop
 
 	matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", p.Path)
 	if err != nil || !matched {
-		errorSet.Add(NewAppError(fmt.Sprintf("The file path `%s` contains invalid characters. File paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", p.Filepath)))
+		errorSet.Add(NewAppError(fmt.Sprintf("The path `%s` contains invalid characters. File paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", p.Filepath)))
 	}
 	for _, c := range p.Children {
 		c.isValid(false, errorSet)

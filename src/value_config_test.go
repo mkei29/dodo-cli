@@ -10,6 +10,10 @@ import (
 
 const TestCaseValid = `
 version: 1
+index:
+  title: "index"
+  filepath: "./README.md"
+  description: "description"
 pages:
   - filepath: "README1.md"
     path: "readme1"
@@ -24,7 +28,7 @@ pages:
 
 func TestValidCase(t *testing.T) {
 	t.Parallel()
-	conf, err := ParseDocumentConfig(strings.NewReader(TestCaseValid))
+	conf, err := ParseConfig(strings.NewReader(TestCaseValid))
 	require.NoError(t, err)
 
 	assert.Equal(t, "1", conf.Version)

@@ -3,6 +3,9 @@ project:
   name: dodo
   description: test project
   version: 0.0.1
+index:
+  title: "test"
+  filepath: docs/index.md
 pages:
   - filepath: docs/index.md
     path: "/test"

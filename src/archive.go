@@ -16,10 +16,12 @@ func collectFiles(p *Page) []string {
 	pages := p.ListPageHeader()
 	fileList := make([]string, 0, len(pages))
 	for _, page := range pages {
-		if page.Type != PageTypeLeafNode {
-			continue
+		if page.Type == PageTypeLeafNode {
+			fileList = append(fileList, page.Filepath)
 		}
-		fileList = append(fileList, page.Filepath)
+		if page.Type == PageTypeRootNode {
+			fileList = append(fileList, page.Filepath)
+		}
 	}
 	return fileList
 }

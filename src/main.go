@@ -73,7 +73,7 @@ func execute(args argsOpts) { //nolint: funlen, cyclop
 	}
 	defer configFile.Close()
 
-	config, err := ParseDocumentConfig(configFile)
+	config, err := ParseConfig(configFile)
 	if err != nil {
 		log.Errorf("internal error: failed to parse config file: %w", err)
 		return
