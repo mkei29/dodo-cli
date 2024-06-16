@@ -1,9 +1,9 @@
 
-## Summary of uploading
+## Summary of the uploading flow
 
 * PageConfigをPageに変換する
 * Pageに基づいて必要なファイルをarchiveする
-* 最後にアップロードする
+* endpointにアップロードする
 
 ## Issues
 
@@ -20,7 +20,6 @@
 * pathに使える文字は[a-zA-Z0-9-_]に限定する。
 
 ### パースの流れ
-
 * Configを作成
 * ConfigからMetadataを作成
 * MetadataからArchiveを作成

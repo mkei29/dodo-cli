@@ -12,5 +12,9 @@ install-local:
 	sudo cp ./dist/dodo-client_linux_amd64_v1/dodo-client /usr/local/bin
 .PHONY: install-local
 
+.PHONY: release
+release:
+	goreleaser release
+
 fmt:
 	golangci-lint run --fix src
