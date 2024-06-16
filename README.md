@@ -1,4 +1,15 @@
 
+
+# How To Release 
+
+```
+# Set tag
+git tag v0.0.1 -m release
+
+# goreleaser release
+```
+
+
 ## Summary of the uploading flow
 
 * PageConfigをPageに変換する
