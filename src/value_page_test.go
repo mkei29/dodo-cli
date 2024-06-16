@@ -282,7 +282,7 @@ pages:
     title: "section"
 `
 
-// No index field
+// No index field.
 const TestCasePageMalicious5 = `
 version: 1
 index:
@@ -296,7 +296,7 @@ pages:
     title: "section"
 `
 
-// No title in index field
+// No title in index field.
 const TestCasePageMalicious6 = `
 version: 1
 index:
@@ -309,7 +309,7 @@ pages:
     title: "section"
 `
 
-// No filepath in index field
+// No filepath in index field.
 const TestCasePageMalicious7 = `
 version: 1
 index:
