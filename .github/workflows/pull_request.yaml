@@ -27,6 +27,6 @@ jobs:
           version: v1.55.2
           args: --timeout=10m src 
       - name: Install dependencies
-        run: go get .
+        run: go mod download
       - name: Test
         run: go test ./src
