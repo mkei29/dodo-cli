@@ -31,11 +31,12 @@ func CreateUploadCmd() *cobra.Command {
 			return executeUpload(opts)
 		},
 	}
-	uploadCmd.Flags().StringVarP(&opts.file, "file", "f", ".dodo.yaml", "config file path")
-	uploadCmd.Flags().StringVarP(&opts.output, "output", "o", "./output.zip", "archive file path")
+	uploadCmd.Flags().StringVarP(&opts.file, "config", "c", ".dodo.yaml", "Path to the configuration file")
+	uploadCmd.Flags().StringVarP(&opts.rootPath, "workingDir", "w", ".", "Defines the root path of the project for the command's execution context")
+	uploadCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
+
+	uploadCmd.Flags().StringVarP(&opts.output, "output", "o", "./output.zip", "archive file path") // Deprecated
 	uploadCmd.Flags().StringVar(&opts.endpoint, "endpoint", "http://api.dodo-doc.com/project/upload", "endpoint to upload")
-	uploadCmd.Flags().BoolVar(&opts.debug, "debug", false, "run in debug mode")
-	uploadCmd.Flags().StringVarP(&opts.rootPath, "root", "r", ".", "root path of the project")
 	return uploadCmd
 }
 
