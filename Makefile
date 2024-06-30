@@ -20,6 +20,10 @@ release:
 fmt:
 	golangci-lint run --fix src
 
+.PHONY: deploy-docs
+deploy-docs:
+	dodo-client upload 
+
 .PHONY: clean
 clean:
 	rm -rf dist

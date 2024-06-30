@@ -1,23 +1,20 @@
 version: 1
 project:
   name: dodo
-  description: test project
+  description: The dodo documentation
   version: 0.0.1
 index:
   title: "test"
   filepath: docs/index.md
 pages:
-  - filepath: docs/index.md
-    path: "/test"
-    title: "What is dodo"
-  - match: "docs/*.md"
-    title: "test"
-    path": "/test"
-  - filepath: docs/index.md
-    path: "/directory"
-    title: "ok"
-    children:
-      - match: docs/usage/*.md
-        title: "test2"
-        path: "/directory"
+  - filepath: docs/install.md
+    path: "install"
+    title: "Install"
+  - filepath: docs/quick_start.md
+    path: "quick_start"
+    title: "Quick Start"
+  - filepath: docs/yaml_specification.md
+    path: "yaml_specification"
+    title: "Yaml Spec"
+ 
  
