@@ -1,12 +1,15 @@
 ---
-title: How to use dodo
-path: /index
-description: This page describe how to setup dodo.
+title: dodo
+path: ""
+description: ""
 ---
 
 * Install
 * Quick Start
 * Setup CI
+
+Reactとか参考に
+https://react.dev/learn
 
 # What is dodo
 

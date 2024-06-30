@@ -5,6 +5,7 @@ go 1.21.2
 require (
 	github.com/adrg/frontmatter v0.2.0
 	github.com/caarlos0/log v0.4.4
+	github.com/manifoldco/promptui v0.9.0
 	github.com/mattn/go-zglob v0.0.4
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
@@ -21,7 +22,6 @@ require (
 	github.com/elliotchance/orderedmap/v2 v2.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
-	github.com/manifoldco/promptui v0.9.0 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect

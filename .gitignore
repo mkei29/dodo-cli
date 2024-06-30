@@ -1,4 +1,4 @@
 dist
 dist/
 output.zip
-.env.rc
+.envrc
