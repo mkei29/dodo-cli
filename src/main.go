@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
+const (
 	shortDescRoot = "The CLI tool for dodo to manage your dodo project"
 	longDescRoot  = `
 The CLI tool for dodo to manage your dodo project.

@@ -1,6 +1,6 @@
 # dodo cli
 
-Publishes your document to [dodo](https://www.dodo-doc.com).
+Publishes your document to [dodo](https://www.dodo-doc.com)
 
 ## Documentation
 

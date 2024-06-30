@@ -4,7 +4,7 @@ project:
   version: {{ .Version }}
   description: {{ .Description }}
 index:
-  title: "TOP"
+  title: "index"
   filepath: README.md 
 #pages:
   #- filepath: README.md
