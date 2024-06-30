@@ -18,6 +18,7 @@ var configTemplate string
 type InitArgs struct {
 	configPath string // config file path
 	workingDir string // root path of the project
+	force      bool   // overwrite the configuration file if it already exists
 	debug      bool   // server endpoint to upload
 }
 
@@ -32,7 +33,8 @@ func CreateInitCmd() *cobra.Command {
 	}
 	initCmd.Flags().StringVarP(&opts.configPath, "config", "c", ".dodo.yaml", "Path to the configuration file")
 	initCmd.Flags().StringVarP(&opts.workingDir, "workingDir", "w", ".", "Defines the root path of the project for the command's execution context")
-	initCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
+	initCmd.Flags().BoolVarP(&opts.force, "force", "f", false, "Overwrite the configuration file if it already exists")
+	initCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode")
 	return initCmd
 }
 
@@ -45,8 +47,8 @@ func executeInit(args InitArgs) error {
 	configPath := filepath.Join(args.workingDir, args.configPath)
 	log.Debugf("config file: %s", configPath)
 
-	_, err := os.Stat(args.workingDir)
-	if os.IsExist(err) {
+	if !args.force && fileExists(configPath) {
+		log.Errorf("configuration file already exists: %s", configPath)
 		return fmt.Errorf("configuration file already exists: %s", configPath)
 	}
 
@@ -68,6 +70,10 @@ func executeInit(args InitArgs) error {
 		return fmt.Errorf("failed to write configuration file: %w", err)
 	}
 	f.Sync()
+
+	if args.force {
+		log.Info("Overwrite the configuration file")
+	}
 	return nil
 }
 
@@ -85,4 +91,12 @@ func generateConfigContent(placeholder PlaceHolderForConfig) (string, error) {
 	w := &bytes.Buffer{}
 	template.Execute(w, placeholder)
 	return w.String(), nil
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }
