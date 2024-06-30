@@ -4,6 +4,10 @@ path: /index
 description: This page describe how to setup dodo.
 ---
 
+* Install
+* Quick Start
+* Setup CI
+
 # What is dodo
 
 `dodo` is a documentation web service for modern developers.
@@ -25,12 +29,6 @@ First of all, let's install dodo to your machine.
 ```bash
 curl url
 ```
-
-### For mac user
-
-### For linux user
-
-### For windows user
 
 ## Create First Project
 次にdodoダッシュボードで新しくプロジェクトを作成しましょう。
