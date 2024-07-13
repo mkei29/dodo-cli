@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION="0.0.1"
+VERSION="0.0.2"
 OS=$(uname -s)
 LOCAL_ARCH=$(uname -m)
 
@@ -23,15 +23,15 @@ case $LOCAL_ARCH in
 esac
 
 # Download the binary
-URL="https://github.com/toritoritori29/dodo-cli/releases/download/$VERSION/dodo-client_${OS}_${ARCH}.tar.gz"
+URL="https://github.com/toritoritori29/dodo-cli/releases/download/$VERSION/dodo-cli_${OS}_${ARCH}.tar.gz"
 echo "[1/2] Downloading dodo-cli from $URL ..."
 curl -sLO $URL
-filename="dodo-client_${OS}_${ARCH}.tar.gz"
+filename="dodo-cli_${OS}_${ARCH}.tar.gz"
 
 echo "[2/2] Extracting dodo-cli from the archive ..."
 tar -xzf $filename
 rm $filename
-chmod +x dodo-client
+chmod +x dodo-cli
 
 printf "\ndodo-cli %s Download Complete!" $VERSION
 printf "\ndodo-cli has been successfully downloaded into the current directory."

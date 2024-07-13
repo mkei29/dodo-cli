@@ -21,5 +21,6 @@ func main() {
 	}
 	rootCmd.AddCommand(CreateInitCmd())
 	rootCmd.AddCommand(CreateUploadCmd())
+	rootCmd.AddCommand(CreateVersionCmd())
 	cobra.CheckErr(rootCmd.Execute())
 }
