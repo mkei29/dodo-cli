@@ -10,7 +10,7 @@ test:
 .PHONY: install-local
 install-local:
 	goreleaser release --snapshot --clean
-	sudo cp ./dist/dodo-client_linux_amd64_v1/dodo-client /usr/local/bin
+	sudo cp ./dist/dodo-cli_linux_amd64_v1/dodo-cli /usr/local/bin
 
 .PHONY: release
 release:
@@ -22,7 +22,7 @@ fmt:
 
 .PHONY: deploy-docs
 deploy-docs:
-	dodo-client upload 
+	dodo-cli upload 
 
 .PHONY: clean
 clean:

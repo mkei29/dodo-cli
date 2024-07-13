@@ -1,4 +1,4 @@
-module github.com/toritoritori29/dodo-client
+module github.com/toritoritori29/dodo-cli
 
 go 1.21.2
 
