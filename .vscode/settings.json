@@ -1,0 +1,8 @@
+{
+  "yaml.schemas": {
+    "https://json.schemastore.org/yamllint.json": [
+      "file:///home/keisuke/dev/dodo-client/src/template.yaml",
+      "file:///home/keisuke/dev/dodo-client/resouces/template.yaml"
+    ]
+  }
+}

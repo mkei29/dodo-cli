@@ -16,5 +16,3 @@ View the [changelog]()
 ```bash
 curl https://github.com/toritoritori29/dodo-cli/raw/main/.goreleaser.yaml | sh - 
 ```
-
-
