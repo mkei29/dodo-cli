@@ -3,3 +3,5 @@ dist/
 output.zip
 .envrc
 .vscode
+
+src/version.txt
