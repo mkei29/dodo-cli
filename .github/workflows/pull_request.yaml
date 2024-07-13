@@ -18,6 +18,8 @@ jobs:
         with:
           go-version: '1.21'
           cache: false
+      - name: Go generate
+        run: go generate ./src
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:

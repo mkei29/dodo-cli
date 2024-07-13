@@ -22,6 +22,8 @@ jobs:
           git config --global user.email "toritorineko29@gmail.com"
       - name: Set up Go
         uses: actions/setup-go@v5
+      - name: Go generate
+        run: go generate ./src
       - name: Set tag
         id: tag
         run: |
