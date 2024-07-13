@@ -2,3 +2,4 @@ dist
 dist/
 output.zip
 .envrc
+.vscode
