@@ -4,7 +4,7 @@ project:
   description: The dodo documentation
   version: 0.0.1
 index:
-  title: "test"
+  title: "What is dodo?"
   filepath: docs/index.md
 pages:
   - filepath: docs/install.md
@@ -13,8 +13,13 @@ pages:
   - filepath: docs/quick_start.md
     path: "quick_start"
     title: "Quick Start"
-  - filepath: docs/yaml_specification.md
+  - filepath: docs/yaml_spec.md
     path: "yaml_specification"
     title: "Yaml Spec"
- 
+  - filepath: docs/cicd.md
+    path: "cicd"
+    title: "Use with CI/CD"
+  - filepath: docs/roadmap.md
+    path: "roadmap"
+    title: "Roadmap"
  
