@@ -1,59 +1,39 @@
 ---
-title: dodo
+title: ""
 path: ""
 description: ""
 ---
 
-* Install
-* Quick Start
-* Setup CI
+dodoはあなたが書いたmarkdownをドキュメントとしてホストするためのサービスです。
+設定ファイルを用意することで、コマンド1つで簡単にMarkdownのドキュメントをデプロイすることができます。
 
-Reactとか参考に
-https://react.dev/learn
+具体的にどんなドキュメントが使えるのか見てみたいですか?
+このドキュメント自体がdodoでホストされています。
+もし気に入って自分で試してみたければ、以下のリンクから次のステップに進んでください。
 
-# What is dodo
+https://document.do.dodo-doc.com/install
 
-`dodo` is a documentation web service for modern developers.
-dodoは現代の開発者のためのドキュメントツールです。
+# dodoの主な機能
+dodoの主要な特徴は以下の通りです。
 
-これまで優秀なドキュメントツールは多々ありましたが、多くのツールではホストするたの環境を自前で整える必要があります。
-dodoはpublicに公開したい場合にもプライベートで使いたい場合にも数分でセットアップできます。
+* *開発者フレンドリー*: Markdownをアップロードするだけなので、既存の開発パイプラインに簡単に組み込むことができます。
+* *簡単なセットアップ*: dodo-cliのinitコマンドを使って設定ファイルのテンプレートを生成することができます。
+* *CI/CD*: バイナリ1つでドキュメントをアップロードできるのでCI/CD環境の構築も簡単です。
+* *Private機能*: ドキュメントをPrivateに設定することができます。個人的な日記などの用途にも適しています。
 
-* シンプルなyamlファイルで設定を記述可能
-* publicに公開することも、privateで一部のユーザーだけで利用することもできる
-* デプロイ操作がCLIで完結して開発者フレンドリー
-* 各種CIへの組み込みも簡単
+また現在以下の機能開発を進めています。
+詳細は[ロードマップ](/roadmap.yaml)のページを参照してください。
 
+* 複数ドキュメントの横断検索
+* 複数言語対応
+* 画像のアップロード
+* 対応するMarkdown文法の拡充
+* その他ユーザー体験の改善
 
-## Install
+# Next Step
+まずはdodoのアカウントを作成してみて実際にドキュメントをホストしてみることを推奨します。
+以下のドキュメントを参考にクライアントをセットアップして、最初のドキュメントをホストしてみてください。
 
-First of all, let's install dodo to your machine. 
+https://document.do.dodo-doc.com/install
 
-```bash
-curl url
-```
-
-## Create First Project
-次にdodoダッシュボードで新しくプロジェクトを作成しましょう。
-Then, go to the dodo dashboard.
-
-
-## How to write `.dodo.yaml`
-dodoは`.dodo.yaml`ファイルが配置されているディレクトリをドキュメント用のディレクトリとして認識します。
-
-
-```yaml
-pages:
-  - path: "./index.md"
-  - path: "./index.md"
-```
-
-pagesを指定した場合には, pagesに列挙した順番に従ってレイアウトが構成されます。
-pagesを指定した上で列挙されなかったファイルはレイアウトに追加されません。
-同じファイルを複数指定した場合にはエラーが発生します。
-
-
-## Client Logics
-Call /upload_archive
-This endpoint returns the id for uploaded archive
-
+https://document.do.dodo-doc.com/quick_start
