@@ -11,7 +11,6 @@ import (
 type Config struct {
 	Version string         `yaml:"version"`
 	Project *ConfigProject `yaml:"project"`
-	Index   *ConfigIndex   `yaml:"index"`
 	Pages   []*ConfigPage  `yaml:"pages"`
 }
 
@@ -21,85 +20,112 @@ type ConfigProject struct {
 	Version     *string `yaml:"version"`
 }
 
-type ConfigIndex struct {
-	Filepath    *string           `yaml:"filepath"`
-	Title       *string           `yaml:"title"`
-	Description *string           `yaml:"description"`
-	CreatedAt   *SerializableTime `yaml:"created_at"`
-}
-
 type ConfigPage struct {
-	Filepath    *string           `yaml:"filepath"`
-	Match       *string           `yaml:"match"`
+	// markdown syntax
+	Markdown    *string           `yaml:"markdown"`
 	Title       *string           `yaml:"title"`
 	Path        *string           `yaml:"path"`
 	Description *string           `yaml:"description"`
-	SortKey     *string           `yaml:"sort_key"`
-	SortOrder   *string           `yaml:"sort_order"`
-	CreatedAt   *SerializableTime `yaml:"created_at"`
-	Children    []*ConfigPage     `yaml:"children"`
+	UpdatedAt   *SerializableTime `yaml:"updated_at"`
+
+	// match syntax
+	Match     *string `yaml:"match"`
+	SortKey   *string `yaml:"sort_key"`
+	SortOrder *string `yaml:"sort_order"`
+
+	// directory syntax
+	Directory *string       `yaml:"directory"`
+	Children  []*ConfigPage `yaml:"children"`
 }
 
 // Check if the page is a valid single page.
-// A valid single page should satisfy the following conditions:
-// 1. The page must have a filepath field.
-// 2. The page must not have a match field.
-// 3. The page must have a title field.
-// 4. The page must have a name field.
-func (c *ConfigPage) MatchLeafNode() bool {
-	if c.Filepath == nil {
-		return false
-	}
-	if c.Match != nil {
-		return false
-	}
-	if c.Title == nil {
-		return false
-	}
-	if c.Path == nil {
+func (c *ConfigPage) MatchMarkdown() bool {
+	if c.Markdown == nil {
 		return false
 	}
 
-	// Cannot use sort key and sort order for leaf node.
+	// prohibit match syntax
+	if c.Match != nil {
+		return false
+	}
 	if c.SortKey != nil {
 		return false
 	}
 	if c.SortOrder != nil {
 		return false
 	}
+
+	// prohibit directory syntax
+	if c.Directory != nil {
+		return false
+	}
+	if c.Children != nil {
+		return false
+	}
 	return true
 }
 
-func (c *ConfigPage) IsValidMatchPage() bool {
-	if c.Filepath != nil {
-		return false
-	}
+func (c *ConfigPage) MatchMatch() bool {
 	if c.Match == nil {
 		return false
 	}
-	if c.Title == nil {
+
+	// prohibit markdown syntax
+	if c.Markdown != nil {
+		return false
+	}
+	if c.Title != nil {
 		return false
 	}
 	if c.Path != nil {
 		return false
 	}
+	if c.Description != nil {
+		return false
+	}
+	if c.UpdatedAt != nil {
+		return false
+	}
+	// prohibit directory syntax
+	if c.Directory != nil {
+		return false
+	}
+	if c.Children != nil {
+		return false
+	}
 	return true
 }
 
-// Check if the page consist of multiple pages.
-// A valid single page should satisfy the following conditions:
-// 1. The page must have a match field.
-func (c *ConfigPage) MatchDirNode() bool {
-	if c.Filepath != nil {
+func (c *ConfigPage) MatchDirectory() bool {
+	if c.Directory == nil {
 		return false
 	}
-	if c.Match == nil {
+
+	// prohibit markdown syntax
+	if c.Markdown != nil {
 		return false
 	}
-	if c.Title == nil {
+	if c.Title != nil {
 		return false
 	}
-	if c.Path == nil {
+	if c.Path != nil {
+		return false
+	}
+	if c.Description != nil {
+		return false
+	}
+	if c.UpdatedAt != nil {
+		return false
+	}
+
+	// prohibit match syntax
+	if c.Match != nil {
+		return false
+	}
+	if c.SortKey != nil {
+		return false
+	}
+	if c.SortOrder != nil {
 		return false
 	}
 	return true

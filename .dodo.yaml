@@ -3,23 +3,20 @@ project:
   name: dodo
   description: The dodo documentation
   version: 0.0.1
-index:
-  title: "What is dodo?"
-  filepath: docs/index.md
 pages:
-  - filepath: docs/install.md
+  - markdown: docs/install.md
     path: "install"
     title: "Install"
-  - filepath: docs/quick_start.md
+  - markdown: docs/quick_start.md
     path: "quick_start"
     title: "Quick Start"
-  - filepath: docs/yaml_spec.md
+  - markdown: docs/yaml_spec.md
     path: "yaml_specification"
     title: "Yaml Spec"
-  - filepath: docs/cicd.md
+  - markdown: docs/cicd.md
     path: "cicd"
     title: "Use with CI/CD"
-  - filepath: docs/roadmap.md
+  - markdown: docs/roadmap.md
     path: "roadmap"
     title: "Roadmap"
  

@@ -19,20 +19,11 @@ func collectFiles(p *Page) []string {
 		if page.Type == PageTypeLeafNode {
 			fileList = append(fileList, page.Filepath)
 		}
-		if page.Type == PageTypeRootNode {
-			fileList = append(fileList, page.Filepath)
-		}
 	}
 	return fileList
 }
 
-func archive(output string, pathList []string) error {
-	zipFile, err := os.Create(output)
-	if err != nil {
-		return fmt.Errorf("failed to create zip file: %w", err)
-	}
-	defer zipFile.Close()
-
+func archive(zipFile *os.File, pathList []string) error {
 	zipWriter := zip.NewWriter(zipFile)
 	defer zipWriter.Close()
 
@@ -40,7 +31,7 @@ func archive(output string, pathList []string) error {
 	var merr error
 	for _, path := range pathList {
 		if err := addFile(path, zipWriter); err != nil {
-			merr = multierr.Append(merr, fmt.Errorf("failed to add %s to archive", path))
+			merr = multierr.Append(merr, fmt.Errorf("failed to add a file to the archive. File: '%s': %w", path, err))
 		}
 	}
 	return merr //nolint: wrapcheck
@@ -49,7 +40,7 @@ func archive(output string, pathList []string) error {
 func addFile(filename string, writer *zip.Writer) error {
 	targetFile, err := os.Open(filename)
 	if err != nil {
-		return fmt.Errorf("failed to open file: %w", err)
+		return fmt.Errorf("failed to open the file. File: %s: %w", filename, err)
 	}
 	defer targetFile.Close()
 

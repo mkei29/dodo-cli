@@ -35,7 +35,7 @@ func CreateUploadCmd() *cobra.Command {
 	uploadCmd.Flags().StringVarP(&opts.rootPath, "workingDir", "w", ".", "Defines the root path of the project for the command's execution context")
 	uploadCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
 
-	uploadCmd.Flags().StringVarP(&opts.output, "output", "o", "./output.zip", "archive file path") // Deprecated
+	uploadCmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
 	uploadCmd.Flags().StringVar(&opts.endpoint, "endpoint", "http://api.dodo-doc.com/project/upload", "endpoint to upload")
 	return uploadCmd
 }
@@ -93,8 +93,27 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 		Page:    *page,
 	}
 
+	var zipFile *os.File
+	if args.output == "" {
+		zipFile, err = os.CreateTemp("", "output.zip")
+		if err != nil {
+			log.Error("failed to create a temporary file")
+			return fmt.Errorf("failed to create a temporary file: %w", err)
+		}
+		defer os.Remove(zipFile.Name())
+	} else {
+		zipFile, err = os.Create(args.output)
+		if err != nil {
+			log.Errorf("failed to create an archive file at '%s'", args.output)
+			return fmt.Errorf("failed to create a file. Path: %s: %w", args.output, err)
+		}
+
+	}
+	defer zipFile.Close()
+
 	pathList := collectFiles(page)
-	err = archive(args.output, pathList)
+	err = archive(zipFile, pathList)
+
 	if multierr.Errors(err) != nil {
 		for _, e := range multierr.Errors(err) {
 			log.Errorf("internal error: failed to archive: %w", e)
@@ -103,7 +122,7 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 	}
 	log.Infof("successfully archived: %s", args.file)
 
-	if err := uploadFile(args.endpoint, metadata, args.output, env.APIKey); err != nil {
+	if err := uploadFile(args.endpoint, metadata, zipFile, env.APIKey); err != nil {
 		log.Errorf("internal error: ", err)
 		return fmt.Errorf("failed to upload zip: %w", err)
 	}
@@ -147,8 +166,8 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 	return nil
 }
 
-func uploadFile(uri string, metadata Metadata, archivePath string, apiKey string) error {
-	req, err := newFileUploadRequest(uri, metadata, archivePath, apiKey)
+func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) error {
+	req, err := newFileUploadRequest(uri, metadata, zipFile, apiKey)
 	if err != nil {
 		return fmt.Errorf("failed to create upload request: %w", err)
 	}
@@ -165,7 +184,7 @@ func uploadFile(uri string, metadata Metadata, archivePath string, apiKey string
 	return nil
 }
 
-func newFileUploadRequest(uri string, metadata Metadata, zipPath string, apiKey string) (*http.Request, error) {
+func newFileUploadRequest(uri string, metadata Metadata, zipFile *os.File, apiKey string) (*http.Request, error) {
 	body := &bytes.Buffer{}
 	// Try to create a new multipart writer in a closure.
 	// This is to ensure that the multipart writer is closed properly.
@@ -186,20 +205,15 @@ func newFileUploadRequest(uri string, metadata Metadata, zipPath string, apiKey 
 		}
 		_, err = metadataPart.Write(serialized)
 		if err != nil {
-			return nil, fmt.Errorf("failed to write metadata to a multipart section: %w", err)
+			return nil, fmt.Errorf("failed to write the metadata to the multipart section: %w", err)
 		}
 
 		// Write archived documents
-		filePart, err := writer.CreateFormFile("archive", filepath.Base(zipPath))
+		filePart, err := writer.CreateFormFile("archive", filepath.Base(zipFile.Name()))
 		if err != nil {
-			return nil, fmt.Errorf("failed to a multipart section: %w", err)
+			return nil, fmt.Errorf("failed to create FormFile: %w", err)
 		}
-		file, err := os.Open(zipPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open archive file: %w", err)
-		}
-		defer file.Close()
-		_, err = io.Copy(filePart, file)
+		_, err = io.Copy(filePart, zipFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to copy archive file content to writer: %w", err)
 		}

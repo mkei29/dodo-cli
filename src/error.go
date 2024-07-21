@@ -1,6 +1,10 @@
 package main
 
-import "github.com/caarlos0/log"
+import (
+	"fmt"
+
+	"github.com/caarlos0/log"
+)
 
 type AppError struct {
 	message string
@@ -34,6 +38,10 @@ func (e *ErrorSet) Add(err error) {
 	e.errors = append(e.errors, err)
 }
 
+func (e *ErrorSet) Merge(errs *ErrorSet) {
+	e.errors = append(e.errors, errs.errors...)
+}
+
 func (e *ErrorSet) HasError() bool {
 	return len(e.errors) > 0
 }
@@ -45,5 +53,6 @@ func (e *ErrorSet) Length() int {
 func (e *ErrorSet) Summary() {
 	for _, err := range e.errors {
 		log.Debug(err.Error())
+		fmt.Println(err.Error())
 	}
 }

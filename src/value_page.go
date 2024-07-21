@@ -21,11 +21,11 @@ const (
 )
 
 type PageSummary struct {
-	Type        string
+	Type        string `json:"type"`
 	Filepath    string `json:"filepath"`
 	Path        string `json:"path"`
 	Title       string `json:"title"`
-	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
 	Description string `json:"description"`
 }
 
@@ -53,11 +53,11 @@ type Page struct {
 	Path        string           `json:"path"`
 	Title       string           `json:"title"`
 	Description string           `json:"description"`
-	CreatedAt   SerializableTime `json:"created_at"`
+	UpdatedAt   SerializableTime `json:"updated_at"`
 	Children    []Page           `json:"children"`
 }
 
-func NewPageFromFrontMatter(filePath string) (*Page, error) {
+func NewLeafNodeFromFrontMatter(filePath string) (*Page, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
@@ -77,143 +77,6 @@ func NewPageFromFrontMatter(filePath string) (*Page, error) {
 	page.Filepath = filePath
 	page.Children = []Page{}
 	return &page, nil
-}
-
-func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
-	children := make([]Page, 0, len(config.Pages))
-	errorSet := NewErrorSet()
-
-	root := createRootPage(errorSet, config)
-	if errorSet.HasError() {
-		return nil, errorSet
-	}
-
-	for _, c := range config.Pages {
-		children = convertToPage(errorSet, children, c, rootDir)
-	}
-
-	root.Children = children
-	return root, errorSet
-}
-
-func createRootPage(errorSet *ErrorSet, config Config) *Page {
-	if config.Index == nil {
-		errorSet.Add(NewAppError("invalid configuration: index field is missing"))
-		return nil
-	}
-	if config.Index.Filepath == nil {
-		errorSet.Add(NewAppError("invalid configuration: index.filepath field is missing"))
-		return nil
-	}
-	// Path should be empty for the root node.
-	// If the path is not empty, backend server will refuse the request.
-	root := Page{
-		Type:        PageTypeRootNode,
-		Filepath:    *config.Index.Filepath,
-		Title:       "",
-		Path:        "",
-		Description: "",
-		Children:    []Page{},
-	}
-
-	if config.Index.Title != nil {
-		root.Title = *config.Index.Title
-	}
-	if config.Index.Description != nil {
-		root.Description = *config.Index.Description
-	}
-	if config.Index.CreatedAt != nil {
-		root.CreatedAt = *config.Index.CreatedAt
-	}
-	return &root
-}
-
-func convertToPage(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string) []Page {
-	if c.MatchLeafNode() {
-		return convertToLeafNode(errorSet, slice, c, rootDir)
-	}
-	if c.MatchDirNode() {
-		return convertToDirNode(errorSet, slice, c, rootDir)
-	}
-	errorSet.Add(NewAppError("invalid configuration: doesn't match any pattern"))
-	return nil
-}
-
-// TODO: This function can process leaf node and dir node with page for now.
-// TODO: Should fill the page value from front matter.
-func convertToLeafNode(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string) []Page {
-	filepath := filepath.Clean(filepath.Join(rootDir, *c.Filepath))
-	if err := IsUnderRootPath(rootDir, filepath); err != nil {
-		errorSet.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", filepath)))
-		return nil
-	}
-
-	children := make([]Page, 0, len(c.Children))
-	for _, child := range c.Children {
-		child := convertToPage(errorSet, children, child, rootDir)
-		if child != nil {
-			children = append(children, child...)
-		}
-	}
-
-	description := ""
-	if c.Description != nil {
-		description = *c.Description
-	}
-
-	newPage := Page{
-		Type:        PageTypeLeafNode,
-		Filepath:    filepath,
-		Path:        *c.Path,
-		Title:       *c.Title,
-		Description: description,
-		Children:    children,
-	}
-	if c.CreatedAt != nil {
-		newPage.CreatedAt = *c.CreatedAt
-	}
-	slice = append(slice, newPage)
-	return slice
-}
-
-func convertToDirNode(errorSet *ErrorSet, slice []Page, c *ConfigPage, rootDir string) []Page {
-	dirPath := filepath.Clean(filepath.Join(rootDir, *c.Match))
-	if err := IsUnderRootPath(rootDir, dirPath); err != nil {
-		errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: path should be under the rootDir: path: %s", dirPath)))
-		return nil
-	}
-	matches, err := zglob.Glob(dirPath)
-	if err != nil {
-		errorSet.Add(NewAppError(fmt.Sprintf("internal error:  error raised during globbing %s", dirPath)))
-		return nil
-	}
-
-	// Add matched files to the children.
-	children := make([]Page, 0, len(matches))
-	for _, m := range matches {
-		page, err := NewPageFromFrontMatter(m)
-		if err != nil {
-			errorSet.Add(NewAppError(fmt.Sprintf("invalid configuration: cannot read a file: path %s", dirPath)))
-		}
-		children = append(children, *page)
-	}
-
-	if err := SortPageSlice(c.SortKey, c.SortOrder, children); err != nil {
-		errorSet.Add(NewAppError(fmt.Sprintf("failed to sort pages: %v", err)))
-		return nil
-	}
-
-	newPage := Page{
-		Type:     PageTypeDirNode,
-		Path:     *c.Path,
-		Title:    *c.Title,
-		Children: children,
-	}
-	if c.CreatedAt != nil {
-		newPage.CreatedAt = *c.CreatedAt
-	}
-	slice = append(slice, newPage)
-	return slice
 }
 
 // List PageSummary of the page includes.
@@ -346,4 +209,130 @@ func SortPageSlice(sortKey, sortOrder *string, pages []Page) error {
 		return nil
 	}
 	return fmt.Errorf("invalid sort key: %s", *sortKey)
+}
+
+func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
+	errorSet := NewErrorSet()
+	root := Page{
+		Type: PageTypeRootNode,
+	}
+
+	children := make([]Page, 0, len(config.Pages))
+	for _, p := range config.Pages {
+		c, es := buildPage(rootDir, p)
+		children = append(children, c...)
+		errorSet.Merge(es)
+	}
+
+	root.Children = children
+	return &root, errorSet
+}
+
+func buildPage(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
+	if c.MatchMarkdown() {
+		return transformMarkdown(rootDir, c)
+	}
+	if c.MatchMatch() {
+		return transformMatch(rootDir, c)
+	}
+
+	if c.MatchDirectory() {
+		return transformDirectory(rootDir, c)
+	}
+
+	es := NewErrorSet()
+	es.Add(NewAppError("invalid configuration: doesn't match any pattern"))
+	return nil, es
+}
+
+func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
+	es := NewErrorSet()
+	filepath := filepath.Clean(filepath.Join(rootDir, *c.Markdown))
+
+	if err := IsUnderRootPath(rootDir, filepath); err != nil {
+		es.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", filepath)))
+		return nil, es
+	}
+
+	// First, populate the fields from the markdown front matter.
+	p, err := NewLeafNodeFromFrontMatter(filepath)
+	if err != nil {
+		es.Add(err)
+		return nil, es
+	}
+
+	// Second, populate the fields from the configuration.
+	if c.Title != nil {
+		p.Title = *c.Title
+	}
+	if c.Path != nil {
+		p.Path = *c.Path
+	}
+	if c.Description != nil {
+		p.Description = *c.Description
+	}
+	if c.UpdatedAt != nil {
+		p.UpdatedAt = *c.UpdatedAt
+	}
+
+	// TODO: check here if the page is valid.
+	return []Page{*p}, es
+}
+
+func transformMatch(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
+	pages := make([]Page, 0)
+	es := NewErrorSet()
+	dirPath := filepath.Clean(filepath.Join(rootDir, *c.Match))
+	if err := IsUnderRootPath(rootDir, dirPath); err != nil {
+		es.Add(NewAppError(fmt.Sprintf("invalid configuration: path should be under the rootDir: path: %s", dirPath)))
+		return nil, es
+	}
+
+	matches, err := zglob.Glob(dirPath)
+	if err != nil {
+		es.Add(NewAppError(fmt.Sprintf("internal error:  error raised during globbing %s", dirPath)))
+		return nil, es
+	}
+
+	for _, m := range matches {
+		p, err := NewLeafNodeFromFrontMatter(m)
+		if err != nil {
+			es.Add(err)
+			continue
+		}
+		pages = append(pages, *p)
+	}
+
+	if err := SortPageSlice(c.SortKey, c.SortOrder, pages); err != nil {
+		es.Add(NewAppError(fmt.Sprintf("failed to sort pages: %v", err)))
+		return nil, es
+	}
+
+	return pages, es
+}
+
+func transformDirectory(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
+	es := NewErrorSet()
+
+	children := make([]Page, 0, len(c.Children))
+	for _, child := range c.Children {
+		pages, err := buildPage(rootDir, child)
+
+		if err.HasError() {
+			es.Merge(err)
+			continue
+		}
+
+		children = append(children, pages...)
+	}
+
+	p := Page{
+		Type:     PageTypeDirNode,
+		Title:    "",
+		Children: children,
+	}
+	if c.Directory != nil {
+		p.Title = *c.Directory
+	}
+	return []Page{p}, es
 }

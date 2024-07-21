@@ -11,14 +11,35 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func prepareTempDir(t *testing.T) string {
+	t.Helper()
+	dir, err := os.MkdirTemp("", "")
+	require.NoError(t, err)
+	return dir
+}
+
+func prepareSubDir(t *testing.T, rootDir, subDir string) string {
+	t.Helper()
+	dir := filepath.Join(rootDir, subDir)
+	err := os.Mkdir(dir, 0o755)
+	require.NoError(t, err)
+	return dir
+}
+
+func prepareFile(t *testing.T, rootDir, filename, content string) {
+	t.Helper()
+	filepath := filepath.Join(rootDir, filename)
+	file, err := os.Create(filepath)
+	require.NoError(t, err)
+	defer file.Close()
+	file.WriteString(content)
+}
+
 // Valid Case.
 const TestCaseParseConfig1 = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "README2.md"
+  - markdown: "README2.md"
     path: "readme1"
     title: "README2"
 `
@@ -26,27 +47,11 @@ pages:
 // Invalid Case with unknown date format in the pages field.
 const TestCaseParseConfig2 = `
 version: 1
-index
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "README2.md"
+  - markdown: "README2.md"
     path: "readme1"
     title: "README2"
-		created_at: "23/1/2024
-`
-
-// Invalid Case with unknown date format in the index field.
-const TestCaseParseConfig3 = `
-version: 1
-index
-  title: "root"
-  filepath: "./README.md"
-	created_at: "23/1/2024
-pages:
-  - filepath: "README2.md"
-    path: "readme1"
-    title: "README2"
+		updated_at: "23/1/2024
 `
 
 func TestParseConfig(t *testing.T) {
@@ -54,6 +59,9 @@ func TestParseConfig(t *testing.T) {
 
 	t.Run("should not return error when valid config was given", func(t *testing.T) {
 		t.Parallel()
+		dir := prepareTempDir(t)
+		prepareFile(t, dir, "README1.md", "content")
+
 		_, err := ParseConfig(strings.NewReader(TestCaseParseConfig1))
 		require.NoError(t, err)
 	})
@@ -62,170 +70,172 @@ func TestParseConfig(t *testing.T) {
 		_, err := ParseConfig(strings.NewReader(TestCaseParseConfig2))
 		require.Error(t, err)
 	})
-	t.Run("should return error when invalid config was given", func(t *testing.T) {
-		t.Parallel()
-		_, err := ParseConfig(strings.NewReader(TestCaseParseConfig3))
-		require.Error(t, err)
-	})
 }
 
-const TestCaseCreatePageTree1 = `
+const TestCaseCreatePageWithMarkdown = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
-  description: "description"
-  created_at: "2021-01-01T00:00:00Z"
 pages:
-  - filepath: "README1.md"
+  - markdown: "README1.md"
     path: "readme1"
     title: "README2"
-    created_at: "2021-01-01T00:00:00Z"
-  - filepath: "README2.md"
-    path: "readme1"
+    updated_at: "2021-01-01T00:00:00Z"
+  - markdown: "README2.md"
+    path: "readme2"
     title: "README2"
 `
 
-func TestCreatePageTreeOnlySinglePage(t *testing.T) {
+func TestCreatePageTreeWithMarkdown(t *testing.T) {
 	t.Parallel()
-	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageTree1))
+	dir := prepareTempDir(t)
+	prepareFile(t, dir, "README1.md", "content")
+	prepareFile(t, dir, "README2.md", "content")
+
+	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageWithMarkdown))
 	require.NoError(t, err)
 
-	page, es := CreatePageTree(*conf, "./")
+	page, es := CreatePageTree(*conf, dir)
 	require.False(t, es.HasError())
-	assert.Equal(t, "", page.Path)
-	assert.Equal(t, "root", page.Title)
-	assert.Equal(t, "description", page.Description)
-	assert.Equal(t, "2021-01-01T00:00:00Z", page.CreatedAt.String())
+	assert.Equal(t, "RootNode", page.Type)
 	assert.Len(t, page.Children, 2)
 
-	assert.Equal(t, "readme1", page.Children[0].Path)
-	assert.Equal(t, "README2", page.Children[0].Title)
-	assert.Equal(t, "2021-01-01T00:00:00Z", page.Children[0].CreatedAt.String())
+	page1 := page.Children[0]
+	assert.Equal(t, "readme1", page1.Path)
+	assert.Equal(t, "README2", page1.Title)
+	assert.Equal(t, "", page1.Description)
+	assert.Equal(t, "2021-01-01T00:00:00Z", page1.UpdatedAt.String())
+
+	page2 := page.Children[1]
+	assert.Equal(t, "readme2", page2.Path)
+	assert.Equal(t, "README2", page2.Title)
+	assert.Equal(t, "", page2.Description)
+	assert.Equal(t, "", page2.UpdatedAt.String())
 }
 
-const TestCaseCreatePageTree2 = `
+const TestCaseCreatePageTreeMatch = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - match: "README*.md"
-    title: "section1"
-    path: "section1"
-  - match: "docs/**/*.md"
-    title: "section2"
-    path: "section2"
+  - match: "./**/README*.md"
 `
 
-func TestCreatePageTreeWithPattern(t *testing.T) {
+func TestCreatePageTreeWithMatch(t *testing.T) {
 	t.Parallel()
 
-	dir, err := os.MkdirTemp("", "test_dir")
-	require.NoError(t, err)
-
 	// Create files
-	os.Create(filepath.Join(dir, "README1.md"))
-	os.Create(filepath.Join(dir, "README2.md"))
-	os.Create(filepath.Join(dir, "README3.md"))
+	dir := prepareTempDir(t)
+	prepareFile(t, dir, "README1.md", `
+	---
+  title: README1
+  path: readme1
+	---
+	`)
+	prepareFile(t, dir, "README2.md", `
+	---
+  title: README2
+  path: readme2
+	---
+	`)
 
-	os.Mkdir(filepath.Join(dir, "docs"), 0o755)
-	os.Create(filepath.Join(dir, "docs", "README1.md"))
-	os.Create(filepath.Join(dir, "docs", "README2.md"))
+	sub := prepareSubDir(t, dir, "docs")
+	prepareFile(t, dir, "README3.md", `
+	---
+  title: README3
+  path: readme3
+	---
+	`)
+	prepareFile(t, sub, "README4.md", `
+	---
+  title: README4
+  path: readme4
+	---
+	`)
+	prepareFile(t, sub, "README5.md", `
+	---
+  title: README5
+  path: readme5
+	---
+	`)
 
-	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageTree2))
+	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageTreeMatch))
 	require.NoError(t, err, "should not return error")
 
 	page, es := CreatePageTree(*conf, dir)
 	require.False(t, es.HasError(), "should not return error when valid config is given")
-	assert.Equal(t, "", page.Path)
-	assert.Equal(t, "root", page.Title)
 
 	// Root node should have 2 children
-	assert.Len(t, page.Children, 2, "root node should have 2 children")
-	assert.Len(t, page.Children[0].Children, 3, "first child should have 3 children")
-	assert.Len(t, page.Children[1].Children, 2, "second child should have 3 children")
+	assert.Len(t, page.Children, 5, "root node should have 5 children")
 }
 
-const TestCaseCreatePageTree3 = `
+const TestCaseCreatePageHybridCase = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "README.md"
-    path: "readme1"
-    title: "README2"
-  - filepath: "README2.md"
-    path: "readme1"
-    title: "README2"
-  - match: "README*.md"
-    title: "section1"
-    path: "section1"
-  - match: "docs/**/*.md"
-    title: "section2"
-    path: "section2"
+  - markdown: "README.md"
+  - match: "*.md"
 `
 
 func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	t.Parallel()
 
-	dir, err := os.MkdirTemp("", "test_dir")
-	require.NoError(t, err)
+	dir := prepareTempDir(t)
+	prepareFile(t, dir, "README.md", `
+	---
+  title: README
+  path: readme
+	---
+	`)
 
-	// Create files
-	os.Create(filepath.Join(dir, "README1.md"))
-	os.Create(filepath.Join(dir, "README2.md"))
-	os.Create(filepath.Join(dir, "README3.md"))
-
-	os.Mkdir(filepath.Join(dir, "docs"), 0o755)
-	os.Create(filepath.Join(dir, "docs", "README1.md"))
-	os.Create(filepath.Join(dir, "docs", "README2.md"))
-
-	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageTree3))
+	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageHybridCase))
 	require.NoError(t, err, "should not return error")
 
 	page, es := CreatePageTree(*conf, dir)
 	require.False(t, es.HasError())
-	assert.Equal(t, "", page.Path)
-	assert.Equal(t, "root", page.Title)
+	assert.Len(t, page.Children, 2, "root node should have 4 children")
 
-	// Root node should have 4 children
-	assert.Len(t, page.Children, 4, "root node should have 4 children")
-	assert.Empty(t, page.Children[0].Children, "first child should have no children")
-	assert.Empty(t, page.Children[1].Children, "second child should have no children")
-	assert.Len(t, page.Children[2].Children, 3, "third child should have 3 children")
-	assert.Len(t, page.Children[3].Children, 2, "fourth child should have 2 children")
+	page1 := page.Children[0]
+	assert.Equal(t, "LeafNode", page1.Type)
+	assert.Equal(t, "readme", page1.Path)
+	assert.Equal(t, "", page1.Description)
+
+	page2 := page.Children[1]
+	assert.Equal(t, "LeafNode", page2.Type)
+	assert.Equal(t, "readme", page2.Path)
+	assert.Equal(t, "", page2.Description)
 }
 
-const TestCaseCreatePageTree4 = `
+const TestCaseCreatePageWithDirectory = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "dir1.md"
-    path: "dir1"
-    title: "dir1"
+  - directory: "directory"
     children:
-      - filepath: "README1.md"
+      - markdown: "README1.md"
         path: "readme1"
         title: "README1"
 `
 
-func TestCreatePageTreeLayeredCase(t *testing.T) {
+func TestCreatePageTreeWithDirectory(t *testing.T) {
 	t.Parallel()
-	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageTree4))
+
+	dir := prepareTempDir(t)
+	prepareFile(t, dir, "README1.md", `
+	---
+  title: README1
+  path: readme1
+	---
+	`)
+
+	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageWithDirectory))
 	require.NoError(t, err)
 
-	page, es := CreatePageTree(*conf, "./")
+	page, es := CreatePageTree(*conf, dir)
 	require.False(t, es.HasError())
-	assert.Equal(t, "", page.Path)
-	assert.Equal(t, "root", page.Title)
 	assert.Len(t, page.Children, 1)
 
-	assert.Equal(t, "dir1", page.Children[0].Path)
-	assert.Equal(t, "readme1", page.Children[0].Children[0].Path)
+	dir1 := page.Children[0]
+	assert.Equal(t, "DirNodeWithoutPage", dir1.Type)
+	assert.Equal(t, "directory", dir1.Title)
+
+	page1 := dir1.Children[0]
+	assert.Equal(t, "README1", page1.Title)
+	assert.Equal(t, "readme1", page1.Path)
 }
 
 const TestCasePageMalicious1 = `
@@ -417,7 +427,7 @@ func TestReadPageFromFile(t *testing.T) {
 			_, err = file.WriteString(c.content)
 			require.NoError(t, err)
 
-			page, err := NewPageFromFrontMatter(path)
+			page, err := NewLeafNodeFromFrontMatter(path)
 			if c.expectError {
 				require.Error(t, err)
 				return
@@ -432,71 +442,52 @@ func TestReadPageFromFile(t *testing.T) {
 // Valid case.
 const TestCasePageValid1 = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "README1.md"
+  - markdown: "README1.md"
     path: "readme1"
     title: "README1"
-  - filepath: "README2.md"
+  - markdown: "README2.md"
     path: "readme2"
     title: "README2"
 `
 
-// Valid case. There are same paths, but parent path is different.
 const TestCasePageValid2 = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "DIR1.md"
-    path: "dir1"
-    title: "Dir1"
+  - directory: "DIR1"
     children:
-      - filepath: "README1.md"
+      - markdown: "README1.md"
         path: "readme1"
         title: "README1"
-  - filepath: "DIR2.md"
-    path: "dir2"
-    title: "DIR2"
+  - directory: "DIR2"
     children:
-      - filepath: "README1.md"
-        path: "readme1"
-        title: "README1"
+      - markdown: "README2.md"
+        path: "readme2"
+        title: "README2"
 `
 
-// Duplicated path.
+// Invalid Case: Paths are duplicated.
 const TestCasePageInvalid1 = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "README1.md"
+  - markdown: "README1.md"
     path: "readme1"
     title: "README1"
-  - filepath: "README1.md"
+  - markdown: "README1.md"
     path: "readme1"
     title: "README1"
 `
 
-// Duplicated path under the same parent.
+// Invalid Case: Duplicated path under the same parent.
 const TestCasePageInvalid2 = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "DIR1.md"
-    title: "dir1"
-    path: "dir1"
+  - directory: "DIR1"
     children:
-      - filepath: "README1.md"
+      - markdown: "README1.md"
         path: "readme1"
         title: "README1"
-      - filepath: "README1.md"
+      - markdown: "README1.md"
         path: "readme1"
         title: "README1"
 `
@@ -504,11 +495,8 @@ pages:
 // Path field is invalid.
 const TestCasePageInvalid3 = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "README1.md"
+  - markdown: "README1.md"
     path: "test/readme1"
     title: "README1"	
 `
@@ -526,22 +514,22 @@ func TestIsValid(t *testing.T) {
 			true,
 		},
 		{
-			"valid content with same path but different parent",
+			"invalid: same path but different parent",
 			TestCasePageValid2,
-			true,
+			false,
 		},
 		{
-			"page has duplicated paths",
+			"invalid: page has duplicated paths in the different parent",
 			TestCasePageInvalid1,
 			false,
 		},
 		{
-			"some pages doesn't have necessary fields",
+			"invalid: page has duplicated paths under the same parent",
 			TestCasePageInvalid2,
 			false,
 		},
 		{
-			"path field is invalid",
+			"invalid: path field is invalid",
 			TestCasePageInvalid3,
 			false,
 		},
@@ -550,9 +538,14 @@ func TestIsValid(t *testing.T) {
 		c := tt
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
+
+			dir := prepareTempDir(t)
+			prepareFile(t, dir, "README1.md", "")
+			prepareFile(t, dir, "README2.md", "")
+
 			conf, err := ParseConfig(strings.NewReader(c.content))
 			require.NoError(t, err, "should not return error")
-			page, es := CreatePageTree(*conf, "")
+			page, es := CreatePageTree(*conf, dir)
 			require.False(t, es.HasError(), "should not return error if valid config is given")
 
 			es = page.IsValid()
