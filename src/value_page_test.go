@@ -40,7 +40,7 @@ const TestCaseParseConfig1 = `
 version: 1
 pages:
   - markdown: "README2.md"
-    path: "readme1"
+    path: "readme2"
     title: "README2"
 `
 
@@ -49,7 +49,7 @@ const TestCaseParseConfig2 = `
 version: 1
 pages:
   - markdown: "README2.md"
-    path: "readme1"
+    path: "readme2"
     title: "README2"
 		updated_at: "23/1/2024
 `
@@ -99,12 +99,14 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 	assert.Len(t, page.Children, 2)
 
 	page1 := page.Children[0]
+	assert.Equal(t, "LeafNode", page1.Type)
 	assert.Equal(t, "readme1", page1.Path)
 	assert.Equal(t, "README2", page1.Title)
 	assert.Equal(t, "", page1.Description)
 	assert.Equal(t, "2021-01-01T00:00:00Z", page1.UpdatedAt.String())
 
 	page2 := page.Children[1]
+	assert.Equal(t, "LeafNode", page2.Type)
 	assert.Equal(t, "readme2", page2.Path)
 	assert.Equal(t, "README2", page2.Title)
 	assert.Equal(t, "", page2.Description)
@@ -115,6 +117,8 @@ const TestCaseCreatePageTreeMatch = `
 version: 1
 pages:
   - match: "./**/README*.md"
+    sort_key: "title"
+    sort_order: "asc"
 `
 
 func TestCreatePageTreeWithMatch(t *testing.T) {
@@ -163,6 +167,20 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 
 	// Root node should have 2 children
 	assert.Len(t, page.Children, 5, "root node should have 5 children")
+
+	// Check the first child
+	page1 := page.Children[0]
+	assert.Equal(t, "LeafNode", page1.Type)
+	assert.Equal(t, "readme1", page1.Path)
+	assert.Equal(t, "README1", page1.Title)
+	assert.Equal(t, "", page1.Description)
+	assert.Equal(t, "", page1.UpdatedAt.String())
+
+	// Check the remaining children
+	assert.Equal(t, "README2", page.Children[1].Title)
+	assert.Equal(t, "README3", page.Children[2].Title)
+	assert.Equal(t, "README4", page.Children[3].Title)
+	assert.Equal(t, "README5", page.Children[4].Title)
 }
 
 const TestCaseCreatePageHybridCase = `
@@ -192,11 +210,13 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 
 	page1 := page.Children[0]
 	assert.Equal(t, "LeafNode", page1.Type)
+	assert.Equal(t, "README", page1.Title)
 	assert.Equal(t, "readme", page1.Path)
 	assert.Equal(t, "", page1.Description)
 
 	page2 := page.Children[1]
 	assert.Equal(t, "LeafNode", page2.Type)
+	assert.Equal(t, "README", page2.Title)
 	assert.Equal(t, "readme", page2.Path)
 	assert.Equal(t, "", page2.Description)
 }
@@ -238,104 +258,78 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 	assert.Equal(t, "readme1", page1.Path)
 }
 
+// Directory Traversal Attack
 const TestCasePageMalicious1 = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "../README.md"
+  - markdown: "../TARGET1.md"
+    path: "target1"
+    title: "TARGET1"
+  - markdown: "README1.md"
     path: "readme1"
-    title: "README2"
-  - filepath: "README2.md"
-    path: "readme1"
-    title: "README2"
+    title: "README1"
 `
 
+// Directory Traversal Attack
 const TestCasePageMalicious2 = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "README2.md"
+  - markdown: "README1.md"
     path: "readme1"
-    title: "README2"
-  - filepath: "./dir1/.././../confidential"
-    path: "readme1"
-    title: "README2"
+    title: "README1"
+  - markdown: "./dir1/.././../TARGET1.md"
+    path: "target1"
+    title: "TARGET1"
 `
 
+// Directory Traversal Attack
 const TestCasePageMalicious3 = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "README2.md"
+  - markdown: "README1.md"
     path: "readme1"
-    title: "README2"
+    title: "README1"
   - match: "../**/*.md"
-    title: "section"
 `
 
+// Directory Traversal Attack
 const TestCasePageMalicious4 = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "README2.md"
+  - markdown: "README1.md"
     path: "readme1"
-    title: "README2"
+    title: "README1"
   - match: "./dir1/../../**/*.md"
-    title: "section"
 `
 
-// No index field.
+// Invalid field for the first item
 const TestCasePageMalicious5 = `
 version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
 pages:
-  - filepath: "README2.md"
-    path: "readme1"
-    title: "README2"
-  - match: "./dir1/../../**/*.md"
-    title: "section"
+  - path: "readme1"
+    title: "README1"
+  - match: "./**/*.md"
 `
 
-// No title in index field.
+// Can't use children in the markdown item
+// Directory Traversal Attack
 const TestCasePageMalicious6 = `
 version: 1
-index:
-  filepath: "./README.md"
 pages:
-  - filepath: "README2.md"
+  - markdown: "README1.md"
     path: "readme1"
-    title: "README2"
-  - match: "./dir1/../../**/*.md"
-    title: "section"
-`
-
-// No filepath in index field.
-const TestCasePageMalicious7 = `
-version: 1
-index:
-  title: "root"
-  filepath: "./README.md"
-pages:
-  - filepath: "README2.md"
-    path: "readme1"
-    title: "README2"
-  - match: "./dir1/../../**/*.md"
-    title: "section"
+    title: "README1"
+    children:
+      - markdown: "./README1.md"
+        path: "./another"
+        title: "./ANOTHER"
 `
 
 func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {
-	dir, err := os.MkdirTemp("", "test_dir")
-	require.NoError(t, err)
+	parent := prepareTempDir(t)
+	dir := prepareSubDir(t, parent, "working_dir")
+	prepareFile(t, parent, "TARGET1.md", "content")
+	prepareFile(t, dir, "README1.md", "content")
 
 	cases := []string{
 		TestCasePageMalicious1,
@@ -344,7 +338,6 @@ func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {
 		TestCasePageMalicious4,
 		TestCasePageMalicious5,
 		TestCasePageMalicious6,
-		TestCasePageMalicious7,
 	}
 
 	for i, c := range cases {

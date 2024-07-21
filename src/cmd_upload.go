@@ -95,12 +95,15 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 
 	var zipFile *os.File
 	if args.output == "" {
-		zipFile, err = os.CreateTemp("", "output.zip")
+		zipFile, err = os.CreateTemp("", "dodo.zip")
 		if err != nil {
 			log.Error("failed to create a temporary file")
 			return fmt.Errorf("failed to create a temporary file: %w", err)
 		}
-		defer os.Remove(zipFile.Name())
+		defer func() {
+			log.Debugf("clean up a temporary file: %s", zipFile.Name())
+			os.Remove(zipFile.Name())
+		}()
 	} else {
 		zipFile, err = os.Create(args.output)
 		if err != nil {
@@ -110,6 +113,7 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 
 	}
 	defer zipFile.Close()
+	log.Debugf("prepare an archive file on %s", zipFile.Name())
 
 	pathList := collectFiles(page)
 	err = archive(zipFile, pathList)
@@ -213,6 +217,8 @@ func newFileUploadRequest(uri string, metadata Metadata, zipFile *os.File, apiKe
 		if err != nil {
 			return nil, fmt.Errorf("failed to create FormFile: %w", err)
 		}
+
+		zipFile.Seek(0, 0)
 		_, err = io.Copy(filePart, zipFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to copy archive file content to writer: %w", err)

@@ -4,6 +4,9 @@ project:
   description: The dodo documentation
   version: 0.0.1
 pages:
+  - markdown: docs/quick_start.md
+    path: "what_is_dodo"
+    title: "What is dodo?"
   - markdown: docs/install.md
     path: "install"
     title: "Install"
