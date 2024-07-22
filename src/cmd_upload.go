@@ -110,7 +110,6 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 			log.Errorf("failed to create an archive file at '%s'", args.output)
 			return fmt.Errorf("failed to create a file. Path: %s: %w", args.output, err)
 		}
-
 	}
 	defer zipFile.Close()
 	log.Debugf("prepare an archive file on %s", zipFile.Name())
@@ -218,7 +217,10 @@ func newFileUploadRequest(uri string, metadata Metadata, zipFile *os.File, apiKe
 			return nil, fmt.Errorf("failed to create FormFile: %w", err)
 		}
 
-		zipFile.Seek(0, 0)
+		_, err = zipFile.Seek(0, 0)
+		if err != nil {
+			return nil, fmt.Errorf("failed to seek the archive file: %w", err)
+		}
 		_, err = io.Copy(filePart, zipFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to copy archive file content to writer: %w", err)

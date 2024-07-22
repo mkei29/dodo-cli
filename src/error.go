@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/caarlos0/log"
 )
 
@@ -53,6 +51,5 @@ func (e *ErrorSet) Length() int {
 func (e *ErrorSet) Summary() {
 	for _, err := range e.errors {
 		log.Debug(err.Error())
-		fmt.Println(err.Error())
 	}
 }

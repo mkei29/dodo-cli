@@ -258,7 +258,7 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 	assert.Equal(t, "readme1", page1.Path)
 }
 
-// Directory Traversal Attack
+// Directory Traversal Attack.
 const TestCasePageMalicious1 = `
 version: 1
 pages:
@@ -270,7 +270,7 @@ pages:
     title: "README1"
 `
 
-// Directory Traversal Attack
+// Directory Traversal Attack.
 const TestCasePageMalicious2 = `
 version: 1
 pages:
@@ -282,7 +282,7 @@ pages:
     title: "TARGET1"
 `
 
-// Directory Traversal Attack
+// Directory Traversal Attack.
 const TestCasePageMalicious3 = `
 version: 1
 pages:
@@ -292,7 +292,7 @@ pages:
   - match: "../**/*.md"
 `
 
-// Directory Traversal Attack
+// Directory Traversal Attack.
 const TestCasePageMalicious4 = `
 version: 1
 pages:
@@ -302,7 +302,7 @@ pages:
   - match: "./dir1/../../**/*.md"
 `
 
-// Invalid field for the first item
+// Invalid field for the first item.
 const TestCasePageMalicious5 = `
 version: 1
 pages:
@@ -312,7 +312,7 @@ pages:
 `
 
 // Can't use children in the markdown item
-// Directory Traversal Attack
+// Directory Traversal Attack.
 const TestCasePageMalicious6 = `
 version: 1
 pages:
