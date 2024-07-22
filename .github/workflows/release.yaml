@@ -25,7 +25,7 @@ jobs:
       - name: Go generate
         run: |
            go generate ./src
-           git add --clean
+           git add -A
            git commit -m "chore: incorporate go generate"
       - name: Set tag
         id: tag
