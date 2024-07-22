@@ -23,7 +23,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
       - name: Go generate
-        run: go generate ./src
+        run: |
+           go generate ./src
+           git add --clean
+           git commit -m "chore: incorporate go generate"
       - name: Set tag
         id: tag
         run: |
