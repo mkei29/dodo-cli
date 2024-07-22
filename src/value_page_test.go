@@ -527,6 +527,7 @@ func TestIsValid(t *testing.T) {
 			false,
 		},
 	}
+
 	for _, tt := range testCases {
 		c := tt
 		t.Run(c.name, func(t *testing.T) {
