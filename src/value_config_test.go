@@ -10,16 +10,12 @@ import (
 
 const TestCaseValid = `
 version: 1
-index:
-  title: "index"
-  filepath: "./README.md"
-  description: "description"
 pages:
-  - filepath: "README1.md"
+  - markdown: "README1.md"
     path: "readme1"
     title: "README1"
-    created_at: "2021-01-01T00:00:00Z"
-  - filepath: "README2.md"
+    updated_at: "2021-01-01T00:00:00Z"
+  - markdown: "README2.md"
     path: "readme1"
     title: "README1"
   - match: "docs/*.md"
@@ -32,10 +28,10 @@ func TestValidCase(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "1", conf.Version)
-	assert.Equal(t, "README1.md", *conf.Pages[0].Filepath)
+	assert.Equal(t, "README1.md", *conf.Pages[0].Markdown)
 	assert.Equal(t, "readme1", *conf.Pages[0].Path)
 	assert.Equal(t, "README1", *conf.Pages[0].Title)
-	assert.Equal(t, "2021-01-01T00:00:00Z", conf.Pages[0].CreatedAt.String())
+	assert.Equal(t, "2021-01-01T00:00:00Z", conf.Pages[0].UpdatedAt.String())
 
-	assert.Nil(t, conf.Pages[1].CreatedAt, "CreatedAt should be nil if there is no explicit value")
+	assert.Nil(t, conf.Pages[1].UpdatedAt, "CreatedAt should be nil if there is no explicit value")
 }

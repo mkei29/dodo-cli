@@ -1,6 +1,8 @@
 package main
 
-import "github.com/caarlos0/log"
+import (
+	"github.com/caarlos0/log"
+)
 
 type AppError struct {
 	message string
@@ -32,6 +34,10 @@ func (e *ErrorSet) Errors() []error {
 
 func (e *ErrorSet) Add(err error) {
 	e.errors = append(e.errors, err)
+}
+
+func (e *ErrorSet) Merge(errs *ErrorSet) {
+	e.errors = append(e.errors, errs.errors...)
 }
 
 func (e *ErrorSet) HasError() bool {
