@@ -1,3 +1,6 @@
+---
+language: ja
+---
 
 # Markdown
 
