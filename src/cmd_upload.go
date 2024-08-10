@@ -125,11 +125,13 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 	}
 	log.Infof("successfully archived: %s", args.file)
 
-	if err := uploadFile(args.endpoint, metadata, zipFile, env.APIKey); err != nil {
+	resp, err := uploadFile(args.endpoint, metadata, zipFile, env.APIKey)
+	if err != nil {
 		log.Errorf("internal error: ", err)
 		return fmt.Errorf("failed to upload zip: %w", err)
 	}
 	log.Infof("successfully uploaded: %s", args.output)
+	log.Infof("please open this link to view the document: %s", resp.DocumentURL)
 	return nil
 }
 
@@ -169,22 +171,26 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 	return nil
 }
 
-func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) error {
+func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) (*UploadResponse, error) {
 	req, err := newFileUploadRequest(uri, metadata, zipFile, apiKey)
 	if err != nil {
-		return fmt.Errorf("failed to create upload request: %w", err)
+		return nil, fmt.Errorf("failed to create upload request: %w", err)
 	}
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	data, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("error raised during communicating to the server: %w", err)
+		return nil, fmt.Errorf("error raised during communicating to the server: %w", err)
 	}
-	defer resp.Body.Close()
+	defer data.Body.Close()
+	if data.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to upload file: %d", data.StatusCode)
+	}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to upload file: %d", resp.StatusCode)
+	resp, err := ParseUploadResponse(data.Body)
+	if resp.Status != "ok" {
+		return nil, fmt.Errorf("failed to upload file: %w", err)
 	}
-	return nil
+	return resp, nil
 }
 
 func newFileUploadRequest(uri string, metadata Metadata, zipFile *os.File, apiKey string) (*http.Request, error) {

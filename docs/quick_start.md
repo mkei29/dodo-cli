@@ -1,103 +1,95 @@
-この章では実際にドキュメントをアップロードするまでの一連の流れを説明します。
-
-事前にサインアップとプロジェクトの作成を完了させている必要があります。
-まだこれらの作業を完了していない場合には、以下のドキュメントに従い先にサインアップとプロジェクトの作成を完了させてください。
+This chapter explains the complete process of uploading a document.
+You need to have completed signup and project creation beforehand.
+If you haven't completed these steps yet, please follow the document below to first complete signup and project creation.
 
 https://document.do.dodo-doc.com/install
 
-# ドキュメントのアップロードまでの流れ
-ドキュメントをアップロードするまでの大まかな流れは以下の通りです。
+## Steps to Upload a Document
+The general process for uploading a document is as follows:
 
-* プロジェクト画面から新しいAPI Keyを発行して環境変数に設定する
-* `dodo-cli init`コマンドで設定ファイルを生成する。
-* `dodo-cli upload`コマンドでドキュメントをアップロードする
+* Generate a new API Key from the project screen and set it as an environment variable
+* Use the `dodo-cli init` command to generate a configuration file
+* Use the `dodo-cli upload` command to upload the document
 
-では具体的な作業を深堀りしましょう。
+Now, let's delve into the specific steps in more detail.
 
-# API Keyの作成
-API Keyはdodo-cliを実行したユーザーが適切な権限を持っていることを確認するために必要になります。
-まずはブラウザでdodoにログインして新しいAPI Keyを発行しましょう。
+# Creating an API Key
+An API Key is necessary to verify that the user running dodo-cli has the appropriate permissions.
+First, let's log into Dodo in your browser and generate a new API Key.
 
-API Keyは各プロジェクトの画面から発行することができます。
-ダッシュボードからアップロードしたいプロジェクトをクリックしてプロジェクト画面を開いてください。
+You can generate API Keys from each project's screen.
+From the dashboard, click on the project you want to upload to in order to open the project screen.
 
 https://www.dodo-doc.com/dashboard
 
-プロジェクト画面の右上にある`New API Key`ボタンを押すと、新しいAPI Keyが発行されます。
-画面上部に発行されたAPI Keyが表示されるのでコピーして保管してください。
+Clicking the `New API Key` button in the upper right corner of the project screen will generate a new API Key.
+The newly issued API Key will be displayed at the top of the screen. Please copy and store it securely.
 
 !important
-API Keyは一度しか表示されず、画面を閉じると二度と確認することができません。
+The API Key is only shown once and cannot be viewed again after you close the screen.
 
 !important
-API Keyはインターネットなどに公開しないでください。
-API Keyが流出するとドキュメントの内容を改ざんされる可能性があります。
+The API Key is only displayed once and cannot be viewed again after you close the screen.
 
-# 設定ファイルの作成
-次にdodo用の設定ファイルを作成します。
-`dodo-cli init`コマンドを使うことで簡単に設定ファイルの雛形を作成することができます。
+!important
+Do not share your API Key on the internet or in any public space.
+If your API Key is leaked, there is a risk that the content of your documents could be tampered with.
 
-まずはgitレポジトリのルートに移動して、`dodo-cli`コマンドを実行してください。
-対話形式で何個か質問されるので回答してください。
-質問への回答が終わると新しく`.dodo.yaml`という設定ファイルが生成されます。
+# Creating a Configuration File
+Next, we'll create a configuration file for dodo.
+You can easily create a template for the configuration file using the `dodo-cli init` command.
+
+First, navigate to the root of your git repository and run the dodo-cli command.
+You'll be asked a few questions in an interactive format. Please answer them.
+Once you've finished answering the questions, a new configuration file named `.dodo.yaml` will be generated.
 
 ```yaml
 version: 1
 project:
-  name: test
+  name: testdoc
   version: 1
-  description: test
-index:
-  title: "index"
-  filepath: README.md 
-#pages:
-  #- filepath: README.md
-  #  path: "/test"
-  #  title: "What is dodo"
-  # - match: "docs/*.md"
-  #   title: "test"
-  #  path": "/test"
-  # - filepath: docs/index.md
-  #  path: "/directory"
-  #  title: "ok"
+  description: test description
+pages:
+  - markdown: README.md
+    path: "/README"
+    title: "README"
+  ## Create the directory and place all markdown files in the docs
+  #- directory: "Directory"
   #  children:
-  #    - match: docs/usage/*.md
-  #      title: "test2"
-  #      path: "/directory"
- 
+  #    - match: "docs/*.md"
 ```
 
-デフォルトではREADME.mdがトップページになるように設定されています。
-必要に応じて[設定ファイルの仕様](https://document.do.dodo-doc.com/yaml_specification)を参照してpagesフィールドを書き換えてください。
-設定ファイルの準備ができたら最後にアップロードしましょう。
+By default, README.md is set as the top page.
+If needed, refer to the [configuration file specification](/yaml_specification) to modify the pages field.
+Once your configuration file is ready, let's proceed to the final step of uploading.
 
-# ドキュメントのアップロード
-ドキュメントをアップロードするためには、環境変数`DOOO_API_KEY`に最初に取得したAPI Keyをセットする必要があります。
-以下のコマンドを実行してAPI Keyを環境変数にセットしてください。
+# Uploading Documents
+
+To upload documents, you need to set the API Key you obtained earlier as an environment variable named `DODO_API_KEY`.
+Run the following command to set the API Key as an environment variable:
 
 ```bash
-export DODO_API_KEY="<最初に取得したAPI Key>"
+export DODO_API_KEY="<Your initially obtained API Key>"
 ```
-
 !note
-ローカル環境から継続的にアップロードする場合にはdirenvなどを利用すると便利です。
+If you're uploading continuously from a local environment, using tools like (direnv)[https://direnv.net/] can be convenient.
 
-これでアップロードするための準備が整いました。
-以下のコマンドを実行して、実際にドキュメントをアップロードしてみましょう。
+Now you're all set for uploading.
+Let's run the following command to actually upload the documents:
 
 ```bash
 dodo-cli upload
 ```
 
-成功すれば`successfully uploaded`というログメッセージが出力されます。
-またドキュメントもURLが表示されるので、ブラウザでそのURLを開いて確認してみましょう。
+If successful, you'll see a log message saying `successfully uploaded`.
+A URL for the document will also be displayed. Open this URL in your browser to check the result.
 
-もう一回アップロードしたい場合には、`dodo-cli upload`をもう一度実行するだけです。
-簡単ですね。
+If you want to upload again, simply run `dodo-cli upload` once more.
+Easy, isn't it?
 
 # Next Steps
-アップロードの基本はこれでおわりです。
-より詳しい使い方を知りたい場合には以下のリンクを参考にしてください。
+This concludes the basics of uploading.
+If you want to learn more detailed usage, please refer to the links below.
 
 https://document.do.dodo-doc.com/yaml_specification
 

@@ -1,38 +1,32 @@
----
-title: ""
-path: ""
-description: ""
----
+dodo is a service that hosts your Markdown documents.
+By preparing a configuration file, you can easily deploy Markdown documents with a single command.
 
-dodoはあなたが書いたmarkdownをドキュメントとしてホストするためのサービスです。
-設定ファイルを用意することで、コマンド1つで簡単にMarkdownのドキュメントをデプロイすることができます。
-
-具体的にどんなドキュメントが使えるのか見てみたいですか?
-このドキュメント自体がdodoでホストされています。
-もし気に入って自分で試してみたければ、以下のリンクから次のステップに進んでください。
+Would you like to see examples of what kinds of documents can be used? This document itself is hosted on dodo.
+If you like it and want to try it yourself, please proceed to the next step using the link below.
 
 https://document.do.dodo-doc.com/install
 
-# dodoの主な機能
-dodoの主要な特徴は以下の通りです。
+# Main Features of dodo
+dodo's key features are as follows:
 
-* *開発者フレンドリー*: Markdownをアップロードするだけなので、既存の開発パイプラインに簡単に組み込むことができます。
-* *簡単なセットアップ*: dodo-cliのinitコマンドを使って設定ファイルのテンプレートを生成することができます。
-* *CI/CD*: バイナリ1つでドキュメントをアップロードできるのでCI/CD環境の構築も簡単です。
-* *Private機能*: ドキュメントをPrivateに設定することができます。個人的な日記などの用途にも適しています。
+* **Developer-friendly**: Since you only need to upload Markdown, it's easy to integrate into existing development pipelines.
+* **Easy setup**: You can generate a configuration file template using the init command of the dodo-cli.
+* **CI/CD**: Building a CI/CD environment is simple as you can upload documents with a single binary.
+* **Private option**: You can set documents to private. This makes it suitable for personal use, such as keeping a diary.
 
-また現在以下の機能開発を進めています。
-詳細は[ロードマップ](/roadmap.yaml)のページを参照してください。
+We are also currently developing the following features.
+For details, please refer to [the roadmap page](/roadmap).
 
-* 複数ドキュメントの横断検索
-* 複数言語対応
-* 画像のアップロード
-* 対応するMarkdown文法の拡充
-* その他ユーザー体験の改善
+* Cross-document search
+* Multi-language support
+* Image upload capability
+* Expansion of supported Markdown syntax
+* Other user experience improvements
 
 # Next Step
-まずはdodoのアカウントを作成してみて実際にドキュメントをホストしてみることを推奨します。
-以下のドキュメントを参考にクライアントをセットアップして、最初のドキュメントをホストしてみてください。
+Next Step
+First, we recommend creating a dodo account and trying to host a document yourself.
+Please refer to the following documentation to set up the client and host your first document.
 
 https://document.do.dodo-doc.com/install
 
