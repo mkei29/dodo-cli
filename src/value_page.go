@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/adrg/frontmatter"
+	"github.com/caarlos0/log"
 	"github.com/mattn/go-zglob"
 	"gopkg.in/yaml.v3"
 )
@@ -116,28 +117,39 @@ func (p *Page) IsValid() *ErrorSet {
 }
 
 func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) { //nolint: cyclop
-	if isRoot && p.Type != PageTypeRootNode {
-		errorSet.Add(NewAppError("Type for root node should be Root"))
-		return
-	}
-	if !isRoot && p.Type == PageTypeRootNode {
-		errorSet.Add(NewAppError("Type for non-root node should not be Root"))
-		return
-	}
-	if p.Type == PageTypeLeafNode && p.Path == "" {
-		errorSet.Add(NewAppError(fmt.Sprintf("%s Path field of child page should not be empty", p.Filepath)))
-	}
-	if p.Type == PageTypeDirNode && p.Path == "" {
-		errorSet.Add(NewAppError(fmt.Sprintf("%s Path field of child page should not be empty", p.Filepath)))
-	}
-
-	matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", p.Path)
-	if err != nil || !matched {
-		errorSet.Add(NewAppError(fmt.Sprintf("The path `%s` contains invalid characters. File paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", p.Filepath)))
-	}
+	// TODO: simplify this function with a switch statement.
 	for _, c := range p.Children {
 		c.isValid(false, errorSet)
 	}
+
+	if p.Type == PageTypeRootNode {
+		if !isRoot {
+			errorSet.Add(NewAppError("Type for root node should be Root"))
+		}
+		return
+	}
+
+	// Common validation for all nodes without root node.
+	if isRoot {
+		errorSet.Add(NewAppError("Type for non-root node should not have the RootNode type"))
+		return
+	}
+
+	if p.Type == PageTypeDirNode || p.Type == PageTypeDirNodeWithPage {
+		return
+	}
+
+	if p.Type == PageTypeLeafNode {
+		if p.Path == "" {
+			errorSet.Add(NewAppError(fmt.Sprintf("%s Path field should not be empty", p.Filepath)))
+		}
+		matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", p.Path)
+		if err != nil || !matched {
+			errorSet.Add(NewAppError(fmt.Sprintf("The path `%s` contains invalid characters. File paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", p.Filepath)))
+		}
+		return
+	}
+	errorSet.Add(NewAppError(fmt.Sprintf("invalid type: %s", p.Type)))
 }
 
 func (p *Page) duplicationCount(pathMap map[string]int, parentPath string) {
@@ -275,7 +287,7 @@ func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
 		p.UpdatedAt = *c.UpdatedAt
 	}
 
-	// TODO: check here if the page is valid.
+	log.Debugf("Node Found. Type: Markdown, Filepath: '%s', Title: '%s', Path: '%s'", p.Filepath, p.Title, p.Path)
 	return []Page{*p}, es
 }
 
@@ -300,6 +312,7 @@ func transformMatch(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
 			es.Add(err)
 			continue
 		}
+		log.Debugf("Node Found. Type: Markdown, Filepath: %s, Title: %s, Path: %s", p.Filepath, p.Title, p.Path)
 		pages = append(pages, *p)
 	}
 
@@ -334,5 +347,6 @@ func transformDirectory(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
 	if c.Directory != nil {
 		p.Title = *c.Directory
 	}
+	log.Debugf("Node Found. Type: Document, Title: %s", p.Title)
 	return []Page{p}, es
 }

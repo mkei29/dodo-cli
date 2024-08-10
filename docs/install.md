@@ -1,41 +1,39 @@
+To use dodo, you need to complete two initial setup steps:
 
-dodoを利用するためには、最初に２つのセットアップを行う必要があります。
+* Create a new project
+* Install the dodo-cli
 
-* 新しいプロジェクトの作成
-* dodo-cliのインストール
+Let's look at each of these in detail.
 
-それぞれ詳しく見ていきましょう。
-
-## 新しいプロジェクトの作成
-ドキュメントをホストするためには、まずプロジェクトを作成する必要があります。
-まずはdodoのアカウントを作成してプロジェクトを作成してみましょう。
-以下のリンクからdodoにsignupしてください。
+## Creating a New Project
+To host documents, you first need to create a project.
+Let's start by creating a Dodo account and setting up a project.
+Please sign up for Dodo using the link below:
 
 https://www.dodo-doc.com/signup
 
-サインアップが終わるとダッシュボードに自動的に遷移します。
-`Create a new project`ボタンを押して、新しくプロジェクトを作成しましょう。
-ボタンを押すとダイアログが開きます。
-ダイアログ内のフォームを入力して`Create Button`を押してください。
-これでプロジェクトの作成は完了です。
+After completing the signup process, you will automatically be redirected to the dashboard.
+Click the `Create a new project` button and open the dialog.
+Fill out the form in the dialog and click the `Create` button.
+With this, your project setup is complete.
 
-## dodo-cliのインストール
-次にdodo-cliをインストールしてみましょう。
-インストール方法はOSによって異なっています。
+## Installing dodo-cli
+Next, let's install the dodo-cli.
+The installation method varies depending on your operating system.
 
-### Linux または Mac OS
-LinuxまたはMac OSを利用している場合には以下のコマンドでダウンロードすることができます。
-カレントディレクトリにdodo-cliがダウンロードされるので、必要に応じて実行パスの通っているディレクトリにコピーしてください。
+### Linux or Mac OS
+If you're using Linux or Mac OS, you can download dodo-cli with the following command:
+The dodo-cli will be downloaded to your current directory. If needed, copy it to a directory in your execution path.
 
 ```bash
 curl https://raw.githubusercontent.com/toritoritori29/dodo-cli/main/download.sh | sh -
 ```
 
 ### Windows
-現在Windows向けのダウンロードスクリプトは用意していません。
-github releaseのページからお使いのアーキテクチャに対応したバイナリをダウンロードしてください。
+Currently, we don't have a download script prepared for Windows.
+Please download the binary that corresponds to your architecture from the GitHub release page.
 
 ## Next Step
-これでセットアップは終わりです。次の章で実際にドキュメントをdodoにアップロードしてみましょう。
+This completes the setup. In the next chapter, let's try actually uploading a document to dodo.
 
 https://document.do.dodo-doc.com/quick_start
