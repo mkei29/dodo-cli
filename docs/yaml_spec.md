@@ -28,14 +28,14 @@ The YAML file consists of three main sections.
 
 Let's now delve into the details of each section.
 
-# version
+# Version
 This item represents the version of the `.dodo.yaml` specification.
 Currently, only `1` can be specified.
 
 While dodo strives to maintain backward compatibility with `.dodo.yaml`, there is a possibility of providing a new specification for a better experience in the future.
 In case multiple specifications are provided in the future, you can specify which version to use in this item.
 
-# project
+# Project
 By modifying the items in this section, you can set the name and description that will be displayed at the top left of the document.
 
 ```yaml
@@ -47,7 +47,7 @@ project:
 * `name` (string, Required): Name of the document. The name displayed on the document will be this value. If not specified, the document name set on the dodo dashboard will be used.
 * `description` (string, Required): Description of the document. The description displayed on the document will be this value. If not specified, an empty string will be used.
 
-# pages
+# Pages
 By modifying the items in this section, you can configure the content and layout of the document.
 In the `pages` section, you can specify nodes in the format of `markdown`, `match`, or `directory` in an array.
 
@@ -67,7 +67,7 @@ An important point is that the path of each document will not form a hierarchica
 Therefore, if there are documents with the same `path`, an error will occur during upload.
 
 
-### `markdown` Node
+### Markdown Node
 Nodes containing `markdown` entries are considered as `markdown` nodes.
 A `markdown` node represents a single document.
 
@@ -83,7 +83,7 @@ A `markdown` node represents a single document.
 * `description` (string, Optional): Description of the document. The appearance of the document does not change in the management entry.
 * `updated_at` (string, Optional): Date when the document was updated. The appearance of the document does not change in the management entry.
 
-### `match` Node
+### Match Node
 Nodes containing a `match` entry are considered as `match` nodes.
 By using a `match` node, you can add markdown that matches a pattern to the layout.
 
@@ -103,7 +103,7 @@ path: "what_is_dodo"
 * `title` (string, Required): Title of the document.
 * `path` (string, Required): Path of the uploaded document's URL. Only alphanumeric characters can be specified.
 
-### `directory` Node
+### Directory Node
 Nodes containing a `directory` entry are considered as `directory` nodes.
 By setting a `directory` node, you can represent the structural layout of the document.
 

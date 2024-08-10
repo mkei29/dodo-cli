@@ -27,4 +27,7 @@ pages:
   - markdown: docs/roadmap.md
     path: "roadmap"
     title: "Roadmap"
+  - markdown: docs/release_note.md
+    path: "release_note"
+    title: "Release Note"
  

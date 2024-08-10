@@ -9,7 +9,7 @@ import (
 type UploadResponse struct {
 	Status      string `json:"status"`
 	Message     string `json:"message"`
-	DocumentURL string `json:"document_url"`
+	DocumentURL string `json:"documentURL"`
 }
 
 func ParseUploadResponse(body io.Reader) (*UploadResponse, error) {
