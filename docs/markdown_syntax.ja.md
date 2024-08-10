@@ -1,4 +1,4 @@
-This page introduces the Markdown syntax that can be used in dodo
+このページではdodoで利用可能なMarkdownの文法を紹介します。
 
 # Headings
 
@@ -89,7 +89,7 @@ This is __Bold__ text2.
 
 # Link Card
 
-If you surround a URL with blank lines, it will be displayed as a LinkCard.
+空白行でURLの前後を空白で挟むとLinkCardとして表示されます。
 
 ```markdown
 
