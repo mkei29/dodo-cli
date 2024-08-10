@@ -1,5 +1,6 @@
 import argparse
 from openai import OpenAI
+import sys
 
 SYSTEM_PROMPT = """
 You are a translator. You have been given a text to translate from one language to another.
@@ -19,19 +20,20 @@ def translate_text(text:str, input_language: str, output_language: str) -> str:
     chat_completion = client.chat.completions.create(
         messages=[
             {
-                "role": "SYSTEM",
+                "role": "system",
                 "content": SYSTEM_PROMPT.format(input_language=input_language, output_language=output_language),
             },
             { 
-                "role": "USER",
+                "role": "user",
                 "content": text
              }
         ],
         model="gpt-3.5-turbo",
     )
 
-    print(chat_completion)
-    chat_completion.messages[-1].content
+    if len(chat_completion.choices) != 1:
+        raise RuntimeError("Unexpected number of messages in chat completion")
+    return chat_completion.choices[0].message.content
 
     
 
@@ -42,11 +44,12 @@ def main():
     parser.add_argument("-o", "--output-language", help="The language to translate to", default="en")
 
     args = parser.parse_args()
-    print(args)
 
     with open(args.text, "r") as f:
         text = f.read()
-    translate_text(text, args.input_language, args.output_language)
+    translated = translate_text(text, args.input_language, args.output_language)
+    sys.stdout.write(translated)
+
 
 
 if __name__ == "__main__":

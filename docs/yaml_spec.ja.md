@@ -103,9 +103,9 @@ pages:
 `match`ノードを使うことで、パターンに一致するmarkdownをまとめてレイアウトに追加することができます。
 
 
-* `match`: 追加したいマークダウンのパターン。パターンの仕様はgolangの[このライブラリ](https://pkg.go.dev/v.io/v23/glob)に基づいています。
-* `sort_key` "title: どのような順番でドキュメントを並べるか指定できます。現時点ではタイトルでソートする"title"のみが利用可能です。
-* `sort_order` "desc" | "asc":  降順でソートするか昇順でソートするかを指定できます　
+* `match` (string, Required): 追加したいマークダウンのパターン。パターンの仕様はgolangの[このライブラリ](https://pkg.go.dev/v.io/v23/glob)に基づいています。
+* `sort_key` ("title", Optional): どのような順番でドキュメントを並べるか指定できます。現時点ではタイトルでソートする"title"のみが利用可能です。
+* `sort_order` ("desc" | "asc", Optional):  降順でソートするか昇順でソートするかを指定できます　
 
 このノードを利用する際には、ドキュメント冒頭に明示的にタイトルとパスの情報を記載する必要があります。
 
@@ -116,8 +116,8 @@ path: "what_is_dodo"
 ---
 ```
 
-* `title` string: ドキュメントのタイトル。
-* `path` string: アップロードしたドキュメントのURLのパス。英数字のみ指定することができます。
+* `title` (string, Required): ドキュメントのタイトル。
+* `path` (string, Required): アップロードしたドキュメントのURLのパス。英数字のみ指定することができます。
 
 ### `directory` Node
 `directory`エントリを含むノードは`directory`ノードと見做されます。
@@ -131,5 +131,5 @@ path: "what_is_dodo"
       title: "GitHub Actions"
 ```
 
-* `directory` string: ディレクトリの名前
-* `children` Node[]:　ディレクトリの子ノード
+* `directory` (string, Required): ディレクトリの名前
+* `children` (Node[], Optional):　ディレクトリの子ノード
