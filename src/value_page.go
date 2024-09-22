@@ -98,9 +98,9 @@ func listPageHeader(list []PageSummary, p *Page) []PageSummary {
 // This function checks the following conditions:
 // 1. all page have necessary fields.
 // 2. There are no duplicated paths.
-func (p *Page) IsValid() *ErrorSet {
+func (p *Page) IsValid() ErrorSet {
 	errorSet := NewErrorSet()
-	p.isValid(true, errorSet)
+	p.isValid(true, &errorSet)
 	if errorSet.HasError() {
 		return errorSet
 	}
@@ -211,7 +211,7 @@ func SortPageSlice(sortKey, sortOrder *string, pages []Page) error {
 	return fmt.Errorf("invalid sort key: %s", *sortKey)
 }
 
-func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
+func CreatePageTree(config Config, rootDir string) (*Page, ErrorSet) {
 	errorSet := NewErrorSet()
 	root := Page{
 		Type: PageTypeRootNode,
@@ -228,7 +228,7 @@ func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
 	return &root, errorSet
 }
 
-func buildPage(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
+func buildPage(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	if c.MatchMarkdown() {
 		return transformMarkdown(rootDir, c)
 	}
@@ -245,7 +245,7 @@ func buildPage(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
 	return nil, es
 }
 
-func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
+func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	es := NewErrorSet()
 	filepath := filepath.Clean(filepath.Join(rootDir, *c.Markdown))
 
@@ -279,7 +279,7 @@ func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
 	return []Page{*p}, es
 }
 
-func transformMatch(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
+func transformMatch(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	pages := make([]Page, 0)
 	es := NewErrorSet()
 	dirPath := filepath.Clean(filepath.Join(rootDir, *c.Match))
@@ -311,7 +311,7 @@ func transformMatch(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
 	return pages, es
 }
 
-func transformDirectory(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
+func transformDirectory(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	es := NewErrorSet()
 
 	children := make([]Page, 0, len(c.Children))

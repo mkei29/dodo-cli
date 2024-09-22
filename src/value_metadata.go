@@ -9,6 +9,7 @@ type Metadata struct {
 	Version string          `json:"version"`
 	Project MetadataProject `json:"project"`
 	Page    Page            `json:"page"`
+	Asset   []MetadataAsset `json:"asset"`
 }
 
 func (m *Metadata) Serialize() ([]byte, error) {
@@ -49,3 +50,5 @@ func NewMetadataProjectFromConfig(c *Config) MetadataProject {
 		Version:     version,
 	}
 }
+
+type MetadataAsset string

@@ -11,7 +11,6 @@ import (
 
 	"github.com/caarlos0/log"
 	"github.com/spf13/cobra"
-	"go.uber.org/multierr"
 )
 
 type UploadArgs struct {
@@ -67,32 +66,32 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 		return fmt.Errorf("failed to parse config file: %w", err)
 	}
 
+	// Create Project struct from config.
+	project := NewMetadataProjectFromConfig(config)
+
 	// Create Page structs from config.
-	page, es := CreatePageTree(*config, args.rootPath)
+	page, es := convertConfigPageToMetadataPage(args.rootPath, config)
 	if es.HasError() {
-		for _, e := range es.Errors() {
-			log.Errorf(e.Error())
-		}
-		return fmt.Errorf("failed to create page tree")
+		es.Log()
+		return fmt.Errorf("failed to convert config to page")
 	}
 	log.Debugf("successfully convert config to page. found %d pages", page.Count())
 
-	es = page.IsValid()
+	// Create Assets struct from config.
+	asset, es := convertConfigAssetToMetadataAsset(args.rootPath, config.Assets)
 	if es.HasError() {
-		for _, e := range es.Errors() {
-			log.Errorf(e.Error())
-		}
-		return fmt.Errorf("failed to validate page tree")
+		es.Log()
+		return fmt.Errorf("failed to convert config to asset")
 	}
-
-	project := NewMetadataProjectFromConfig(config)
 
 	metadata := Metadata{
 		Version: "1",
 		Project: project,
 		Page:    *page,
+		Asset:   asset,
 	}
 
+	// Prepare archive file
 	var zipFile *os.File
 	if args.output == "" {
 		zipFile, err = os.CreateTemp("", "dodo.zip")
@@ -114,16 +113,12 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 	defer zipFile.Close()
 	log.Debugf("prepare an archive file on %s", zipFile.Name())
 
-	pathList := collectFiles(page)
-	err = archive(zipFile, pathList)
-
-	if multierr.Errors(err) != nil {
-		for _, e := range multierr.Errors(err) {
-			log.Errorf("internal error: failed to archive: %w", e)
-		}
-		return fmt.Errorf("failed to archive documents")
+	// Archive documents
+	if es = archiveFiles(zipFile, &metadata); es.HasError() {
+		es.Log()
+		log.Errorf("error raised during archiving\n")
+		return fmt.Errorf("failed to archive: %w", err)
 	}
-	log.Infof("successfully archived: %s", args.file)
 
 	if err := uploadFile(args.endpoint, metadata, zipFile, env.APIKey); err != nil {
 		log.Errorf("internal error: ", err)
@@ -167,6 +162,49 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 		return fmt.Errorf("the API key is empty. Please set the environment variable DODO_API_KEY")
 	}
 	return nil
+}
+
+func convertConfigPageToMetadataPage(rootDir string, config *Config) (*Page, ErrorSet) {
+	page, es := CreatePageTree(*config, rootDir)
+	if es.HasError() {
+		return nil, es
+	}
+	es = page.IsValid()
+	return page, es
+}
+
+func convertConfigAssetToMetadataAsset(rootDir string, assets []ConfigAsset) ([]MetadataAsset, ErrorSet) {
+	// Create Assets struct from config.
+	es := NewErrorSet()
+	metadataAssets := make([]MetadataAsset, 0, len(assets)*5)
+	for _, a := range assets {
+		files, err := a.List(rootDir)
+		if err != nil {
+			es.Add(err)
+		}
+		// FIXME: This code could be cause too many allocations.
+		for _, f := range files {
+			metadataAssets = append(metadataAssets, MetadataAsset(f))
+		}
+	}
+	return metadataAssets, es
+}
+
+func archiveFiles(zipFile *os.File, metadata *Metadata) ErrorSet {
+	// Archive documents
+	pathList := collectFiles(&metadata.Page)
+	es := archive(zipFile, pathList)
+	if es.HasError() {
+		return es
+	}
+
+	// Archive assets
+	assetPathList := make([]string, 0, len(metadata.Asset))
+	for _, a := range metadata.Asset {
+		assetPathList = append(assetPathList, string(a))
+	}
+	es = archive(zipFile, assetPathList)
+	return es
 }
 
 func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) error {
