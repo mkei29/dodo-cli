@@ -22,11 +22,7 @@ func collectFiles(p *Page) []string {
 	return fileList
 }
 
-func archive(zipFile *os.File, pathList []string) ErrorSet {
-	zipWriter := zip.NewWriter(zipFile)
-	defer zipWriter.Close()
-
-	// TODO: replace mutierr with error set
+func archive(zipWriter *zip.Writer, pathList []string) ErrorSet {
 	es := NewErrorSet()
 	for _, path := range pathList {
 		if err := addFile(path, zipWriter); err != nil {

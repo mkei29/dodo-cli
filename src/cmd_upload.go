@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"bytes"
 	"fmt"
 	"io"
@@ -192,8 +193,11 @@ func convertConfigAssetToMetadataAsset(rootDir string, assets []ConfigAsset) ([]
 
 func archiveFiles(zipFile *os.File, metadata *Metadata) ErrorSet {
 	// Archive documents
+	zipWriter := zip.NewWriter(zipFile)
+	defer zipWriter.Close()
+
 	pathList := collectFiles(&metadata.Page)
-	es := archive(zipFile, pathList)
+	es := archive(zipWriter, pathList)
 	if es.HasError() {
 		return es
 	}
@@ -203,7 +207,7 @@ func archiveFiles(zipFile *os.File, metadata *Metadata) ErrorSet {
 	for _, a := range metadata.Asset {
 		assetPathList = append(assetPathList, string(a))
 	}
-	es = archive(zipFile, assetPathList)
+	es = archive(zipWriter, assetPathList)
 	return es
 }
 

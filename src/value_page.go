@@ -115,7 +115,7 @@ func (p *Page) IsValid() ErrorSet {
 	return errorSet
 }
 
-func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) { //nolint: cyclop
+func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) { 
 	if isRoot && p.Type != PageTypeRootNode {
 		errorSet.Add(NewAppError("Type for root node should be Root"))
 		return
@@ -125,10 +125,7 @@ func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) { //nolint: cyclop
 		return
 	}
 	if p.Type == PageTypeLeafNode && p.Path == "" {
-		errorSet.Add(NewAppError(fmt.Sprintf("%s Path field of child page should not be empty", p.Filepath)))
-	}
-	if p.Type == PageTypeDirNode && p.Path == "" {
-		errorSet.Add(NewAppError(fmt.Sprintf("%s Path field of child page should not be empty", p.Filepath)))
+		errorSet.Add(NewAppError("'path' is required for leaf node"))
 	}
 
 	matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", p.Path)
