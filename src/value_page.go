@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,6 +24,7 @@ const (
 type PageSummary struct {
 	Type        string `json:"type"`
 	Filepath    string `json:"filepath"`
+	Hash        string `json:"hash"`
 	Path        string `json:"path"`
 	Title       string `json:"title"`
 	UpdatedAt   string `json:"updated_at"`
@@ -30,17 +32,21 @@ type PageSummary struct {
 }
 
 func NewPageSummary(filepath, path, title string) PageSummary {
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(filepath)))
 	return PageSummary{
 		Filepath: filepath,
 		Path:     path,
+		Hash:     hash,
 		Title:    title,
 	}
 }
 
 func NewPageHeaderFromPage(p *Page) PageSummary {
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(p.Filepath)))
 	return PageSummary{
 		Type:        p.Type,
 		Filepath:    p.Filepath,
+		Hash:        hash,
 		Path:        p.Path,
 		Title:       p.Title,
 		Description: p.Description,
@@ -50,6 +56,7 @@ func NewPageHeaderFromPage(p *Page) PageSummary {
 type Page struct {
 	Type        string           `json:"type"`
 	Filepath    string           `json:"filepath"`
+	Hash        string           `json:"hash"`
 	Path        string           `json:"path"`
 	Title       string           `json:"title"`
 	Description string           `json:"description"`
@@ -75,6 +82,7 @@ func NewLeafNodeFromFrontMatter(filePath string) (*Page, error) {
 
 	page.Type = PageTypeLeafNode
 	page.Filepath = filePath
+	page.Hash = fmt.Sprintf("%x", sha256.Sum256([]byte(filePath)))
 	page.Children = []Page{}
 	return &page, nil
 }
@@ -98,9 +106,9 @@ func listPageHeader(list []PageSummary, p *Page) []PageSummary {
 // This function checks the following conditions:
 // 1. all page have necessary fields.
 // 2. There are no duplicated paths.
-func (p *Page) IsValid() *ErrorSet {
+func (p *Page) IsValid() ErrorSet {
 	errorSet := NewErrorSet()
-	p.isValid(true, errorSet)
+	p.isValid(true, &errorSet)
 	if errorSet.HasError() {
 		return errorSet
 	}
@@ -115,7 +123,7 @@ func (p *Page) IsValid() *ErrorSet {
 	return errorSet
 }
 
-func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) { //nolint: cyclop
+func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
 	if isRoot && p.Type != PageTypeRootNode {
 		errorSet.Add(NewAppError("Type for root node should be Root"))
 		return
@@ -125,10 +133,7 @@ func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) { //nolint: cyclop
 		return
 	}
 	if p.Type == PageTypeLeafNode && p.Path == "" {
-		errorSet.Add(NewAppError(fmt.Sprintf("%s Path field of child page should not be empty", p.Filepath)))
-	}
-	if p.Type == PageTypeDirNode && p.Path == "" {
-		errorSet.Add(NewAppError(fmt.Sprintf("%s Path field of child page should not be empty", p.Filepath)))
+		errorSet.Add(NewAppError("'path' is required for leaf node"))
 	}
 
 	matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", p.Path)
@@ -211,7 +216,7 @@ func SortPageSlice(sortKey, sortOrder *string, pages []Page) error {
 	return fmt.Errorf("invalid sort key: %s", *sortKey)
 }
 
-func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
+func CreatePageTree(config Config, rootDir string) (*Page, ErrorSet) {
 	errorSet := NewErrorSet()
 	root := Page{
 		Type: PageTypeRootNode,
@@ -228,7 +233,7 @@ func CreatePageTree(config Config, rootDir string) (*Page, *ErrorSet) {
 	return &root, errorSet
 }
 
-func buildPage(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
+func buildPage(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	if c.MatchMarkdown() {
 		return transformMarkdown(rootDir, c)
 	}
@@ -245,7 +250,7 @@ func buildPage(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
 	return nil, es
 }
 
-func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
+func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	es := NewErrorSet()
 	filepath := filepath.Clean(filepath.Join(rootDir, *c.Markdown))
 
@@ -279,7 +284,7 @@ func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
 	return []Page{*p}, es
 }
 
-func transformMatch(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
+func transformMatch(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	pages := make([]Page, 0)
 	es := NewErrorSet()
 	dirPath := filepath.Clean(filepath.Join(rootDir, *c.Match))
@@ -311,7 +316,7 @@ func transformMatch(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
 	return pages, es
 }
 
-func transformDirectory(rootDir string, c *ConfigPage) ([]Page, *ErrorSet) {
+func transformDirectory(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	es := NewErrorSet()
 
 	children := make([]Page, 0, len(c.Children))

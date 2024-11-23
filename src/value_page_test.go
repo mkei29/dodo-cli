@@ -454,9 +454,9 @@ pages:
         title: "README1"
   - directory: "DIR2"
     children:
-      - markdown: "README2.md"
-        path: "readme2"
-        title: "README2"
+      - markdown: "README1.md"
+        path: "readme1"
+        title: "README1"
 `
 
 // Invalid Case: Paths are duplicated.

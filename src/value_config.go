@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"path/filepath"
 
+	"github.com/mattn/go-zglob"
 	"gopkg.in/yaml.v3"
 )
 
@@ -12,6 +14,7 @@ type Config struct {
 	Version string         `yaml:"version"`
 	Project *ConfigProject `yaml:"project"`
 	Pages   []*ConfigPage  `yaml:"pages"`
+	Assets  []ConfigAsset  `yaml:"assets"`
 }
 
 type ConfigProject struct {
@@ -129,6 +132,21 @@ func (c *ConfigPage) MatchDirectory() bool {
 		return false
 	}
 	return true
+}
+
+type ConfigAsset string
+
+func (m ConfigAsset) List(rootDir string) ([]string, error) {
+	globPath := filepath.Clean(filepath.Join(rootDir, string(m)))
+	if err := IsUnderRootPath(rootDir, globPath); err != nil {
+		return nil, fmt.Errorf("invalid configuration: path should be under the rootDir: path: %s", globPath)
+	}
+
+	matches, err := zglob.Glob(globPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list files match '%s' : %w", globPath, err)
+	}
+	return matches, nil
 }
 
 func ParseConfig(reader io.Reader) (*Config, error) {
