@@ -144,7 +144,7 @@ func (m ConfigAsset) List(rootDir string) ([]string, error) {
 
 	matches, err := zglob.Glob(globPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list files: %w", err)
+		return nil, fmt.Errorf("failed to list files match '%s' : %w", globPath, err)
 	}
 	return matches, nil
 }

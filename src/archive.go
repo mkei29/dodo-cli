@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -22,31 +23,39 @@ func collectFiles(p *Page) []string {
 	return fileList
 }
 
-func archive(zipWriter *zip.Writer, pathList []string) ErrorSet {
-	es := NewErrorSet()
-	for _, path := range pathList {
-		if err := addFile(path, zipWriter); err != nil {
-			es.Add(fmt.Errorf("failed to add a file to the archive. File: '%s': %w", path, err))
-		}
-	}
-	return es
-}
-
-func addFile(filename string, writer *zip.Writer) error {
-	targetFile, err := os.Open(filename)
+func addFile(from, to string, writer *zip.Writer) error {
+	targetFile, err := os.Open(from)
 	if err != nil {
-		return fmt.Errorf("failed to open the file. File: %s: %w", filename, err)
+		return fmt.Errorf("failed to open the file. File: %s: %w", from, err)
 	}
 	defer targetFile.Close()
 
-	log.Debug(fmt.Sprintf("add %s to archive", filename))
-	w, err := writer.Create(filename)
+	log.Debug(fmt.Sprintf("add %s to archive", from))
+	w, err := writer.Create(to)
 	if err != nil {
 		return fmt.Errorf("failed to get zip writer: %w", err)
 	}
 	_, err = io.Copy(w, targetFile)
 	if err != nil {
 		return fmt.Errorf("failed to write file into zip archive: %w", err)
+	}
+	return nil
+}
+
+func addMetadata(metadata *Metadata, writer *zip.Writer) error {
+	metadataJSON, err := metadata.Serialize()
+	if err != nil {
+		return fmt.Errorf("failed to serialize metadata: %w", err)
+	}
+	log.Debug("add metadata.json to archive")
+
+	w, err := writer.Create("metadata.json")
+	if err != nil {
+		return fmt.Errorf("failed to get zip writer: %w", err)
+	}
+	_, err = io.Copy(w, bytes.NewReader(metadataJSON))
+	if err != nil {
+		return fmt.Errorf("failed to write metadata into zip archive: %w", err)
 	}
 	return nil
 }

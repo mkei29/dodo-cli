@@ -84,6 +84,7 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 		es.Log()
 		return fmt.Errorf("failed to convert config to asset")
 	}
+	log.Debugf("successfully convert assets to metadata. found %d assets", len(asset))
 
 	metadata := Metadata{
 		Version: "1",
@@ -185,7 +186,7 @@ func convertConfigAssetToMetadataAsset(rootDir string, assets []ConfigAsset) ([]
 		}
 		// FIXME: This code could be cause too many allocations.
 		for _, f := range files {
-			metadataAssets = append(metadataAssets, MetadataAsset(f))
+			metadataAssets = append(metadataAssets, NewMetadataAsset(f))
 		}
 	}
 	return metadataAssets, es
@@ -196,18 +197,30 @@ func archiveFiles(zipFile *os.File, metadata *Metadata) ErrorSet {
 	zipWriter := zip.NewWriter(zipFile)
 	defer zipWriter.Close()
 
+	es := NewErrorSet()
 	pathList := collectFiles(&metadata.Page)
-	es := archive(zipWriter, pathList)
-	if es.HasError() {
-		return es
+	for _, from := range pathList {
+		to := filepath.Join("docs", from)
+		if err := addFile(from, to, zipWriter); err != nil {
+			es.Add(err)
+		}
 	}
 
 	// Archive assets
-	assetPathList := make([]string, 0, len(metadata.Asset))
-	for _, a := range metadata.Asset {
-		assetPathList = append(assetPathList, string(a))
+	// Add assets with the hash name under the `blobs` directory.
+	for _, asset := range metadata.Asset {
+		from := string(asset.Path)
+		to := filepath.Join("blobs", filepath.Base(asset.Hash))
+		if err := addFile(from, to, zipWriter); err != nil {
+			es.Add(err)
+		}
 	}
-	es = archive(zipWriter, assetPathList)
+
+	// Add metadata
+	err := addMetadata(metadata, zipWriter)
+	if err != nil {
+		es.Add(err)
+	}
 	return es
 }
 

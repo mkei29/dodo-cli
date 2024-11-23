@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 )
@@ -51,4 +52,16 @@ func NewMetadataProjectFromConfig(c *Config) MetadataProject {
 	}
 }
 
-type MetadataAsset string
+type MetadataAsset struct {
+	Path string `json:"path"`
+	Hash string `json:"hash"`
+}
+
+func NewMetadataAsset(path string) MetadataAsset {
+	sum := sha256.Sum256([]byte(path))
+	hash := fmt.Sprintf("%x", sum)
+	return MetadataAsset{
+		path,
+		hash,
+	}
+}

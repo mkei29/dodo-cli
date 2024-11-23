@@ -115,7 +115,7 @@ func (p *Page) IsValid() ErrorSet {
 	return errorSet
 }
 
-func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) { 
+func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
 	if isRoot && p.Type != PageTypeRootNode {
 		errorSet.Add(NewAppError("Type for root node should be Root"))
 		return

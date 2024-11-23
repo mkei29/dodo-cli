@@ -22,4 +22,5 @@ pages:
   - markdown: docs/roadmap.md
     path: "roadmap"
     title: "Roadmap"
- 
+assets:
+  - "./assets/**/*.png"
