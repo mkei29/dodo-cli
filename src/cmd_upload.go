@@ -1,7 +1,6 @@
 package main
 
 import (
-	"archive/zip"
 	"bytes"
 	"fmt"
 	"io"
@@ -94,35 +93,19 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 	}
 
 	// Prepare archive file
-	var zipFile *os.File
-	if args.output == "" {
-		zipFile, err = os.CreateTemp("", "dodo.zip")
-		if err != nil {
-			log.Error("failed to create a temporary file")
-			return fmt.Errorf("failed to create a temporary file: %w", err)
-		}
-		defer func() {
-			log.Debugf("clean up a temporary file: %s", zipFile.Name())
-			os.Remove(zipFile.Name())
-		}()
-	} else {
-		zipFile, err = os.Create(args.output)
-		if err != nil {
-			log.Errorf("failed to create an archive file at '%s'", args.output)
-			return fmt.Errorf("failed to create a file. Path: %s: %w", args.output, err)
-		}
+	archive, err := NewArchive(args.output)
+	if err != nil {
+		log.Error("internal error: failed to create an archive file")
 	}
-	defer zipFile.Close()
-	log.Debugf("prepare an archive file on %s", zipFile.Name())
-
-	// Archive documents
-	if es = archiveFiles(zipFile, &metadata); es.HasError() {
+	defer archive.Close()
+	if es = archive.Archive(&metadata); es.HasError() {
 		es.Log()
 		log.Errorf("error raised during archiving\n")
 		return fmt.Errorf("failed to archive: %w", err)
 	}
 
-	if err := uploadFile(args.endpoint, metadata, zipFile, env.APIKey); err != nil {
+	// Upload the archive file
+	if err := uploadFile(args.endpoint, metadata, archive.File, env.APIKey); err != nil {
 		log.Errorf("internal error: ", err)
 		return fmt.Errorf("failed to upload zip: %w", err)
 	}
@@ -190,38 +173,6 @@ func convertConfigAssetToMetadataAsset(rootDir string, assets []ConfigAsset) ([]
 		}
 	}
 	return metadataAssets, es
-}
-
-func archiveFiles(zipFile *os.File, metadata *Metadata) ErrorSet {
-	// Archive documents
-	zipWriter := zip.NewWriter(zipFile)
-	defer zipWriter.Close()
-
-	es := NewErrorSet()
-	pathList := collectFiles(&metadata.Page)
-	for _, from := range pathList {
-		to := filepath.Join("docs", from)
-		if err := addFile(from, to, zipWriter); err != nil {
-			es.Add(err)
-		}
-	}
-
-	// Archive assets
-	// Add assets with the hash name under the `blobs` directory.
-	for _, asset := range metadata.Asset {
-		from := string(asset.Path)
-		to := filepath.Join("blobs", filepath.Base(asset.Hash))
-		if err := addFile(from, to, zipWriter); err != nil {
-			es.Add(err)
-		}
-	}
-
-	// Add metadata
-	err := addMetadata(metadata, zipWriter)
-	if err != nil {
-		es.Add(err)
-	}
-	return es
 }
 
 func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) error {

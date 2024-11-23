@@ -6,9 +6,85 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/caarlos0/log"
 )
+
+const DEFAULT_ARCHIVE_PATH = "dodo.zip"
+
+type Archive struct {
+	File          *os.File
+	shouldCleanUp bool
+}
+
+func NewArchive(path string) (*Archive, error) {
+	// Prepare archive file
+	if path == "" {
+		zipFile, err := os.CreateTemp("", DEFAULT_ARCHIVE_PATH)
+		if err != nil {
+			log.Error("failed to create a temporary file")
+			return nil, fmt.Errorf("failed to create a temporary file: %w", err)
+		}
+		return &Archive{
+			File:          zipFile,
+			shouldCleanUp: true,
+		}, nil
+	}
+
+	zipFile, err := os.Create(path)
+	if err != nil {
+		log.Errorf("failed to create an archive file at '%s'", path)
+		return nil, fmt.Errorf("failed to create a file. Path: %s: %w", path, err)
+	}
+	return &Archive{
+		File:          zipFile,
+		shouldCleanUp: false,
+	}, nil
+}
+
+func (a *Archive) Close() error {
+	err := a.File.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close the archive file: %w", err)
+	}
+	if a.shouldCleanUp {
+		return os.Remove(a.File.Name())
+	}
+	return nil
+}
+
+func (a *Archive) Archive(metadata *Metadata) ErrorSet {
+	// Archive documents
+	zipWriter := zip.NewWriter(a.File)
+	defer zipWriter.Close()
+
+	es := NewErrorSet()
+	pathList := collectFiles(&metadata.Page)
+	for _, from := range pathList {
+		to := filepath.Join("docs", from)
+		if err := addFile(from, to, zipWriter); err != nil {
+			es.Add(err)
+		}
+	}
+
+	// Archive assets
+	// Add assets with the hash name under the `blobs` directory.
+	for _, asset := range metadata.Asset {
+		from := string(asset.Path)
+		to := filepath.Join("blobs", filepath.Base(asset.Hash))
+		if err := addFile(from, to, zipWriter); err != nil {
+			es.Add(err)
+		}
+	}
+
+	// Add metadata
+	err := addMetadata(metadata, zipWriter)
+	if err != nil {
+		es.Add(err)
+	}
+	return es
+}
 
 // List all files to be archived.
 func collectFiles(p *Page) []string {
