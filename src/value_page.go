@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,6 +24,7 @@ const (
 type PageSummary struct {
 	Type        string `json:"type"`
 	Filepath    string `json:"filepath"`
+	Hash        string `json:"hash"`
 	Path        string `json:"path"`
 	Title       string `json:"title"`
 	UpdatedAt   string `json:"updated_at"`
@@ -30,17 +32,21 @@ type PageSummary struct {
 }
 
 func NewPageSummary(filepath, path, title string) PageSummary {
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(filepath)))
 	return PageSummary{
 		Filepath: filepath,
 		Path:     path,
+		Hash:     hash,
 		Title:    title,
 	}
 }
 
 func NewPageHeaderFromPage(p *Page) PageSummary {
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(p.Filepath)))
 	return PageSummary{
 		Type:        p.Type,
 		Filepath:    p.Filepath,
+		Hash:        hash,
 		Path:        p.Path,
 		Title:       p.Title,
 		Description: p.Description,
@@ -50,6 +56,7 @@ func NewPageHeaderFromPage(p *Page) PageSummary {
 type Page struct {
 	Type        string           `json:"type"`
 	Filepath    string           `json:"filepath"`
+	Hash        string           `json:"hash"`
 	Path        string           `json:"path"`
 	Title       string           `json:"title"`
 	Description string           `json:"description"`
@@ -75,6 +82,7 @@ func NewLeafNodeFromFrontMatter(filePath string) (*Page, error) {
 
 	page.Type = PageTypeLeafNode
 	page.Filepath = filePath
+	page.Hash = fmt.Sprintf("%x", sha256.Sum256([]byte(filePath)))
 	page.Children = []Page{}
 	return &page, nil
 }

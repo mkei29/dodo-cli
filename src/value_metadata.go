@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 )
@@ -59,7 +60,7 @@ type MetadataAsset struct {
 
 func NewMetadataAsset(path string) MetadataAsset {
 	sum := sha256.Sum256([]byte(path))
-	hash := fmt.Sprintf("%x", sum)
+	hash := hex.EncodeToString(sum[:])
 	return MetadataAsset{
 		path,
 		hash,

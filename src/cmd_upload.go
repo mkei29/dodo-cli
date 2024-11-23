@@ -39,7 +39,7 @@ func CreateUploadCmd() *cobra.Command {
 	return uploadCmd
 }
 
-func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
+func executeUpload(args UploadArgs) error { //nolint: funlen
 	env := NewEnvArgs()
 
 	if args.debug {

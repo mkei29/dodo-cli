@@ -11,7 +11,11 @@ import (
 	"github.com/caarlos0/log"
 )
 
-const DEFAULT_ARCHIVE_PATH = "dodo.zip"
+const (
+	DefaultArchivePath = "dodo.zip"
+	DocsDir            = "docs"
+	BlobsDir           = "blobs"
+)
 
 type Archive struct {
 	File          *os.File
@@ -21,7 +25,7 @@ type Archive struct {
 func NewArchive(path string) (*Archive, error) {
 	// Prepare archive file
 	if path == "" {
-		zipFile, err := os.CreateTemp("", DEFAULT_ARCHIVE_PATH)
+		zipFile, err := os.CreateTemp("", DefaultArchivePath)
 		if err != nil {
 			log.Error("failed to create a temporary file")
 			return nil, fmt.Errorf("failed to create a temporary file: %w", err)
@@ -49,7 +53,9 @@ func (a *Archive) Close() error {
 		return fmt.Errorf("failed to close the archive file: %w", err)
 	}
 	if a.shouldCleanUp {
-		return os.Remove(a.File.Name())
+		if err = os.Remove(a.File.Name()); err != nil {
+			return fmt.Errorf("failed to remove the archive file: %w", err)
+		}
 	}
 	return nil
 }
@@ -59,10 +65,23 @@ func (a *Archive) Archive(metadata *Metadata) ErrorSet {
 	zipWriter := zip.NewWriter(a.File)
 	defer zipWriter.Close()
 
+	// FIEME: Old logics. to be removed.
 	es := NewErrorSet()
 	pathList := collectFiles(&metadata.Page)
 	for _, from := range pathList {
-		to := filepath.Join("docs", from)
+		to := filepath.Join(DocsDir, from)
+		if err := addFile(from, to, zipWriter); err != nil {
+			es.Add(err)
+		}
+	}
+
+	// New docs logics
+	for _, page := range metadata.Page.ListPageHeader() {
+		if page.Type != PageTypeLeafNode {
+			continue
+		}
+		from := page.Filepath
+		to := filepath.Join(BlobsDir, filepath.Base(page.Hash))
 		if err := addFile(from, to, zipWriter); err != nil {
 			es.Add(err)
 		}
@@ -71,8 +90,8 @@ func (a *Archive) Archive(metadata *Metadata) ErrorSet {
 	// Archive assets
 	// Add assets with the hash name under the `blobs` directory.
 	for _, asset := range metadata.Asset {
-		from := string(asset.Path)
-		to := filepath.Join("blobs", filepath.Base(asset.Hash))
+		from := asset.Path
+		to := filepath.Join(BlobsDir, filepath.Base(asset.Hash))
 		if err := addFile(from, to, zipWriter); err != nil {
 			es.Add(err)
 		}
