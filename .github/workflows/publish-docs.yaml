@@ -11,4 +11,6 @@ jobs:
           curl https://raw.githubusercontent.com/toritoritori29/dodo-cli/main/download.sh | sh -
       - name: Publish docs
         run: |
-          dodo upload
+          dodo-cli upload
+        env:
+          DODO_API_KEY: ${{ DODO_ACCESS_KEY }}
