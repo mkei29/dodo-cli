@@ -1,0 +1,14 @@
+name: publish-docs
+on: push
+jobs:
+  publish-relesae-notes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install dodo CLI
+        run: |
+          curl https://raw.githubusercontent.com/toritoritori29/dodo-cli/main/download.sh | sh -
+      - name: Publish docs
+        run: |
+          dodo upload
