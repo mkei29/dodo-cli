@@ -16,4 +16,4 @@ jobs:
         run: |
           ./dodo-cli upload
         env:
-          DODO_API_KEY: ${{ DODO_ACCESS_KEY }}
+          DODO_API_KEY: ${{ secrets.DODO_ACCESS_KEY }}
