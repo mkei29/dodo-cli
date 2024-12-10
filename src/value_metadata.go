@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 )
@@ -9,6 +11,7 @@ type Metadata struct {
 	Version string          `json:"version"`
 	Project MetadataProject `json:"project"`
 	Page    Page            `json:"page"`
+	Asset   []MetadataAsset `json:"asset"`
 }
 
 func (m *Metadata) Serialize() ([]byte, error) {
@@ -47,5 +50,19 @@ func NewMetadataProjectFromConfig(c *Config) MetadataProject {
 		Name:        name,
 		Description: description,
 		Version:     version,
+	}
+}
+
+type MetadataAsset struct {
+	Path string `json:"path"`
+	Hash string `json:"hash"`
+}
+
+func NewMetadataAsset(path string) MetadataAsset {
+	sum := sha256.Sum256([]byte(path))
+	hash := hex.EncodeToString(sum[:])
+	return MetadataAsset{
+		path,
+		hash,
 	}
 }

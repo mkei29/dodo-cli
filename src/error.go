@@ -22,8 +22,8 @@ type ErrorSet struct {
 	errors []error
 }
 
-func NewErrorSet() *ErrorSet {
-	return &ErrorSet{
+func NewErrorSet() ErrorSet {
+	return ErrorSet{
 		errors: []error{},
 	}
 }
@@ -36,7 +36,7 @@ func (e *ErrorSet) Add(err error) {
 	e.errors = append(e.errors, err)
 }
 
-func (e *ErrorSet) Merge(errs *ErrorSet) {
+func (e *ErrorSet) Merge(errs ErrorSet) {
 	e.errors = append(e.errors, errs.errors...)
 }
 
@@ -46,6 +46,12 @@ func (e *ErrorSet) HasError() bool {
 
 func (e *ErrorSet) Length() int {
 	return len(e.errors)
+}
+
+func (e *ErrorSet) Log() {
+	for _, err := range e.errors {
+		log.Error(err.Error())
+	}
 }
 
 func (e *ErrorSet) Summary() {
