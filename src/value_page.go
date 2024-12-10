@@ -125,34 +125,25 @@ func (p *Page) IsValid() ErrorSet {
 }
 
 func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
-	if p.Type == PageTypeRootNode {
-		if !isRoot {
-			errorSet.Add(NewAppError("Type for root node should be Root"))
-		}
+	if isRoot && p.Type != PageTypeRootNode {
+		errorSet.Add(NewAppError("Type for root node should be Root"))
 		return
+	}
+	if !isRoot && p.Type == PageTypeRootNode {
+		errorSet.Add(NewAppError("Type for non-root node should not be Root"))
+		return
+	}
+	if p.Type == PageTypeLeafNode && p.Path == "" {
+		errorSet.Add(NewAppError("'path' is required for leaf node"))
 	}
 
-	// Common validation for all nodes without root node.
-	if isRoot {
-		errorSet.Add(NewAppError("Type for non-root node should not have the RootNode type"))
-		return
+	matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", p.Path)
+	if err != nil || !matched {
+		errorSet.Add(NewAppError(fmt.Sprintf("The path `%s` contains invalid characters. File paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", p.Filepath)))
 	}
-
-	if p.Type == PageTypeDirNode || p.Type == PageTypeDirNodeWithPage {
-		return
+	for _, c := range p.Children {
+		c.isValid(false, errorSet)
 	}
-
-	if p.Type == PageTypeLeafNode {
-		if p.Path == "" {
-			errorSet.Add(NewAppError(fmt.Sprintf("%s Path field should not be empty", p.Filepath)))
-		}
-		matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", p.Path)
-		if err != nil || !matched {
-			errorSet.Add(NewAppError(fmt.Sprintf("The path `%s` contains invalid characters. File paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", p.Filepath)))
-		}
-		return
-	}
-	errorSet.Add(NewAppError(fmt.Sprintf("invalid type: %s", p.Type)))
 }
 
 func (p *Page) duplicationCount(pathMap map[string]int, parentPath string) {
