@@ -125,26 +125,6 @@ func (p *Page) IsValid() ErrorSet {
 }
 
 func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
-	if isRoot && p.Type != PageTypeRootNode {
-		errorSet.Add(NewAppError("Type for root node should be Root"))
-		return
-	}
-	if !isRoot && p.Type == PageTypeRootNode {
-		errorSet.Add(NewAppError("Type for non-root node should not be Root"))
-		return
-	}
-	if p.Type == PageTypeLeafNode && p.Path == "" {
-		errorSet.Add(NewAppError("'path' is required for leaf node"))
-	}
-
-	matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", p.Path)
-	if err != nil || !matched {
-		errorSet.Add(NewAppError(fmt.Sprintf("The path `%s` contains invalid characters. File paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", p.Filepath)))
-	}
-	for _, c := range p.Children {
-		c.isValid(false, errorSet)
-	}
-
 	if p.Type == PageTypeRootNode {
 		if !isRoot {
 			errorSet.Add(NewAppError("Type for root node should be Root"))
