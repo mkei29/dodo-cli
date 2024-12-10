@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/adrg/frontmatter"
+	"github.com/caarlos0/log"
 	"github.com/mattn/go-zglob"
 	"gopkg.in/yaml.v3"
 )
@@ -280,7 +281,7 @@ func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 		p.UpdatedAt = *c.UpdatedAt
 	}
 
-	// TODO: check here if the page is valid.
+	log.Debugf("Node Found. Type: Markdown, Filepath: '%s', Title: '%s', Path: '%s'", p.Filepath, p.Title, p.Path)
 	return []Page{*p}, es
 }
 
@@ -305,6 +306,7 @@ func transformMatch(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 			es.Add(err)
 			continue
 		}
+		log.Debugf("Node Found. Type: Markdown, Filepath: %s, Title: %s, Path: %s", p.Filepath, p.Title, p.Path)
 		pages = append(pages, *p)
 	}
 
@@ -339,5 +341,6 @@ func transformDirectory(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	if c.Directory != nil {
 		p.Title = *c.Directory
 	}
+	log.Debugf("Node Found. Type: Document, Title: %s", p.Title)
 	return []Page{p}, es
 }

@@ -5,7 +5,7 @@ project:
   description: {{ .Description }}
 pages:
   - markdown: README.md
-    path: "/README"
+    path: "README"
     title: "README"
   ## Create the directory and place all markdown files in the docs
   #- directory: "Directory"

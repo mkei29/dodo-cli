@@ -105,11 +105,13 @@ func executeUpload(args UploadArgs) error { //nolint: funlen
 	}
 
 	// Upload the archive file
-	if err := uploadFile(args.endpoint, metadata, archive.File, env.APIKey); err != nil {
+	resp, err := uploadFile(args.endpoint, metadata, archive.File, env.APIKey)
+	if err != nil {
 		log.Errorf("internal error: ", err)
 		return fmt.Errorf("failed to upload zip: %w", err)
 	}
 	log.Infof("successfully uploaded: %s", args.output)
+	log.Infof("please open this link to view the document: %s", resp.DocumentURL)
 	return nil
 }
 
@@ -175,22 +177,27 @@ func convertConfigAssetToMetadataAsset(rootDir string, assets []ConfigAsset) ([]
 	return metadataAssets, es
 }
 
-func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) error {
+func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) (*UploadResponse, error) {
 	req, err := newFileUploadRequest(uri, metadata, zipFile, apiKey)
 	if err != nil {
-		return fmt.Errorf("failed to create upload request: %w", err)
+		return nil, fmt.Errorf("failed to create upload request: %w", err)
 	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("error raised during communicating to the server: %w", err)
+		return nil, fmt.Errorf("error raised during communicating to the server: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to upload file: %d", resp.StatusCode)
+		return nil, fmt.Errorf("failed to upload file: %d", resp.StatusCode)
 	}
-	return nil
+
+	data, err := ParseUploadResponse(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+	return data, nil
 }
 
 func newFileUploadRequest(uri string, metadata Metadata, zipFile *os.File, apiKey string) (*http.Request, error) {

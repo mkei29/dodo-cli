@@ -4,7 +4,7 @@ project:
   description: The dodo documentation
   version: 0.0.1
 pages:
-  - markdown: docs/quick_start.md
+  - markdown: docs/index.md
     path: "what_is_dodo"
     title: "What is dodo?"
   - markdown: docs/install.md
@@ -16,11 +16,18 @@ pages:
   - markdown: docs/yaml_spec.md
     path: "yaml_specification"
     title: "Yaml Spec"
-  - markdown: docs/cicd.md
-    path: "cicd"
-    title: "Use with CI/CD"
+  - markdown: docs/markdown_syntax.md
+    path: "markdown"
+    title: "Markdown Syntax"
+  - directory: "Work with CI/CD"
+    children:
+      - markdown: docs/cicd_github.md
+        path: "cicd_github"
+        title: "GitHub Actions"
   - markdown: docs/roadmap.md
     path: "roadmap"
     title: "Roadmap"
-assets:
-  - "assets/**/*.png"
+  - markdown: docs/release_note.md
+    path: "release_note"
+    title: "Release Note"
+ 
