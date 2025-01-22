@@ -19,3 +19,29 @@ To install this client, run the following command.
 ```bash
 curl https://raw.githubusercontent.com/toritoritori29/dodo-cli/main/download.sh | sh -
 ```
+
+## Supported Syntax
+|syntax|support|
+|:-----|:------:|
+|Thematic breaks|x|
+|Heading|✅|
+|Indented code blocks|x
+|Fenced code blocks|✅
+|HTML Block|x
+|Link reference definitions|x
+|Paragraphs|✅
+|Blank lines|✅
+|Block Quotes|✅
+|List items|✅
+|List|✅
+|Code spans|✅
+|Emphasis|✅
+|Links|✅
+|Images|✅
+|Autolinks|✅
+|Raw html|x|
+|Hard line breaks|x|
+|Soft line breaks|x|
+|Textual Content|x|
+
+

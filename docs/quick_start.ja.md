@@ -26,12 +26,14 @@ https://www.dodo-doc.com/dashboard
 プロジェクト画面の右上にある`New API Key`ボタンを押すと、新しいAPI Keyが発行されます。
 画面上部に発行されたAPI Keyが表示されるのでコピーして保管してください。
 
-!important
+:::message alert
 API Keyは一度しか表示されず、画面を閉じると二度と確認することができません。
+:::
 
-!important
+:::message alert
 API Keyはインターネットなどに公開しないでください。
 API Keyが流出するとドキュメントの内容を改ざんされる可能性があります。
+:::
 
 # 設定ファイルの作成
 次にdodo用の設定ファイルを作成します。

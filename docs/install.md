@@ -26,7 +26,7 @@ If you're using Linux or Mac OS, you can download dodo-cli with the following co
 The dodo-cli will be downloaded to your current directory. If needed, copy it to a directory in your execution path.
 
 ```bash
-curl https://raw.githubusercontent.com/toritoritori29/dodo-cli/main/download.sh | sh -
+$ curl https://raw.githubusercontent.com/toritoritori29/dodo-cli/main/download.sh | sh -
 ```
 
 ### Windows

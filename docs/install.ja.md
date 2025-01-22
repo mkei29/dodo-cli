@@ -28,7 +28,7 @@ LinuxまたはMac OSを利用している場合には以下のコマンドでダ
 カレントディレクトリにdodo-cliがダウンロードされるので、必要に応じて実行パスの通っているディレクトリにコピーしてください。
 
 ```bash
-curl https://raw.githubusercontent.com/toritoritori29/dodo-cli/main/download.sh | sh -
+$ curl https://raw.githubusercontent.com/toritoritori29/dodo-cli/main/download.sh | sh -
 ```
 
 ### Windows
