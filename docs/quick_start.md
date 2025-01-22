@@ -25,15 +25,22 @@ https://www.dodo-doc.com/dashboard
 Clicking the `New API Key` button in the upper right corner of the project screen will generate a new API Key.
 The newly issued API Key will be displayed at the top of the screen. Please copy and store it securely.
 
-!important
-The API Key is only shown once and cannot be viewed again after you close the screen.
-
-!important
+:::message info
 The API Key is only displayed once and cannot be viewed again after you close the screen.
+:::
 
-!important
+:::message warning
+The API Key is only displayed once and cannot be viewed again after you close the screen.
+:::
+
+:::message alert
+The API Key is only displayed once and cannot be viewed again after you close the screen.
+:::
+
+:::message alert
 Do not share your API Key on the internet or in any public space.
 If your API Key is leaked, there is a risk that the content of your documents could be tampered with.
+:::
 
 # Creating a Configuration File
 Next, we'll create a configuration file for dodo.

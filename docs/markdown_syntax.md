@@ -43,6 +43,17 @@ This is __Bold__ text2.
 
 `Inline Code` Example
 
+# Fenced Code Block
+
+```
+\`\`\`bash
+`Inline Code` Example
+\`\`\`
+```
+```bash
+`Inline Code` Example
+```
+
 # Blockquote
 
 ```markdown
@@ -98,3 +109,20 @@ https://www.dodo-doc.com
 ```
 
 https://www.dodo-doc.com
+
+
+# Message (original syntax)
+
+```markdown
+:::message info
+Info Message
+:::
+
+:::message warning
+Warning Message
+:::
+
+:::message alert
+Alert Message
+:::
+```
