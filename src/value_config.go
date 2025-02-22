@@ -81,6 +81,7 @@ type ParseState struct {
 	isVersionAlreadyParsed bool
 	isProjectAlreadyParsed bool
 	isPagesAlreadyParsed   bool
+	isAssetsAlreadyParsed  bool
 }
 
 func NewParseState() *ParseState {
@@ -139,6 +140,9 @@ func parseRootItem(state *ParseState, node ast.Node) error {
 	}
 	if mapping.Key.String() == "pages" {
 		return parseConfigPage(state, mapping)
+	}
+	if mapping.Key.String() == "assets" {
+		return parseConfigAssets(state, mapping)
 	}
 
 	return nil
@@ -305,7 +309,7 @@ func estimateConfigPageType(mapping *ast.MappingNode) (int, error) {
 			return ConfigPageTypeDirectory, nil
 		}
 	}
-	return -1, nil
+	return -1, ErrUnexpectedNode("this mapping does not match any page type", mapping)
 }
 
 func parseConfigPageMarkdown(mapping *ast.MappingNode) (ConfigPage, error) { //nolint: cyclop
@@ -332,29 +336,30 @@ func parseConfigPageMarkdown(mapping *ast.MappingNode) (ConfigPage, error) { //n
 		case "title":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, fmt.Errorf("invalid page markdown value: %s", item.Value.String())
+				return ConfigPage{}, ErrUnexpectedNode("`title` field should be a string", item.Value)
 			}
 			configPage.Title = v.Value
 		case "path":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, fmt.Errorf("invalid page markdown value: %s", item.Value.String())
+				return ConfigPage{}, ErrUnexpectedNode("`path` field should be a string", item.Value)
 			}
 			configPage.Path = v.Value
 		case "description":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, fmt.Errorf("invalid page markdown value: %s", item.Value.String())
+				return ConfigPage{}, ErrUnexpectedNode("`description` field should be a string", item.Value)
 			}
 			configPage.Description = v.Value
 		case "updated_at":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, fmt.Errorf("invalid page markdown value: %s", item.Value.String())
+				return ConfigPage{}, ErrUnexpectedNode("`updated_at` field should be a string", item.Value)
 			}
+			// TODO: updated_atのフォーマットが正しいことを検証する
 			configPage.UpdatedAt = SerializableTime(v.Value)
 		default:
-			return ConfigPage{}, fmt.Errorf("invalid page markdown key: %s", key)
+			return ConfigPage{}, ErrUnexpectedNode(fmt.Sprintf("a markdown style page cannot accept the key: %s", key), item)
 		}
 	}
 	// TODO: ここで必要なフィールドがすべてあるか検証する
@@ -376,26 +381,27 @@ func parseConfigPageMatch(mapping *ast.MappingNode) (ConfigPage, error) {
 		case "match":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, fmt.Errorf("invalid page markdown value: %s", item.Value.String())
+				return ConfigPage{}, ErrUnexpectedNode("`match` field should be a string", item.Value)
 			}
-			configPage.Markdown = v.Value
+			configPage.Match = v.Value
 		case "sort_key":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, fmt.Errorf("invalid page markdown value: %s", item.Value.String())
+				return ConfigPage{}, ErrUnexpectedNode("`sort_key` field should be a string", item.Value)
 			}
-			configPage.Title = v.Value
+			// TODO: sort_keyで受け入れ可能な値であることを検証する
+			configPage.SortKey = v.Value
 		case "sort_order":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, fmt.Errorf("invalid page markdown value: %s", item.Value.String())
+				return ConfigPage{}, ErrUnexpectedNode("`sort_order` field should be a string", item.Value)
 			}
-			configPage.Path = v.Value
+			// TODO: sort_orderはasc, descのいずれかであることを検証する
+			configPage.SortOrder = v.Value
 		default:
-			return ConfigPage{}, fmt.Errorf("invalid page markdown key: %s", key)
+			return ConfigPage{}, ErrUnexpectedNode("a match style page cannot accept the key: %s", item.Value)
 		}
 	}
-
 	// TODO: ここで必要なフィールドがすべてあるか検証する
 	return configPage, nil
 }
@@ -419,23 +425,52 @@ func parseConfigPageDirectory(mapping *ast.MappingNode) (ConfigPage, error) {
 		case "directory":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, fmt.Errorf("invalid page markdown value: %s", item.Value.String())
+				return ConfigPage{}, ErrUnexpectedNode("`directory` field should be a string", item.Value)
 			}
-			configPage.Markdown = v.Value
+			configPage.Directory = v.Value
 		case "children":
 			v, ok := item.Value.(*ast.SequenceNode)
 			if !ok {
-				return ConfigPage{}, fmt.Errorf("invalid page markdown value: %s", item.Value.String())
+				return ConfigPage{}, ErrUnexpectedNode("`children` field should be a sequence", item.Value)
 			}
 			children, err := parseConfigPageSequence(v)
 			if err != nil {
-				return ConfigPage{}, fmt.Errorf("invalid page markdown value: %w", err)
+				return ConfigPage{}, err
 			}
 			configPage.Children = children
 		default:
-			return ConfigPage{}, fmt.Errorf("invalid page markdown key: %s", key)
+			return ConfigPage{}, ErrUnexpectedNode("a directory style page cannot accept a key", item)
 		}
 	}
 	// TODO: ここで必要なフィールドがすべてあるか検証する
 	return configPage, nil
+}
+
+func parseConfigAssets(state *ParseState, node *ast.MappingValueNode) error {
+	// This function should be called only once.
+	// Receive a object like following:
+	//
+	// assets:
+	//   - "assets/**"
+	//   - "images/**"
+
+	if state.isAssetsAlreadyParsed {
+		return ErrUnexpectedNode("there should be a exact one `assets` field in the config file", node)
+	}
+
+	sequence, ok := node.Value.(*ast.SequenceNode)
+	if !ok {
+		return ErrUnexpectedNode("the `assets` field should be a sequence of string", node.Value)
+	}
+
+	assets := make([]ConfigAsset, 0, len(sequence.Values))
+	for _, item := range sequence.Values {
+		v, ok := item.(*ast.StringNode)
+		if !ok {
+			return ErrUnexpectedNode("a item in the `sequence` field should have a string type", item)
+		}
+		assets = append(assets, ConfigAsset(v.Value))
+	}
+	state.config.Assets = assets
+	return nil
 }

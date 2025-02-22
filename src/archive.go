@@ -60,18 +60,18 @@ func (a *Archive) Close() error {
 	return nil
 }
 
-func (a *Archive) Archive(metadata *Metadata) ErrorSet {
+func (a *Archive) Archive(metadata *Metadata) *MultiError {
 	// Archive documents
 	zipWriter := zip.NewWriter(a.File)
 	defer zipWriter.Close()
 
 	// FIEME: Old logics. to be removed.
-	es := NewErrorSet()
+	merr := NewMultiError()
 	pathList := collectFiles(&metadata.Page)
 	for _, from := range pathList {
 		to := filepath.Join(DocsDir, from)
 		if err := addFile(from, to, zipWriter); err != nil {
-			es.Add(err)
+			merr.Add(err)
 		}
 	}
 
@@ -83,7 +83,7 @@ func (a *Archive) Archive(metadata *Metadata) ErrorSet {
 		from := page.Filepath
 		to := filepath.Join(BlobsDir, filepath.Base(page.Hash))
 		if err := addFile(from, to, zipWriter); err != nil {
-			es.Add(err)
+			merr.Add(err)
 		}
 	}
 
@@ -93,16 +93,19 @@ func (a *Archive) Archive(metadata *Metadata) ErrorSet {
 		from := asset.Path
 		to := filepath.Join(BlobsDir, filepath.Base(asset.Hash))
 		if err := addFile(from, to, zipWriter); err != nil {
-			es.Add(err)
+			merr.Add(err)
 		}
 	}
 
 	// Add metadata
 	err := addMetadata(metadata, zipWriter)
 	if err != nil {
-		es.Add(err)
+		merr.Add(err)
 	}
-	return es
+	if merr.HasError() {
+		return &merr
+	}
+	return nil
 }
 
 // List all files to be archived.

@@ -35,43 +35,6 @@ func prepareFile(t *testing.T, rootDir, filename, content string) {
 	file.WriteString(content)
 }
 
-// Valid Case.
-const TestCaseParseConfig1 = `
-version: 1
-pages:
-  - markdown: "README2.md"
-    path: "readme2"
-    title: "README2"
-`
-
-// Invalid Case with unknown date format in the pages field.
-const TestCaseParseConfig2 = `
-version: 1
-pages:
-  - markdown: "README2.md"
-    path: "readme2"
-    title: "README2"
-		updated_at: "23/1/2024
-`
-
-func TestParseConfig(t *testing.T) {
-	t.Parallel()
-
-	t.Run("should not return error when valid config was given", func(t *testing.T) {
-		t.Parallel()
-		dir := prepareTempDir(t)
-		prepareFile(t, dir, "README1.md", "content")
-
-		_, err := ParseConfig(strings.NewReader(TestCaseParseConfig1))
-		require.NoError(t, err)
-	})
-	t.Run("should return error when invalid config was given", func(t *testing.T) {
-		t.Parallel()
-		_, err := ParseConfig(strings.NewReader(TestCaseParseConfig2))
-		require.Error(t, err)
-	})
-}
-
 const TestCaseCreatePageWithMarkdown = `
 version: 1
 pages:
@@ -93,8 +56,9 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageWithMarkdown))
 	require.NoError(t, err)
 
-	page, es := CreatePageTree(*conf, dir)
-	require.False(t, es.HasError())
+	page, merr := CreatePageTree(conf, dir)
+	require.Nil(t, merr, "CreatePageTree should not return error if the valid case is specified")
+
 	assert.Equal(t, "RootNode", page.Type)
 	assert.Len(t, page.Children, 2)
 
@@ -162,11 +126,11 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageTreeMatch))
 	require.NoError(t, err, "should not return error")
 
-	page, es := CreatePageTree(*conf, dir)
-	require.False(t, es.HasError(), "should not return error when valid config is given")
+	page, merr := CreatePageTree(conf, dir)
+	require.Nil(t, merr, "CreatePageTree should not return error")
 
 	// Root node should have 2 children
-	assert.Len(t, page.Children, 5, "root node should have 5 children")
+	require.Len(t, page.Children, 5, "root node should have 5 children")
 
 	// Check the first child
 	page1 := page.Children[0]
@@ -204,9 +168,9 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageHybridCase))
 	require.NoError(t, err, "should not return error")
 
-	page, es := CreatePageTree(*conf, dir)
-	require.False(t, es.HasError())
-	assert.Len(t, page.Children, 2, "root node should have 4 children")
+	page, merr := CreatePageTree(conf, dir)
+	require.Nil(t, merr, "CreatePageTree should not return error if the valid case is specified: %w", err)
+	require.Len(t, page.Children, 2, "root node should have 4 children")
 
 	page1 := page.Children[0]
 	assert.Equal(t, "LeafNode", page1.Type)
@@ -245,9 +209,10 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageWithDirectory))
 	require.NoError(t, err)
 
-	page, es := CreatePageTree(*conf, dir)
-	require.False(t, es.HasError())
-	assert.Len(t, page.Children, 1)
+	page, merr := CreatePageTree(conf, dir)
+	require.Nil(t, merr, "CreatePageTree should not return error if the valid case is specified: %v", err)
+
+	require.Len(t, page.Children, 1)
 
 	dir1 := page.Children[0]
 	assert.Equal(t, "DirNodeWithoutPage", dir1.Type)
@@ -302,29 +267,6 @@ pages:
   - match: "./dir1/../../**/*.md"
 `
 
-// Invalid field for the first item.
-const TestCasePageMalicious5 = `
-version: 1
-pages:
-  - path: "readme1"
-    title: "README1"
-  - match: "./**/*.md"
-`
-
-// Can't use children in the markdown item
-// Directory Traversal Attack.
-const TestCasePageMalicious6 = `
-version: 1
-pages:
-  - markdown: "README1.md"
-    path: "readme1"
-    title: "README1"
-    children:
-      - markdown: "./README1.md"
-        path: "./another"
-        title: "./ANOTHER"
-`
-
 func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {
 	parent := prepareTempDir(t)
 	dir := prepareSubDir(t, parent, "working_dir")
@@ -336,8 +278,6 @@ func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {
 		TestCasePageMalicious2,
 		TestCasePageMalicious3,
 		TestCasePageMalicious4,
-		TestCasePageMalicious5,
-		TestCasePageMalicious6,
 	}
 
 	for i, c := range cases {
@@ -347,9 +287,8 @@ func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {
 			conf, err := ParseConfig(strings.NewReader(testCase))
 			require.NoError(t, err, "should not return error %v", err)
 
-			_, es := CreatePageTree(*conf, dir)
-			es.Summary()
-			assert.True(t, es.HasError(), "should fail when malicious filepath was given")
+			_, merr := CreatePageTree(conf, dir)
+			assert.NotNil(t, merr, "should fail when malicious filepath was given")
 		})
 	}
 }
@@ -539,12 +478,15 @@ func TestIsValid(t *testing.T) {
 
 			conf, err := ParseConfig(strings.NewReader(c.content))
 			require.NoError(t, err, "should not return error: %v", err)
-			page, es := CreatePageTree(*conf, dir)
-			es.Summary()
-			require.False(t, es.HasError(), "should not return error if valid config is given")
+			page, merr := CreatePageTree(conf, dir)
+			require.Nil(t, merr, "CreatePageTree should not failed if the valid case is specified: %v", err)
 
-			es = page.IsValid()
-			assert.Equal(t, c.isValid, !es.HasError())
+			merr = page.IsValid()
+			if c.isValid {
+				require.Nil(t, merr, "should not return error: %v", merr)
+			} else {
+				require.NotNil(t, merr, "should return error")
+			}
 		})
 	}
 }

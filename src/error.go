@@ -3,9 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/goccy/go-yaml/ast"
-
 	"github.com/caarlos0/log"
+	"github.com/goccy/go-yaml/ast"
 )
 
 type AppError struct {
@@ -22,43 +21,47 @@ func (e *AppError) Error() string {
 	return e.message
 }
 
-type ErrorSet struct {
+type MultiError struct {
 	errors []error
 }
 
-func NewErrorSet() ErrorSet {
-	return ErrorSet{
+func NewMultiError() MultiError {
+	return MultiError{
 		errors: []error{},
 	}
 }
 
-func (e *ErrorSet) Errors() []error {
+func (e *MultiError) Error() string {
+	return fmt.Sprintf("%d errors", len(e.errors))
+}
+
+func (e *MultiError) Errors() []error {
 	return e.errors
 }
 
-func (e *ErrorSet) Add(err error) {
+func (e *MultiError) Add(err error) {
 	e.errors = append(e.errors, err)
 }
 
-func (e *ErrorSet) Merge(errs ErrorSet) {
+func (e *MultiError) Merge(errs MultiError) {
 	e.errors = append(e.errors, errs.errors...)
 }
 
-func (e *ErrorSet) HasError() bool {
+func (e *MultiError) HasError() bool {
 	return len(e.errors) > 0
 }
 
-func (e *ErrorSet) Length() int {
+func (e *MultiError) Length() int {
 	return len(e.errors)
 }
 
-func (e *ErrorSet) Log() {
+func (e *MultiError) Log() {
 	for _, err := range e.errors {
 		log.Error(err.Error())
 	}
 }
 
-func (e *ErrorSet) Summary() {
+func (e *MultiError) Summary() {
 	for _, err := range e.errors {
 		log.Error(err.Error())
 	}

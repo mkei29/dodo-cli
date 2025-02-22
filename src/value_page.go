@@ -107,11 +107,11 @@ func listPageHeader(list []PageSummary, p *Page) []PageSummary {
 // This function checks the following conditions:
 // 1. all page have necessary fields.
 // 2. There are no duplicated paths.
-func (p *Page) IsValid() ErrorSet {
-	errorSet := NewErrorSet()
+func (p *Page) IsValid() *MultiError {
+	errorSet := NewMultiError()
 	p.isValid(true, &errorSet)
 	if errorSet.HasError() {
-		return errorSet
+		return &errorSet
 	}
 
 	pathMap := make(map[string]int)
@@ -121,10 +121,13 @@ func (p *Page) IsValid() ErrorSet {
 			errorSet.Add(NewAppError(fmt.Sprintf("duplicated path was found. path: `%s`", path)))
 		}
 	}
-	return errorSet
+	if errorSet.HasError() {
+		return &errorSet
+	}
+	return nil
 }
 
-func (p *Page) isValid(isRoot bool, errorSet *ErrorSet) {
+func (p *Page) isValid(isRoot bool, errorSet *MultiError) {
 	if isRoot && p.Type != PageTypeRootNode {
 		errorSet.Add(NewAppError("Type for root node should be Root"))
 		return
@@ -189,52 +192,58 @@ func (p *Page) Add(page Page) {
 	p.Children = append(p.Children, page)
 }
 
-func SortPageSlice(sortKey, sortOrder *string, pages []Page) error {
-	if sortKey == nil && sortOrder == nil {
+func SortPageSlice(sortKey, sortOrder string, pages []Page) error {
+	if sortKey == "" && sortOrder == "" {
 		return nil
 	}
-	if sortKey == nil {
+	if sortKey == "" {
 		return fmt.Errorf("sort key is not provided")
 	}
 	// Check sortOrder
 	isASC := true
-	if sortOrder != nil {
-		switch strings.ToLower(*sortOrder) {
+	if sortOrder != "" {
+		switch strings.ToLower(sortOrder) {
 		case "asc":
 			break
 		case "desc":
 			isASC = false
 		default:
-			return fmt.Errorf("invalid sort order: %s", *sortOrder)
+			return fmt.Errorf("invalid sort order: `%s`", sortOrder)
 		}
 	}
-	if *sortKey == "title" {
+	if sortKey == "title" {
 		sort.Slice(pages, func(i, j int) bool {
 			return (pages[i].Title < pages[j].Title) == isASC
 		})
 		return nil
 	}
-	return fmt.Errorf("invalid sort key: %s", *sortKey)
+	return fmt.Errorf("invalid sort key: %s", sortKey)
 }
 
-func CreatePageTree(config Config, rootDir string) (*Page, ErrorSet) {
-	errorSet := NewErrorSet()
+func CreatePageTree(config *Config, rootDir string) (*Page, *MultiError) {
+	errorSet := NewMultiError()
 	root := Page{
 		Type: PageTypeRootNode,
 	}
 
 	children := make([]Page, 0, len(config.Pages))
 	for _, p := range config.Pages {
-		c, es := buildPage(rootDir, p)
+		c, merr := buildPage(rootDir, p)
+		if merr != nil {
+			errorSet.Merge(*merr)
+			continue
+		}
 		children = append(children, c...)
-		errorSet.Merge(es)
+	}
+	if errorSet.HasError() {
+		return nil, &errorSet
 	}
 
 	root.Children = children
-	return &root, errorSet
+	return &root, nil
 }
 
-func buildPage(rootDir string, c ConfigPage) ([]Page, ErrorSet) {
+func buildPage(rootDir string, c ConfigPage) ([]Page, *MultiError) {
 	if c.MatchMarkdown() {
 		return transformMarkdown(rootDir, &c)
 	}
@@ -246,25 +255,25 @@ func buildPage(rootDir string, c ConfigPage) ([]Page, ErrorSet) {
 		return transformDirectory(rootDir, &c)
 	}
 
-	es := NewErrorSet()
-	es.Add(NewAppError("invalid configuration: doesn't match any pattern"))
-	return nil, es
+	err := NewMultiError()
+	err.Add(NewAppError("invalid configuration: doesn't match any pattern"))
+	return nil, &err
 }
 
-func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
-	es := NewErrorSet()
+func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
+	merr := NewMultiError()
 	filepath := filepath.Clean(filepath.Join(rootDir, c.Markdown))
 
 	if err := IsUnderRootPath(rootDir, filepath); err != nil {
-		es.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", filepath)))
-		return nil, es
+		merr.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", filepath)))
+		return nil, &merr
 	}
 
 	// First, populate the fields from the markdown front matter.
 	p, err := NewLeafNodeFromFrontMatter(filepath)
 	if err != nil {
-		es.Add(err)
-		return nil, es
+		merr.Add(err)
+		return nil, &merr
 	}
 
 	// Second, populate the fields from the configuration.
@@ -282,54 +291,55 @@ func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	}
 
 	log.Debugf("Node Found. Type: Markdown, Filepath: '%s', Title: '%s', Path: '%s'", p.Filepath, p.Title, p.Path)
-	return []Page{*p}, es
+	return []Page{*p}, nil
 }
 
-func transformMatch(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
+func transformMatch(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
 	pages := make([]Page, 0)
-	es := NewErrorSet()
+	merr := NewMultiError()
 	dirPath := filepath.Clean(filepath.Join(rootDir, c.Match))
 	if err := IsUnderRootPath(rootDir, dirPath); err != nil {
-		es.Add(NewAppError(fmt.Sprintf("invalid configuration: path should be under the rootDir: path: %s", dirPath)))
-		return nil, es
+		merr.Add(NewAppError(fmt.Sprintf("invalid configuration: path should be under the rootDir: path: %s", dirPath)))
+		return nil, &merr
 	}
 
 	matches, err := zglob.Glob(dirPath)
 	if err != nil {
-		es.Add(NewAppError(fmt.Sprintf("internal error:  error raised during globbing %s", dirPath)))
-		return nil, es
+		merr.Add(NewAppError(fmt.Sprintf("internal error:  error raised during globbing %s", dirPath)))
+		return nil, &merr
 	}
 
 	for _, m := range matches {
 		p, err := NewLeafNodeFromFrontMatter(m)
 		if err != nil {
-			es.Add(err)
+			merr.Add(err)
 			continue
 		}
 		log.Debugf("Node Found. Type: Markdown, Filepath: %s, Title: %s, Path: %s", p.Filepath, p.Title, p.Path)
 		pages = append(pages, *p)
 	}
 
-	if err := SortPageSlice(&c.SortKey, &c.SortOrder, pages); err != nil {
-		es.Add(NewAppError(fmt.Sprintf("failed to sort pages: %v", err)))
-		return nil, es
+	if err := SortPageSlice(c.SortKey, c.SortOrder, pages); err != nil {
+		merr.Add(NewAppError(fmt.Sprintf("failed to sort pages: %v", err)))
+		return nil, &merr
 	}
 
-	return pages, es
+	if merr.HasError() {
+		return nil, &merr
+	}
+	return pages, nil
 }
 
-func transformDirectory(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
-	es := NewErrorSet()
+func transformDirectory(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
+	merr := NewMultiError()
 
 	children := make([]Page, 0, len(c.Children))
 	for _, child := range c.Children {
 		pages, err := buildPage(rootDir, child)
-
-		if err.HasError() {
-			es.Merge(err)
+		if err != nil {
+			merr.Merge(*err)
 			continue
 		}
-
 		children = append(children, pages...)
 	}
 
@@ -338,6 +348,9 @@ func transformDirectory(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 		Title:    c.Directory,
 		Children: children,
 	}
+	if merr.HasError() {
+		return nil, &merr
+	}
 	log.Debugf("Node Found. Type: Document, Title: %s", p.Title)
-	return []Page{p}, es
+	return []Page{p}, nil
 }

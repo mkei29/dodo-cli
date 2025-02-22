@@ -34,7 +34,7 @@ func createTempFile(t *testing.T, dir, path string) {
 	defer f.Close()
 }
 
-func TestValidCase(t *testing.T) {
+func TestParseConfigDetails(t *testing.T) {
 	t.Parallel()
 	conf, err := ParseConfig(strings.NewReader(TestCaseValid))
 	require.NoError(t, err)
@@ -52,6 +52,110 @@ func TestValidCase(t *testing.T) {
 	// Check assets
 	assert.Equal(t, "assets/**", string(conf.Assets[0]))
 	assert.Equal(t, "images/**", string(conf.Assets[1]))
+}
+
+// Valid Case.
+const TestCaseParseConfig1 = `
+version: 1
+pages:
+  - markdown: "README2.md"
+    path: "readme2"
+    title: "README2"
+`
+
+// Invalid Case with unknown page type in the pages field.
+const TestCaseWithUnknownPageType = `
+version: 1
+pages:
+	- path: "readme2"
+	- title: "README2"
+`
+
+// Invalid Case with children in the markdown item.
+// Can't use children in the markdown item.
+const TestCaseWithBrokenMarkdownPage = `
+version: 1
+pages:
+  - markdown: "README1.md"
+    path: "readme1"
+    title: "README1"
+    children:
+      - markdown: "./README1.md"
+        path: "./another"
+        title: "./ANOTHER"
+`
+
+// Invalid Case with unknown date format in the pages field.
+const TestCaseWithUnknownUpdatedAtFormat = `
+version: 1
+pages:
+  - markdown: "README2.md"
+    path: "readme2"
+    title: "README2"
+		updated_at: "23/1/2024
+`
+
+// Invalid case with multiple assets fields.
+const TestCaseWithMultipleAssets = `
+version: 1
+pages:
+	- markdown: "README2.md"
+	- path: "readme2"
+	- title: "README2"
+	- updated_at: "2021-01-01T00:00:00Z"
+assets:
+	- "assets/**"
+assets:
+	- "assets/**"
+`
+
+func TestParseConfig(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{
+			name:     "valid config1",
+			input:    TestCaseParseConfig1,
+			expected: true,
+		},
+		{
+			name:     "invalid config: unknown page type in the `pages` field",
+			input:    TestCaseWithUnknownPageType,
+			expected: false,
+		},
+		{
+			name:     "invalid config: children in the markdown item",
+			input:    TestCaseWithBrokenMarkdownPage,
+			expected: false,
+		},
+		{
+			name:     "invalid config: unknown date format in the `updated_at` field",
+			input:    TestCaseWithUnknownUpdatedAtFormat,
+			expected: false,
+		},
+		{
+			name:     "invalid config: multiple assets fields",
+			input:    TestCaseWithMultipleAssets,
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		testCase := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := ParseConfig(strings.NewReader(testCase.input))
+			if testCase.expected {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
 }
 
 func TestConfigAsset(t *testing.T) {

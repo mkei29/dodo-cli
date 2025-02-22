@@ -78,8 +78,8 @@ func executeUpload(args UploadArgs) error { //nolint: funlen
 	log.Debugf("successfully convert config to page. found %d pages", page.Count())
 
 	// Create Assets struct from config.
-	asset, es := convertConfigAssetToMetadataAsset(args.rootPath, config.Assets)
-	if es.HasError() {
+	asset, merr := convertConfigAssetToMetadataAsset(args.rootPath, config.Assets)
+	if merr != nil {
 		es.Log()
 		return fmt.Errorf("failed to convert config to asset")
 	}
@@ -98,7 +98,7 @@ func executeUpload(args UploadArgs) error { //nolint: funlen
 		log.Error("internal error: failed to create an archive file")
 	}
 	defer archive.Close()
-	if es = archive.Archive(&metadata); es.HasError() {
+	if err := archive.Archive(&metadata); err != nil {
 		es.Log()
 		log.Errorf("error raised during archiving\n")
 		return fmt.Errorf("failed to archive: %w", err)
@@ -151,30 +151,36 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 	return nil
 }
 
-func convertConfigPageToMetadataPage(rootDir string, config *Config) (*Page, ErrorSet) {
-	page, es := CreatePageTree(*config, rootDir)
-	if es.HasError() {
-		return nil, es
+func convertConfigPageToMetadataPage(rootDir string, config *Config) (*Page, *MultiError) {
+	page, merr := CreatePageTree(config, rootDir)
+	if merr != nil {
+		return nil, merr
 	}
-	es = page.IsValid()
-	return page, es
+	if merr = page.IsValid(); merr != nil {
+		return nil, merr
+	}
+
+	return page, nil
 }
 
-func convertConfigAssetToMetadataAsset(rootDir string, assets []ConfigAsset) ([]MetadataAsset, ErrorSet) {
+func convertConfigAssetToMetadataAsset(rootDir string, assets []ConfigAsset) ([]MetadataAsset, *MultiError) {
 	// Create Assets struct from config.
-	es := NewErrorSet()
+	merr := NewMultiError()
 	metadataAssets := make([]MetadataAsset, 0, len(assets)*5)
 	for _, a := range assets {
 		files, err := a.List(rootDir)
 		if err != nil {
-			es.Add(err)
+			merr.Add(err)
 		}
 		// FIXME: This code could be cause too many allocations.
 		for _, f := range files {
 			metadataAssets = append(metadataAssets, NewMetadataAsset(f))
 		}
 	}
-	return metadataAssets, es
+	if merr.HasError() {
+		return nil, &merr
+	}
+	return metadataAssets, nil
 }
 
 func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) (*UploadResponse, error) {
