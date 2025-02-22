@@ -32,7 +32,11 @@ func NewMultiError() MultiError {
 }
 
 func (e *MultiError) Error() string {
-	return fmt.Sprintf("%d errors", len(e.errors))
+	message := fmt.Sprintf("%d errors: ", len(e.errors))
+	for _, err := range e.errors {
+		message += err.Error() + ", "
+	}
+	return message
 }
 
 func (e *MultiError) Errors() []error {

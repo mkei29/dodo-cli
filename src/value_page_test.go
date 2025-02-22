@@ -289,6 +289,7 @@ func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {
 
 			_, merr := CreatePageTree(conf, dir)
 			assert.NotNil(t, merr, "should fail when malicious filepath was given")
+			assert.True(t, merr.HasError(), "should fail when malicious filepath was given")
 		})
 	}
 }

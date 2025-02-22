@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/parser"
@@ -12,40 +13,41 @@ import (
 )
 
 const (
-	ConfigPageTypeMarkdown = iota
+	ConfigPageTypeUnknown = iota
+	ConfigPageTypeMarkdown
 	ConfigPageTypeMatch
 	ConfigPageTypeDirectory
 )
 
 type Config struct {
-	Version string        `yaml:"version"`
-	Project ConfigProject `yaml:"project"`
-	Pages   []ConfigPage  `yaml:"pages"`
-	Assets  []ConfigAsset `yaml:"assets"`
+	Version string
+	Project ConfigProject
+	Pages   []ConfigPage
+	Assets  []ConfigAsset
 }
 
 type ConfigProject struct {
-	Name        string `yaml:"name"`
-	Description string `yaml:"description"`
-	Version     string `yaml:"version"`
+	Name        string
+	Description string
+	Version     string
 }
 
 type ConfigPage struct {
 	// markdown syntax
-	Markdown    string           `yaml:"markdown"`
-	Title       string           `yaml:"title"`
-	Path        string           `yaml:"path"`
-	Description string           `yaml:"description"`
-	UpdatedAt   SerializableTime `yaml:"updated_at"`
+	Markdown    string
+	Title       string
+	Path        string
+	Description string
+	UpdatedAt   SerializableTime
 
 	// match syntax
-	Match     string `yaml:"match"`
-	SortKey   string `yaml:"sort_key"`
-	SortOrder string `yaml:"sort_order"`
+	Match     string
+	SortKey   string
+	SortOrder string
 
 	// directory syntax
-	Directory string       `yaml:"directory"`
-	Children  []ConfigPage `yaml:"children"`
+	Directory string
+	Children  []ConfigPage
 }
 
 // Check if the page is a valid single page.
@@ -76,12 +78,14 @@ func (m ConfigAsset) List(rootDir string) ([]string, error) {
 	return matches, nil
 }
 
+// A struct to keep the state of the parsing process.
 type ParseState struct {
 	config                 Config
 	isVersionAlreadyParsed bool
 	isProjectAlreadyParsed bool
 	isPagesAlreadyParsed   bool
 	isAssetsAlreadyParsed  bool
+	errorSet               MultiError
 }
 
 func NewParseState() *ParseState {
@@ -107,48 +111,55 @@ func ParseConfig(reader io.Reader) (*Config, error) {
 	// I couldn't find any documentation about it.
 	root, err := parser.ParseBytes(buf.Bytes(), parser.Mode(0))
 	if err != nil {
+		// TODO: return more detailed error including the line number.
 		return nil, fmt.Errorf("failed to parse a document config: %w", err)
 	}
 	if len(root.Docs) != 1 {
-		return nil, fmt.Errorf("invalid document config: there should be only one document. got %d", len(root.Docs))
+		return nil, fmt.Errorf("there should be only one document. got %d", len(root.Docs))
 	}
 
 	body, ok := root.Docs[0].Body.(*ast.MappingNode)
 	if !ok {
-		return nil, fmt.Errorf("invalid document config: the document should be a mapping type")
+		state.errorSet.Add(ErrUnexpectedNode("the root node should be a mapping type", root.Docs[0].Body))
+		return nil, &state.errorSet
 	}
 
 	// Apply parseRootItem to each node at the root level.
 	for _, node := range body.Values {
-		if err := parseRootItem(state, node); err != nil {
-			return nil, err
-		}
+		parseRootItem(state, node)
+	}
+	if state.errorSet.HasError() {
+		return nil, &state.errorSet
 	}
 	return &state.config, nil
 }
 
-func parseRootItem(state *ParseState, node ast.Node) error {
+func parseRootItem(state *ParseState, node ast.Node) {
 	mapping, ok := node.(*ast.MappingValueNode)
 	if !ok {
-		return fmt.Errorf("invalid document config: the root item should be a mapping type")
+		state.errorSet.Add(ErrUnexpectedNode("the key-value pair is expected at the top level", node))
+		return
 	}
 	if mapping.Key.String() == "version" {
-		return parseVersion(state, mapping)
+		parseVersion(state, mapping)
+		return
 	}
 	if mapping.Key.String() == "project" {
-		return parseConfigProject(state, mapping)
+		parseConfigProject(state, mapping)
+		return
 	}
 	if mapping.Key.String() == "pages" {
-		return parseConfigPage(state, mapping)
+		parseConfigPage(state, mapping)
+		return
 	}
 	if mapping.Key.String() == "assets" {
-		return parseConfigAssets(state, mapping)
+		parseConfigAssets(state, mapping)
+		return
 	}
-
-	return nil
+	state.errorSet.Add(ErrUnexpectedNode("unexpected key at the top level", mapping.Key))
 }
 
-func parseVersion(state *ParseState, node *ast.MappingValueNode) error {
+func parseVersion(state *ParseState, node *ast.MappingValueNode) {
 	// This function should be called only once.
 	// Receive a object like following:
 	//
@@ -156,19 +167,36 @@ func parseVersion(state *ParseState, node *ast.MappingValueNode) error {
 	//
 
 	if state.isVersionAlreadyParsed {
-		return fmt.Errorf("duplicate version")
+		state.errorSet.Add(ErrUnexpectedNode("there should be a exact one `version` section at the top level", node))
+		return
 	}
-	value := node.Value.String()
-	if value != "1" {
-		return fmt.Errorf("invalid version. version should be '1' : %s", value)
+	state.isVersionAlreadyParsed = true
+
+	intNode, ok := node.Value.(*ast.IntegerNode)
+	if !ok {
+		state.errorSet.Add(ErrUnexpectedNode("`version` should have a int value", node.Value))
+		return
 	}
 
-	state.isVersionAlreadyParsed = true
-	state.config.Version = value
-	return nil
+	var versionNum int
+	switch intNode.Value.(type) {
+	case int:
+		versionNum = intNode.Value.(int)
+	case uint64:
+		versionNum = int(intNode.Value.(uint64))
+	default:
+		state.errorSet.Add(ErrUnexpectedNode("internal error: `version` have unexpected type", node.Value))
+		return
+	}
+
+	if versionNum != 1 {
+		state.errorSet.Add(ErrUnexpectedNode("unsupported version: only '1' is supported now", intNode))
+		return
+	}
+	state.config.Version = fmt.Sprintf("%d", versionNum)
 }
 
-func parseConfigProject(state *ParseState, node *ast.MappingValueNode) error {
+func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolint: cyclop
 	// This function should be called only once.
 	// Receive a object like following:
 	//
@@ -178,35 +206,55 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) error {
 	//   version: "1.0.0"
 
 	if state.isProjectAlreadyParsed {
-		return fmt.Errorf("duplicate project")
+		state.errorSet.Add(ErrUnexpectedNode("there should be a exact one `project` section at the top level", node))
+		return
 	}
+	state.isProjectAlreadyParsed = true
 
 	// node.value should be a mapping type.
 	// ConfigProject needs name, description, and version.
 	// And all of them are string type.
 	children, ok := node.Value.(*ast.MappingNode)
 	if !ok {
-		return fmt.Errorf("invalid project: the project should be a mapping type")
+		state.errorSet.Add(ErrUnexpectedNode("the `project` should have a mapping value", node.Value))
+		return
 	}
 
 	for _, item := range children.Values {
 		key := item.Key.String()
 		switch key {
 		case "name":
-			state.config.Project.Name = item.Value.String()
+			v, ok := item.Value.(*ast.StringNode)
+			if !ok {
+				state.errorSet.Add(ErrUnexpectedNode("`name` field should be a string", item.Value))
+				continue
+			}
+			state.config.Project.Name = v.Value
 		case "description":
-			state.config.Project.Description = item.Value.String()
+			v, ok := item.Value.(*ast.StringNode)
+			if !ok {
+				state.errorSet.Add(ErrUnexpectedNode("`description` field should be a string", item.Value))
+				continue
+			}
+			state.config.Project.Description = v.Value
 		case "version":
-			state.config.Project.Version = item.Value.String()
+			v, ok := item.Value.(*ast.StringNode)
+			if !ok {
+				state.errorSet.Add(ErrUnexpectedNode("`version` field should be a string", item.Value))
+				continue
+			}
+			state.config.Project.Version = v.Value
 		default:
-			return fmt.Errorf("invalid project key: %s", key)
+			state.errorSet.Add(ErrUnexpectedNode(fmt.Sprintf("the `project` does not accept the key: %s", key), item))
 		}
 	}
-	state.isProjectAlreadyParsed = true
-	return nil
+
+	if state.config.Project.Name == "" {
+		state.errorSet.Add(ErrUnexpectedNode("the `project` should have a `name` field longer than 1 character", node))
+	}
 }
 
-func parseConfigPage(state *ParseState, node *ast.MappingValueNode) error {
+func parseConfigPage(state *ParseState, node *ast.MappingValueNode) {
 	// This function should be called only once.
 	// Receive a object like following:
 	//
@@ -217,24 +265,20 @@ func parseConfigPage(state *ParseState, node *ast.MappingValueNode) error {
 	//     ..
 
 	if state.isPagesAlreadyParsed {
-		return fmt.Errorf("duplicate pages")
+		state.errorSet.Add(ErrUnexpectedNode("there should be a exact one `pages` section at the top level", node))
+		return
 	}
+	state.isPagesAlreadyParsed = true
 
 	sequence, ok := node.Value.(*ast.SequenceNode)
 	if !ok {
-		return fmt.Errorf("invalid pages: the pages should be a sequence type")
+		state.errorSet.Add(ErrUnexpectedNode("the `pages` field should be a sequence type", node.Value))
+		return
 	}
-
-	pages, err := parseConfigPageSequence(sequence)
-	if err != nil {
-		return err
-	}
-	state.isPagesAlreadyParsed = true
-	state.config.Pages = pages
-	return nil
+	state.config.Pages = parseConfigPageSequence(state, sequence)
 }
 
-func parseConfigPageSequence(sequence *ast.SequenceNode) ([]ConfigPage, error) {
+func parseConfigPageSequence(state *ParseState, sequence *ast.SequenceNode) []ConfigPage {
 	// Receive a object like following:
 	//
 	// xxx:
@@ -247,43 +291,39 @@ func parseConfigPageSequence(sequence *ast.SequenceNode) ([]ConfigPage, error) {
 	for _, item := range sequence.Values {
 		pageNode, ok := item.(*ast.MappingNode)
 		if !ok {
-			// TODO: エラーメッセージを改善
-			return nil, ErrUnexpectedNode("`page` should have a mapping", item)
+			state.errorSet.Add(ErrUnexpectedNode("each item in the `pages` sequence should be a mapping type", item))
+			continue
 		}
 
-		t, err := estimateConfigPageType(pageNode)
-		if err != nil {
-			return nil, ErrUnexpectedNode("this mapping does not match any page type", item)
+		t := estimateConfigPageType(pageNode)
+		if t == ConfigPageTypeUnknown {
+			state.errorSet.Add(ErrUnexpectedNode("this mapping does not match any page type", pageNode))
+			continue
 		}
 
 		if t == ConfigPageTypeMarkdown {
-			p, err := parseConfigPageMarkdown(pageNode)
-			if err != nil {
-				return nil, fmt.Errorf("invalid page: %w", err)
-			}
+			p := parseConfigPageMarkdown(state, pageNode)
 			configPages = append(configPages, p)
+			continue
 		}
 
 		if t == ConfigPageTypeMatch {
-			p, err := parseConfigPageMatch(pageNode)
-			if err != nil {
-				return nil, fmt.Errorf("invalid page: %w", err)
-			}
+			p := parseConfigPageMatch(state, pageNode)
 			configPages = append(configPages, p)
+			continue
 		}
 
 		if t == ConfigPageTypeDirectory {
-			p, err := parseConfigPageDirectory(pageNode)
-			if err != nil {
-				return nil, fmt.Errorf("invalid page: %w", err)
-			}
+			p := parseConfigPageDirectory(state, pageNode)
 			configPages = append(configPages, p)
+			continue
 		}
+		state.errorSet.Add(ErrUnexpectedNode("unreachable code", pageNode))
 	}
-	return configPages, nil
+	return configPages
 }
 
-func estimateConfigPageType(mapping *ast.MappingNode) (int, error) {
+func estimateConfigPageType(mapping *ast.MappingNode) int {
 	// a page object must match one of the following patterns:
 	// {
 	//   "markdown": "README1.md",
@@ -302,17 +342,17 @@ func estimateConfigPageType(mapping *ast.MappingNode) (int, error) {
 		key := item.Key.String()
 		switch key {
 		case "markdown":
-			return ConfigPageTypeMarkdown, nil
+			return ConfigPageTypeMarkdown
 		case "match":
-			return ConfigPageTypeMatch, nil
+			return ConfigPageTypeMatch
 		case "directory":
-			return ConfigPageTypeDirectory, nil
+			return ConfigPageTypeDirectory
 		}
 	}
-	return -1, ErrUnexpectedNode("this mapping does not match any page type", mapping)
+	return ConfigPageTypeUnknown
 }
 
-func parseConfigPageMarkdown(mapping *ast.MappingNode) (ConfigPage, error) { //nolint: cyclop
+func parseConfigPageMarkdown(state *ParseState, mapping *ast.MappingNode) ConfigPage { //nolint: cyclop, funlen
 	// a markdown object has the following fields:
 	// {
 	//   "markdown": "README1.md",
@@ -330,48 +370,59 @@ func parseConfigPageMarkdown(mapping *ast.MappingNode) (ConfigPage, error) { //n
 		case "markdown":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, ErrUnexpectedNode("`markdown` field should be a string", item.Value)
+				state.errorSet.Add(ErrUnexpectedNode("`markdown` field should be a string", item.Value))
+				continue
 			}
 			configPage.Markdown = v.Value
-		case "title":
+		case "title": //nolint: goconst
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, ErrUnexpectedNode("`title` field should be a string", item.Value)
+				state.errorSet.Add(ErrUnexpectedNode("`title` field should be a string", item.Value))
+				continue
 			}
 			configPage.Title = v.Value
 		case "path":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, ErrUnexpectedNode("`path` field should be a string", item.Value)
+				state.errorSet.Add(ErrUnexpectedNode("`path` field should be a string", item.Value))
+				continue
 			}
 			configPage.Path = v.Value
 		case "description":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, ErrUnexpectedNode("`description` field should be a string", item.Value)
+				state.errorSet.Add(ErrUnexpectedNode("`description` field should be a string", item.Value))
+				continue
 			}
 			configPage.Description = v.Value
 		case "updated_at":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, ErrUnexpectedNode("`updated_at` field should be a string", item.Value)
+				state.errorSet.Add(ErrUnexpectedNode("`updated_at` field should be a string", item.Value))
+				continue
 			}
-			// TODO: updated_atのフォーマットが正しいことを検証する
-			configPage.UpdatedAt = SerializableTime(v.Value)
+			st, err := NewSerializableTime(v.Value)
+			if err != nil {
+				state.errorSet.Add(ErrUnexpectedNode("`updated_at` field should follow RFC333", v))
+				continue
+			}
+			configPage.UpdatedAt = st
 		default:
-			return ConfigPage{}, ErrUnexpectedNode(fmt.Sprintf("a markdown style page cannot accept the key: %s", key), item)
+			state.errorSet.Add(ErrUnexpectedNode(fmt.Sprintf("a markdown style page cannot accept the key: %s", key), item))
 		}
 	}
-	// TODO: ここで必要なフィールドがすべてあるか検証する
-	return configPage, nil
+	// Ideally, we should return an error if any of the required fields are missing.
+	// But in the current implementation, some fields will be populated at a later stage.
+	// So, we can't validate them here.
+	return configPage
 }
 
-func parseConfigPageMatch(mapping *ast.MappingNode) (ConfigPage, error) {
+func parseConfigPageMatch(state *ParseState, mapping *ast.MappingNode) ConfigPage { //nolint: cyclop
 	// a match object has the following fields:
 	// {
 	//   "match": "docs/*.md",
 	//   "sort_key": "title",
-	//   "sort_order": "asc"
+	//   "sort_order": "asc" // `asc` or `desc`
 	// }
 
 	configPage := ConfigPage{}
@@ -381,32 +432,47 @@ func parseConfigPageMatch(mapping *ast.MappingNode) (ConfigPage, error) {
 		case "match":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, ErrUnexpectedNode("`match` field should be a string", item.Value)
+				state.errorSet.Add(ErrUnexpectedNode("`match` field should be a string", item.Value))
+				continue
 			}
 			configPage.Match = v.Value
 		case "sort_key":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, ErrUnexpectedNode("`sort_key` field should be a string", item.Value)
+				state.errorSet.Add(ErrUnexpectedNode("`sort_key` field should be a string", item.Value))
+				continue
 			}
-			// TODO: sort_keyで受け入れ可能な値であることを検証する
-			configPage.SortKey = v.Value
+			text := strings.ToLower(v.Value)
+			if text != "title" && text != "updated_at" {
+				state.errorSet.Add(ErrUnexpectedNode("`sort_key` should be either `title` or `updated_at`", item.Value))
+				continue
+			}
+			configPage.SortKey = text
 		case "sort_order":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, ErrUnexpectedNode("`sort_order` field should be a string", item.Value)
+				state.errorSet.Add(ErrUnexpectedNode("`sort_order` field should be a string", item.Value))
+				continue
 			}
-			// TODO: sort_orderはasc, descのいずれかであることを検証する
-			configPage.SortOrder = v.Value
+			text := strings.ToLower(v.Value)
+			if text != "asc" && text != "desc" {
+				state.errorSet.Add(ErrUnexpectedNode("`sort_key` should be either `asc` or `desc`", item.Value))
+				continue
+			}
+			configPage.SortOrder = text
 		default:
-			return ConfigPage{}, ErrUnexpectedNode("a match style page cannot accept the key: %s", item.Value)
+			state.errorSet.Add(ErrUnexpectedNode("a match style page cannot accept the key", item))
 		}
 	}
-	// TODO: ここで必要なフィールドがすべてあるか検証する
-	return configPage, nil
+
+	// Validate the fields.
+	if configPage.SortKey == "" && configPage.SortOrder != "" {
+		state.errorSet.Add(ErrUnexpectedNode("`sort_key` should not be empty if you specify `sort_order`", mapping))
+	}
+	return configPage
 }
 
-func parseConfigPageDirectory(mapping *ast.MappingNode) (ConfigPage, error) {
+func parseConfigPageDirectory(state *ParseState, mapping *ast.MappingNode) ConfigPage {
 	// a directory object has the following fields:
 	//
 	// {
@@ -425,28 +491,29 @@ func parseConfigPageDirectory(mapping *ast.MappingNode) (ConfigPage, error) {
 		case "directory":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				return ConfigPage{}, ErrUnexpectedNode("`directory` field should be a string", item.Value)
+				state.errorSet.Add(ErrUnexpectedNode("`directory` field should be a string", item.Value))
+				continue
 			}
 			configPage.Directory = v.Value
 		case "children":
 			v, ok := item.Value.(*ast.SequenceNode)
 			if !ok {
-				return ConfigPage{}, ErrUnexpectedNode("`children` field should be a sequence", item.Value)
+				state.errorSet.Add(ErrUnexpectedNode("`children` field should be a sequence", item.Value))
+				continue
 			}
-			children, err := parseConfigPageSequence(v)
-			if err != nil {
-				return ConfigPage{}, err
-			}
-			configPage.Children = children
+			configPage.Children = parseConfigPageSequence(state, v)
 		default:
-			return ConfigPage{}, ErrUnexpectedNode("a directory style page cannot accept a key", item)
+			state.errorSet.Add(ErrUnexpectedNode("a directory style page cannot accept the key", item))
 		}
 	}
-	// TODO: ここで必要なフィールドがすべてあるか検証する
-	return configPage, nil
+
+	if configPage.Directory == "" {
+		state.errorSet.Add(ErrUnexpectedNode("the `directory` field is required", mapping))
+	}
+	return configPage
 }
 
-func parseConfigAssets(state *ParseState, node *ast.MappingValueNode) error {
+func parseConfigAssets(state *ParseState, node *ast.MappingValueNode) {
 	// This function should be called only once.
 	// Receive a object like following:
 	//
@@ -455,22 +522,25 @@ func parseConfigAssets(state *ParseState, node *ast.MappingValueNode) error {
 	//   - "images/**"
 
 	if state.isAssetsAlreadyParsed {
-		return ErrUnexpectedNode("there should be a exact one `assets` field in the config file", node)
+		state.errorSet.Add(ErrUnexpectedNode("there should be a exact one `assets` section at the top level", node))
+		return
 	}
+	state.isAssetsAlreadyParsed = true
 
 	sequence, ok := node.Value.(*ast.SequenceNode)
 	if !ok {
-		return ErrUnexpectedNode("the `assets` field should be a sequence of string", node.Value)
+		state.errorSet.Add(ErrUnexpectedNode("the `assets` field should be a sequence type", node.Value))
+		return
 	}
 
 	assets := make([]ConfigAsset, 0, len(sequence.Values))
 	for _, item := range sequence.Values {
 		v, ok := item.(*ast.StringNode)
 		if !ok {
-			return ErrUnexpectedNode("a item in the `sequence` field should have a string type", item)
+			state.errorSet.Add(ErrUnexpectedNode("a item in the `sequence` field should have a string type", item))
+			continue
 		}
 		assets = append(assets, ConfigAsset(v.Value))
 	}
 	state.config.Assets = assets
-	return nil
 }
