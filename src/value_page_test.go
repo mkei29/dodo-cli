@@ -345,7 +345,7 @@ func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {
 		testCase := c
 		t.Run(fmt.Sprintf("pass when malicious filepath was given. ID: %d", testID), func(t *testing.T) {
 			conf, err := ParseConfig(strings.NewReader(testCase))
-			require.NoError(t, err, "should not return error")
+			require.NoError(t, err, "should not return error %v", err)
 
 			_, es := CreatePageTree(*conf, dir)
 			es.Summary()
@@ -538,8 +538,9 @@ func TestIsValid(t *testing.T) {
 			prepareFile(t, dir, "README2.md", "")
 
 			conf, err := ParseConfig(strings.NewReader(c.content))
-			require.NoError(t, err, "should not return error")
+			require.NoError(t, err, "should not return error: %v", err)
 			page, es := CreatePageTree(*conf, dir)
+			es.Summary()
 			require.False(t, es.HasError(), "should not return error if valid config is given")
 
 			es = page.IsValid()

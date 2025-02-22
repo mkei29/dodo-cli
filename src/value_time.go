@@ -27,6 +27,10 @@ func (t SerializableTime) Time() (time.Time, error) {
 	return tt, nil
 }
 
+func (t *SerializableTime) IsNull() bool {
+	return *t == ""
+}
+
 func (t *SerializableTime) UnmarshalYaml(buf []byte) error {
 	s := bytes.Trim(buf, `"`)
 	*t = SerializableTime(string(s))

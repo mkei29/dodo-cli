@@ -234,16 +234,16 @@ func CreatePageTree(config Config, rootDir string) (*Page, ErrorSet) {
 	return &root, errorSet
 }
 
-func buildPage(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
+func buildPage(rootDir string, c ConfigPage) ([]Page, ErrorSet) {
 	if c.MatchMarkdown() {
-		return transformMarkdown(rootDir, c)
+		return transformMarkdown(rootDir, &c)
 	}
 	if c.MatchMatch() {
-		return transformMatch(rootDir, c)
+		return transformMatch(rootDir, &c)
 	}
 
 	if c.MatchDirectory() {
-		return transformDirectory(rootDir, c)
+		return transformDirectory(rootDir, &c)
 	}
 
 	es := NewErrorSet()
@@ -253,7 +253,7 @@ func buildPage(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 
 func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	es := NewErrorSet()
-	filepath := filepath.Clean(filepath.Join(rootDir, *c.Markdown))
+	filepath := filepath.Clean(filepath.Join(rootDir, c.Markdown))
 
 	if err := IsUnderRootPath(rootDir, filepath); err != nil {
 		es.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", filepath)))
@@ -268,17 +268,17 @@ func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	}
 
 	// Second, populate the fields from the configuration.
-	if c.Title != nil {
-		p.Title = *c.Title
+	if c.Title != "" {
+		p.Title = c.Title
 	}
-	if c.Path != nil {
-		p.Path = *c.Path
+	if c.Path != "" {
+		p.Path = c.Path
 	}
-	if c.Description != nil {
-		p.Description = *c.Description
+	if c.Description != "" {
+		p.Description = c.Description
 	}
-	if c.UpdatedAt != nil {
-		p.UpdatedAt = *c.UpdatedAt
+	if c.UpdatedAt != "" {
+		p.UpdatedAt = c.UpdatedAt
 	}
 
 	log.Debugf("Node Found. Type: Markdown, Filepath: '%s', Title: '%s', Path: '%s'", p.Filepath, p.Title, p.Path)
@@ -288,7 +288,7 @@ func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 func transformMatch(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 	pages := make([]Page, 0)
 	es := NewErrorSet()
-	dirPath := filepath.Clean(filepath.Join(rootDir, *c.Match))
+	dirPath := filepath.Clean(filepath.Join(rootDir, c.Match))
 	if err := IsUnderRootPath(rootDir, dirPath); err != nil {
 		es.Add(NewAppError(fmt.Sprintf("invalid configuration: path should be under the rootDir: path: %s", dirPath)))
 		return nil, es
@@ -310,7 +310,7 @@ func transformMatch(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 		pages = append(pages, *p)
 	}
 
-	if err := SortPageSlice(c.SortKey, c.SortOrder, pages); err != nil {
+	if err := SortPageSlice(&c.SortKey, &c.SortOrder, pages); err != nil {
 		es.Add(NewAppError(fmt.Sprintf("failed to sort pages: %v", err)))
 		return nil, es
 	}
@@ -335,11 +335,8 @@ func transformDirectory(rootDir string, c *ConfigPage) ([]Page, ErrorSet) {
 
 	p := Page{
 		Type:     PageTypeDirNode,
-		Title:    "",
+		Title:    c.Directory,
 		Children: children,
-	}
-	if c.Directory != nil {
-		p.Title = *c.Directory
 	}
 	log.Debugf("Node Found. Type: Document, Title: %s", p.Title)
 	return []Page{p}, es

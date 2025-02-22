@@ -1,6 +1,10 @@
 package main
 
 import (
+	"fmt"
+
+	"github.com/goccy/go-yaml/ast"
+
 	"github.com/caarlos0/log"
 )
 
@@ -56,6 +60,24 @@ func (e *ErrorSet) Log() {
 
 func (e *ErrorSet) Summary() {
 	for _, err := range e.errors {
-		log.Debug(err.Error())
+		log.Error(err.Error())
+	}
+}
+
+type ParseError struct {
+	message string
+	node    ast.Node
+}
+
+func (e *ParseError) Error() string {
+	line := e.node.GetToken().Position.Line
+	text := e.node.String()
+	return fmt.Sprintf("%s[line %d: %s]", e.message, line, text)
+}
+
+func ErrUnexpectedNode(message string, node ast.Node) error {
+	return &ParseError{
+		message: message,
+		node:    node,
 	}
 }
