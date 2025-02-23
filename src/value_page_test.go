@@ -37,6 +37,8 @@ func prepareFile(t *testing.T, rootDir, filename, content string) {
 
 const TestCaseCreatePageWithMarkdown = `
 version: 1
+project:
+  name: "Test Project"
 pages:
   - markdown: "README1.md"
     path: "readme1"
@@ -79,6 +81,8 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 
 const TestCaseCreatePageTreeMatch = `
 version: 1
+project:
+  name: "project"
 pages:
   - match: "./**/README*.md"
     sort_key: "title"
@@ -149,6 +153,8 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 
 const TestCaseCreatePageHybridCase = `
 version: 1
+project:
+  name: "Test Project"
 pages:
   - markdown: "README.md"
   - match: "*.md"
@@ -187,6 +193,8 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 
 const TestCaseCreatePageWithDirectory = `
 version: 1
+project:
+  name: "project"
 pages:
   - directory: "directory"
     children:
@@ -226,6 +234,8 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 // Directory Traversal Attack.
 const TestCasePageMalicious1 = `
 version: 1
+project:
+  name: "Test Project"
 pages:
   - markdown: "../TARGET1.md"
     path: "target1"
@@ -238,6 +248,8 @@ pages:
 // Directory Traversal Attack.
 const TestCasePageMalicious2 = `
 version: 1
+project:
+  name: "Test Project"
 pages:
   - markdown: "README1.md"
     path: "readme1"
@@ -250,6 +262,8 @@ pages:
 // Directory Traversal Attack.
 const TestCasePageMalicious3 = `
 version: 1
+project:
+  name: "Test Project"
 pages:
   - markdown: "README1.md"
     path: "readme1"
@@ -260,6 +274,8 @@ pages:
 // Directory Traversal Attack.
 const TestCasePageMalicious4 = `
 version: 1
+project:
+  name: "Test Project"
 pages:
   - markdown: "README1.md"
     path: "readme1"
@@ -375,6 +391,8 @@ func TestReadPageFromFile(t *testing.T) {
 // Valid case.
 const TestCasePageValid1 = `
 version: 1
+project:
+  name: "project"
 pages:
   - markdown: "README1.md"
     path: "readme1"
@@ -386,6 +404,8 @@ pages:
 
 const TestCasePageValid2 = `
 version: 1
+project:
+  name: "project"
 pages:
   - directory: "DIR1"
     children:
@@ -402,6 +422,8 @@ pages:
 // Invalid Case: Paths are duplicated.
 const TestCasePageInvalid1 = `
 version: 1
+project:
+  name: "project"
 pages:
   - markdown: "README1.md"
     path: "readme1"
@@ -414,6 +436,8 @@ pages:
 // Invalid Case: Duplicated path under the same parent.
 const TestCasePageInvalid2 = `
 version: 1
+project:
+  name: "project"
 pages:
   - directory: "DIR1"
     children:
@@ -428,6 +452,8 @@ pages:
 // Path field is invalid.
 const TestCasePageInvalid3 = `
 version: 1
+project:
+  name: "project"
 pages:
   - markdown: "README1.md"
     path: "test/readme1"

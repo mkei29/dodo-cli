@@ -12,6 +12,8 @@ import (
 
 const TestCaseValid = `
 version: 1
+project:
+  name: "Test Project"
 pages:
   - markdown: "README1.md"
     path: "readme1"
@@ -55,17 +57,63 @@ func TestParseConfigDetails(t *testing.T) {
 }
 
 // Valid Case.
-const TestCaseParseConfig1 = `
+const TestCaseParseMarkdown = `
 version: 1
+project:
+  name: "Test Project"
 pages:
   - markdown: "README2.md"
     path: "readme2"
     title: "README2"
 `
 
+// Invalid Case with a sort order without a sort_key.
+const TestCaseWithMatchPage = `
+version: 1
+project:
+  name: "Test Project"
+pages:
+	- match: "./docs/*.md"
+	- sort_key: "title"
+	- sort_order: "asc"
+assets:
+	- "assets/**"
+`
+
+// Invalid Case with an unknown version.
+const TestCaseWithUnknownVersion = `
+version: 2
+project:
+	name: "Test Project"
+pages:
+	- markdown: "README2.md"
+`
+
+// Invalid Case with an empty project name.
+const TestCaseWithEmptyProjectName = `
+version: 1
+project:
+	name: ""
+	description: "This is a test project."
+	version: "1.0.0"
+pages:
+	- markdown: "README2.md"
+`
+
+const TestCaseWithUnknownField = `
+version: 1
+project:
+	name: "Test Project"
+pages:
+	- markdown: "README2.md"
+unknown: "unknown"
+`
+
 // Invalid Case with unknown page type in the pages field.
 const TestCaseWithUnknownPageType = `
 version: 1
+project:
+  name: "Test Project"
 pages:
 	- path: "readme2"
 	- title: "README2"
@@ -75,6 +123,8 @@ pages:
 // Can't use children in the markdown item.
 const TestCaseWithBrokenMarkdownPage = `
 version: 1
+project:
+  name: "Test Project"
 pages:
   - markdown: "README1.md"
     path: "readme1"
@@ -88,6 +138,8 @@ pages:
 // Invalid Case with unknown date format in the pages field.
 const TestCaseWithUnknownUpdatedAtFormat = `
 version: 1
+project:
+  name: "Test Project"
 pages:
   - markdown: "README2.md"
     path: "readme2"
@@ -98,6 +150,8 @@ pages:
 // Invalid case with multiple assets fields.
 const TestCaseWithMultipleAssets = `
 version: 1
+project:
+  name: "Test Project"
 pages:
 	- markdown: "README2.md"
 	- path: "readme2"
@@ -105,6 +159,18 @@ pages:
 	- updated_at: "2021-01-01T00:00:00Z"
 assets:
 	- "assets/**"
+assets:
+	- "assets/**"
+`
+
+// Invalid Case with a sort order without a sort_key.
+const TestCaseWithSortOrderWithoutSortKey = `
+version: 1
+project:
+  name: "Test Project"
+pages:
+	- match: "./docs/*.md"
+	- sort_order: "asc"
 assets:
 	- "assets/**"
 `
@@ -118,9 +184,30 @@ func TestParseConfig(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:     "valid config1",
-			input:    TestCaseParseConfig1,
+			name:     "valid config with markdown",
+			input:    TestCaseCreatePageWithMarkdown,
 			expected: true,
+		},
+		{
+			name:     "valid config with match",
+			input:    TestCaseCreatePageTreeMatch,
+			expected: true,
+		},
+
+		{
+			name:     "invalid config: unknown version",
+			input:    TestCaseWithUnknownVersion,
+			expected: false,
+		},
+		{
+			name:     "invalid config: empty project name",
+			input:    TestCaseWithEmptyProjectName,
+			expected: false,
+		},
+		{
+			name:     "invalid config: unknown field",
+			input:    TestCaseWithUnknownField,
+			expected: false,
 		},
 		{
 			name:     "invalid config: unknown page type in the `pages` field",
@@ -140,6 +227,11 @@ func TestParseConfig(t *testing.T) {
 		{
 			name:     "invalid config: multiple assets fields",
 			input:    TestCaseWithMultipleAssets,
+			expected: false,
+		},
+		{
+			name:     "invalid config: sort order without a sort key",
+			input:    TestCaseWithSortOrderWithoutSortKey,
 			expected: false,
 		},
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/goccy/go-yaml/ast"
@@ -92,6 +93,10 @@ func NewParseState() *ParseState {
 	return &ParseState{}
 }
 
+func (s *ParseState) HasRequiredFields() bool {
+	return s.isVersionAlreadyParsed && s.isProjectAlreadyParsed && s.isPagesAlreadyParsed && s.isAssetsAlreadyParsed
+}
+
 // ParseConfig takes a reader and parses it into a Config struct.
 // While parsing, it validates the config at the same time.
 // This is because we want to prvide a user-friendly error message.
@@ -128,6 +133,19 @@ func ParseConfig(reader io.Reader) (*Config, error) {
 	for _, node := range body.Values {
 		parseRootItem(state, node)
 	}
+
+	// Check if all required fields are parsed.
+	// NOTE: The `assets` field is optional.
+	if !state.isVersionAlreadyParsed {
+		state.errorSet.Add(fmt.Errorf("the `version` field is required"))
+	}
+	if !state.isProjectAlreadyParsed {
+		state.errorSet.Add(fmt.Errorf("the `project` field is required"))
+	}
+	if !state.isPagesAlreadyParsed {
+		state.errorSet.Add(fmt.Errorf("the `pages` field is required"))
+	}
+
 	if state.errorSet.HasError() {
 		return nil, &state.errorSet
 	}
@@ -179,11 +197,11 @@ func parseVersion(state *ParseState, node *ast.MappingValueNode) {
 	}
 
 	var versionNum int
-	switch intNode.Value.(type) {
+	switch v := intNode.Value.(type) {
 	case int:
-		versionNum = intNode.Value.(int)
+		versionNum = v
 	case uint64:
-		versionNum = int(intNode.Value.(uint64))
+		versionNum = int(v)
 	default:
 		state.errorSet.Add(ErrUnexpectedNode("internal error: `version` have unexpected type", node.Value))
 		return
@@ -193,7 +211,7 @@ func parseVersion(state *ParseState, node *ast.MappingValueNode) {
 		state.errorSet.Add(ErrUnexpectedNode("unsupported version: only '1' is supported now", intNode))
 		return
 	}
-	state.config.Version = fmt.Sprintf("%d", versionNum)
+	state.config.Version = strconv.Itoa(versionNum)
 }
 
 func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolint: cyclop
