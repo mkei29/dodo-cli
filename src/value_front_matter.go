@@ -87,6 +87,11 @@ func (f *FrontMatter) UpdateMarkdown(filepath string) error {
 	contents := []byte(f.String())
 	contents = append(contents, remaining...)
 
+	// Truncate file and rewrite the contents
+
+	if err := file.Truncate(0); err != nil {
+		return fmt.Errorf("failed to truncate file: %w", err)
+	}
 	_, err = file.WriteAt(contents, 0)
 	if err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
