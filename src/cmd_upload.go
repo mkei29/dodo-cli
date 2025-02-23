@@ -19,6 +19,7 @@ type UploadArgs struct {
 	endpoint string // server endpoint to upload
 	debug    bool   // server endpoint to upload
 	rootPath string // root path of the project
+	noColor  bool   // disable color output
 }
 
 func CreateUploadCmd() *cobra.Command {
@@ -38,6 +39,7 @@ func CreateUploadCmd() *cobra.Command {
 
 	uploadCmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
 	uploadCmd.Flags().StringVar(&opts.endpoint, "endpoint", "http://api.dodo-doc.com/project/upload", "endpoint to upload")
+	uploadCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
 	return uploadCmd
 }
 
@@ -50,6 +52,9 @@ func executeUpload(args UploadArgs) error { //nolint: funlen
 	}
 
 	printer := NewPrinter(ErrorLevel)
+	if args.noColor {
+		printer = NewPrinter(NoColor)
+	}
 
 	err := CheckArgsAndEnv(args, env)
 	if err != nil {

@@ -10,12 +10,12 @@ import (
 )
 
 const (
-	None = iota
+	NoColor = iota
 	ErrorLevel
 )
 
 var Styles = [...]StyleFormat{ //nolint: gochecknoglobals
-	None: {
+	NoColor: {
 		Primary:   lipgloss.NewStyle(),
 		Secondary: lipgloss.NewStyle(),
 	},
