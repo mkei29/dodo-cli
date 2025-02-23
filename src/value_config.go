@@ -69,12 +69,12 @@ type ConfigAsset string
 func (m ConfigAsset) List(rootDir string) ([]string, error) {
 	globPath := filepath.Clean(filepath.Join(rootDir, string(m)))
 	if err := IsUnderRootPath(rootDir, globPath); err != nil {
-		return nil, fmt.Errorf("invalid configuration: path should be under the rootDir: path: %s", globPath)
+		return nil, fmt.Errorf("invalid configuration: path should be under the root directory: path: %s", globPath)
 	}
 
 	matches, err := zglob.Glob(globPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list files match '%s' : %w", globPath, err)
+		return nil, fmt.Errorf("failed to list files matching '%s': %w", globPath, err)
 	}
 	return matches, nil
 }
@@ -150,13 +150,13 @@ func ParseConfig(filepath string, reader io.Reader) (*Config, error) {
 
 func parseRoot(state *ParseState, root *ast.File) {
 	if len(root.Docs) != 1 {
-		state.errorSet.Add(fmt.Errorf("there should be only one document. got %d", len(root.Docs)))
+		state.errorSet.Add(fmt.Errorf("there should be only one document. Got %d", len(root.Docs)))
 		return
 	}
 
 	body, ok := root.Docs[0].Body.(*ast.MappingNode)
 	if !ok {
-		state.errorSet.Add(state.buildParseError("the root node should be a mapping type", root.Docs[0].Body))
+		state.errorSet.Add(state.buildParseError("the root node should be of mapping type", root.Docs[0].Body))
 		return
 	}
 
@@ -181,7 +181,7 @@ func parseRoot(state *ParseState, root *ast.File) {
 func parseRootItem(state *ParseState, node ast.Node) {
 	mapping, ok := node.(*ast.MappingValueNode)
 	if !ok {
-		state.errorSet.Add(state.buildParseError("the key-value pair is expected at the top level", node))
+		state.errorSet.Add(state.buildParseError("a key-value pair is expected at the top level", node))
 		return
 	}
 	if mapping.Key.String() == "version" {
@@ -205,20 +205,20 @@ func parseRootItem(state *ParseState, node ast.Node) {
 
 func parseVersion(state *ParseState, node *ast.MappingValueNode) {
 	// This function should be called only once.
-	// Receive a object like following:
+	// Receive an object like the following:
 	//
 	// version: "1"
 	//
 
 	if state.isVersionAlreadyParsed {
-		state.errorSet.Add(state.buildParseError("there should be a exact one `version` section at the top level", node))
+		state.errorSet.Add(state.buildParseError("there should be exactly one `version` section at the top level", node))
 		return
 	}
 	state.isVersionAlreadyParsed = true
 
 	intNode, ok := node.Value.(*ast.IntegerNode)
 	if !ok {
-		state.errorSet.Add(state.buildParseError("`version` should have a int value", node.Value))
+		state.errorSet.Add(state.buildParseError("`version` should have an integer value", node.Value))
 		return
 	}
 
@@ -229,7 +229,7 @@ func parseVersion(state *ParseState, node *ast.MappingValueNode) {
 	case uint64:
 		versionNum = int(v)
 	default:
-		state.errorSet.Add(state.buildParseError("internal error: `version` have unexpected type", node.Value))
+		state.errorSet.Add(state.buildParseError("internal error: `version` has an unexpected type", node.Value))
 		return
 	}
 
@@ -242,7 +242,7 @@ func parseVersion(state *ParseState, node *ast.MappingValueNode) {
 
 func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolint: cyclop
 	// This function should be called only once.
-	// Receive a object like following:
+	// Receive an object like the following:
 	//
 	// project:
 	//   name: "My Project"
@@ -250,7 +250,7 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 	//   version: "1.0.0"
 
 	if state.isProjectAlreadyParsed {
-		state.errorSet.Add(state.buildParseError("there should be a exact one `project` section at the top level", node))
+		state.errorSet.Add(state.buildParseError("there should be exactly one `project` section at the top level", node))
 		return
 	}
 	state.isProjectAlreadyParsed = true
@@ -300,7 +300,7 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 
 func parseConfigPage(state *ParseState, node *ast.MappingValueNode) {
 	// This function should be called only once.
-	// Receive a object like following:
+	// Receive an object like the following:
 	//
 	// pages:
 	//   - markdown: "README1.md"
@@ -309,7 +309,7 @@ func parseConfigPage(state *ParseState, node *ast.MappingValueNode) {
 	//     ..
 
 	if state.isPagesAlreadyParsed {
-		state.errorSet.Add(state.buildParseError("there should be a exact one `pages` section at the top level", node))
+		state.errorSet.Add(state.buildParseError("there should be exactly one `pages` section at the top level", node))
 		return
 	}
 	state.isPagesAlreadyParsed = true
@@ -323,7 +323,7 @@ func parseConfigPage(state *ParseState, node *ast.MappingValueNode) {
 }
 
 func parseConfigPageSequence(state *ParseState, sequence *ast.SequenceNode) []ConfigPage {
-	// Receive a object like following:
+	// Receive an object like the following:
 	//
 	// xxx:
 	//   - markdown: "README1.md"
@@ -335,7 +335,7 @@ func parseConfigPageSequence(state *ParseState, sequence *ast.SequenceNode) []Co
 	for _, item := range sequence.Values {
 		pageNode, ok := item.(*ast.MappingNode)
 		if !ok {
-			state.errorSet.Add(state.buildParseError("each item in the `pages` sequence should be a mapping type", item))
+			state.errorSet.Add(state.buildParseError("each item in the `pages` sequence should be of mapping type", item))
 			continue
 		}
 
@@ -447,7 +447,7 @@ func parseConfigPageMarkdown(state *ParseState, mapping *ast.MappingNode) Config
 			}
 			st, err := NewSerializableTime(v.Value)
 			if err != nil {
-				state.errorSet.Add(state.buildParseError("`updated_at` field should follow RFC333", v))
+				state.errorSet.Add(state.buildParseError("`updated_at` field should follow RFC3339", v))
 				continue
 			}
 			configPage.UpdatedAt = st
@@ -495,12 +495,12 @@ func parseConfigPageMatch(state *ParseState, mapping *ast.MappingNode) ConfigPag
 		case "sort_order":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`sort_order` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`sort_order` should be either `asc` or `desc`", item.Value))
 				continue
 			}
 			text := strings.ToLower(v.Value)
 			if text != "asc" && text != "desc" {
-				state.errorSet.Add(state.buildParseError("`sort_key` should be either `asc` or `desc`", item.Value))
+				state.errorSet.Add(state.buildParseError("`sort_order` should be either `asc` or `desc`", item.Value))
 				continue
 			}
 			configPage.SortOrder = text
@@ -559,14 +559,14 @@ func parseConfigPageDirectory(state *ParseState, mapping *ast.MappingNode) Confi
 
 func parseConfigAssets(state *ParseState, node *ast.MappingValueNode) {
 	// This function should be called only once.
-	// Receive a object like following:
+	// Receive an object like the following:
 	//
 	// assets:
 	//   - "assets/**"
 	//   - "images/**"
 
 	if state.isAssetsAlreadyParsed {
-		state.errorSet.Add(state.buildParseError("there should be a exact one `assets` section at the top level", node))
+		state.errorSet.Add(state.buildParseError("there should be exactly one `assets` section at the top level", node))
 		return
 	}
 	state.isAssetsAlreadyParsed = true
@@ -581,7 +581,7 @@ func parseConfigAssets(state *ParseState, node *ast.MappingValueNode) {
 	for _, item := range sequence.Values {
 		v, ok := item.(*ast.StringNode)
 		if !ok {
-			state.errorSet.Add(state.buildParseError("a item in the `sequence` field should have a string type", item))
+			state.errorSet.Add(state.buildParseError("an item in the `sequence` field should have a string type", item))
 			continue
 		}
 		assets = append(assets, ConfigAsset(v.Value))

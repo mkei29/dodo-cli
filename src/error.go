@@ -59,12 +59,6 @@ func (e *MultiError) Length() int {
 	return len(e.errors)
 }
 
-func (e *MultiError) Log() {
-	for _, err := range e.errors {
-		log.Error(err.Error())
-	}
-}
-
 func (e *MultiError) Summary() {
 	for _, err := range e.errors {
 		log.Error(err.Error())

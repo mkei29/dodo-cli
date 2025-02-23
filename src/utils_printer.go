@@ -59,12 +59,13 @@ func (p *Printer) PrettyErrorPrint(err error) {
 
 	var perr *ParseError
 	if errors.As(err, &perr) {
-		p.prettyParseErrorPrint(perr)
+		p.printParseError(perr)
 		return
 	}
+	p.printError(err)
 }
 
-func (p *Printer) prettyParseErrorPrint(err *ParseError) {
+func (p *Printer) printParseError(err *ParseError) {
 	// Print a parse error in a human-readable format.
 	// This function respects the golangci-lint style error format.
 	//
@@ -80,4 +81,12 @@ func (p *Printer) prettyParseErrorPrint(err *ParseError) {
 
 	arrow := p.style.Secondary.Render(fmt.Sprintf("%*s", p.padding+2, ">"))
 	fmt.Fprintf(p.writer, "%s %s\n", arrow, err.line)
+}
+
+func (p *Printer) printError(err error) {
+	// Print a general error in a human-readable format.
+	// This function respects the golangci-lint style error format.
+	listIcon := p.style.Primary.Render(fmt.Sprintf("%*s", p.padding, "⨯"))
+	message := p.style.Primary.Render(err.Error())
+	fmt.Fprintf(p.writer, "%s %s\n", listIcon, message)
 }
