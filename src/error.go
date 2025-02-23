@@ -72,19 +72,18 @@ func (e *MultiError) Summary() {
 }
 
 type ParseError struct {
-	message string
-	node    ast.Node
+	filepath string
+	message  string
+	line     string
+	node     ast.Node
 }
 
 func (e *ParseError) Error() string {
 	line := e.node.GetToken().Position.Line
-	text := e.node.String()
-	return fmt.Sprintf("%s[line %d: %s]", e.message, line, text)
+	return fmt.Sprintf("%s:%d: %s", e.filepath, line, e.message)
 }
 
-func ErrUnexpectedNode(message string, node ast.Node) error {
-	return &ParseError{
-		message: message,
-		node:    node,
-	}
+func (e *ParseError) Is(target error) bool {
+	_, ok := target.(*ParseError)
+	return ok
 }

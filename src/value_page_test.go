@@ -55,7 +55,7 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 	prepareFile(t, dir, "README1.md", "content")
 	prepareFile(t, dir, "README2.md", "content")
 
-	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageWithMarkdown))
+	conf, err := ParseConfig("config.yaml", strings.NewReader(TestCaseCreatePageWithMarkdown))
 	require.NoError(t, err)
 
 	page, merr := CreatePageTree(conf, dir)
@@ -127,7 +127,7 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 	---
 	`)
 
-	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageTreeMatch))
+	conf, err := ParseConfig("config.yaml", strings.NewReader(TestCaseCreatePageTreeMatch))
 	require.NoError(t, err, "should not return error")
 
 	page, merr := CreatePageTree(conf, dir)
@@ -171,7 +171,7 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	---
 	`)
 
-	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageHybridCase))
+	conf, err := ParseConfig("config.yaml", strings.NewReader(TestCaseCreatePageHybridCase))
 	require.NoError(t, err, "should not return error")
 
 	page, merr := CreatePageTree(conf, dir)
@@ -214,7 +214,7 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 	---
 	`)
 
-	conf, err := ParseConfig(strings.NewReader(TestCaseCreatePageWithDirectory))
+	conf, err := ParseConfig("config.yaml", strings.NewReader(TestCaseCreatePageWithDirectory))
 	require.NoError(t, err)
 
 	page, merr := CreatePageTree(conf, dir)
@@ -300,7 +300,7 @@ func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {
 		testID := i + 1
 		testCase := c
 		t.Run(fmt.Sprintf("pass when malicious filepath was given. ID: %d", testID), func(t *testing.T) {
-			conf, err := ParseConfig(strings.NewReader(testCase))
+			conf, err := ParseConfig("config.yaml", strings.NewReader(testCase))
 			require.NoError(t, err, "should not return error %v", err)
 
 			_, merr := CreatePageTree(conf, dir)
@@ -503,7 +503,7 @@ func TestIsValid(t *testing.T) {
 			prepareFile(t, dir, "README1.md", "")
 			prepareFile(t, dir, "README2.md", "")
 
-			conf, err := ParseConfig(strings.NewReader(c.content))
+			conf, err := ParseConfig("config.yaml", strings.NewReader(c.content))
 			require.NoError(t, err, "should not return error: %v", err)
 			page, merr := CreatePageTree(conf, dir)
 			require.Nil(t, merr, "CreatePageTree should not failed if the valid case is specified: %v", err)

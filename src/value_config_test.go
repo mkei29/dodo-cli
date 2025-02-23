@@ -38,7 +38,7 @@ func createTempFile(t *testing.T, dir, path string) {
 
 func TestParseConfigDetails(t *testing.T) {
 	t.Parallel()
-	conf, err := ParseConfig(strings.NewReader(TestCaseValid))
+	conf, err := ParseConfig("config.yaml", strings.NewReader(TestCaseValid))
 	require.NoError(t, err)
 
 	// Check metadata
@@ -240,7 +240,7 @@ func TestParseConfig(t *testing.T) {
 		testCase := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseConfig(strings.NewReader(testCase.input))
+			_, err := ParseConfig("config.yaml", strings.NewReader(testCase.input))
 			if testCase.expected {
 				require.NoError(t, err)
 			} else {

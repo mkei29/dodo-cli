@@ -24,8 +24,10 @@ type UploadArgs struct {
 func CreateUploadCmd() *cobra.Command {
 	opts := UploadArgs{}
 	uploadCmd := &cobra.Command{
-		Use:   "upload",
-		Short: "upload the project to dodo-doc",
+		Use:           "upload",
+		Short:         "upload the project to dodo-doc",
+		SilenceErrors: true,
+		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return executeUpload(opts)
 		},
@@ -47,6 +49,8 @@ func executeUpload(args UploadArgs) error { //nolint: funlen
 		log.Debug("running in debug mode")
 	}
 
+	printer := NewPrinter(ErrorLevel)
+
 	err := CheckArgsAndEnv(args, env)
 	if err != nil {
 		log.Fatalf("%w", err)
@@ -60,10 +64,10 @@ func executeUpload(args UploadArgs) error { //nolint: funlen
 	}
 	defer configFile.Close()
 
-	config, err := ParseConfig(configFile)
+	config, err := ParseConfig(args.file, configFile)
 	if err != nil {
-		log.Errorf("internal error: failed to parse config file: %w", err)
-		return fmt.Errorf("failed to parse config file: %w", err)
+		printer.PrettyErrorPrint(err)
+		return fmt.Errorf("failed to parse config")
 	}
 
 	// Create Project struct from config.
