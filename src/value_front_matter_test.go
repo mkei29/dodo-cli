@@ -15,8 +15,8 @@ func TestNewFrontMatter(t *testing.T) {
 
 	assert.Equal(t, title, fm.Title, "expected title to be %s, got %s", title, fm.Title)
 	assert.Equal(t, path, fm.Path, "expected path to be %s, got %s", path, fm.Path)
-	assert.False(t, fm.CreatedAt.IsNull(), "expected CreatedAt to be set, got null")
-	assert.False(t, fm.UpdatedAt.IsNull(), "expected UpdatedAt to be set, got null")
+	assert.False(t, fm.CreatedAt.IsNull(), "expected CreatedAt to be set, got zero value")
+	assert.False(t, fm.UpdatedAt.IsNull(), "expected UpdatedAt to be set, got zero value")
 }
 
 func TestNewFrontMatterFromMarkdown(t *testing.T) {
@@ -53,7 +53,7 @@ updated_at: 2023-10-01T00:00:00Z
 	assert.Equal(t, expectedTime, fm.UpdatedAt, "expected UpdatedAt %v, got %v", expectedTime, fm.UpdatedAt)
 }
 
-func TestNewFrontMatterFromMarkdownIncludeUnknownTags(t *testing.T) {
+func TestNewFrontMatterFromMarkdownWithUnknownTags(t *testing.T) {
 	content := `---
 title: Test Title
 path: /test/path
@@ -82,10 +82,10 @@ UnknownTag2: "unknown2"
 	}
 
 	assert.Contains(t, fm.UnknownTags, "UnknownTag1", "expected UnknownTag1 to be included in UnknownTags")
-	assert.Contains(t, fm.UnknownTags, "UnknownTag2", "expected UnknownTag1 to be included in UnknownTags")
+	assert.Contains(t, fm.UnknownTags, "UnknownTag2", "expected UnknownTag2 to be included in UnknownTags")
 
-	assert.Equal(t, "unknown1", fm.UnknownTags["UnknownTag1"], "expected UnknownTag1 to be 'unknown', got %s", fm.UnknownTags["UnknownTag1"])
-	assert.Equal(t, "unknown2", fm.UnknownTags["UnknownTag2"], "expected UnknownTag1 to be 'unknown', got %s", fm.UnknownTags["UnknownTag1"])
+	assert.Equal(t, "unknown1", fm.UnknownTags["UnknownTag1"], "expected UnknownTag1 to be 'unknown1', got %s", fm.UnknownTags["UnknownTag1"])
+	assert.Equal(t, "unknown2", fm.UnknownTags["UnknownTag2"], "expected UnknownTag2 to be 'unknown2', got %s", fm.UnknownTags["UnknownTag2"])
 }
 
 func TestFrontMatterString(t *testing.T) {

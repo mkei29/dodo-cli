@@ -21,7 +21,7 @@ const (
 	FrontMatterKeyUpdatedAt = "updated_at"
 )
 
-// A struct that describe the markdown header.
+// A struct that describes the markdown header.
 type FrontMatter struct {
 	Title       string
 	Path        string
@@ -47,7 +47,7 @@ func NewFrontMatterFromMarkdown(filepath string) (*FrontMatter, error) { //nolin
 	}
 	file, err := os.Open(filepath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
+		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 	defer file.Close()
 
@@ -89,7 +89,7 @@ func NewFrontMatterFromMarkdown(filepath string) (*FrontMatter, error) { //nolin
 }
 
 // UpdateMarkdown updates the front matter of the specified markdown file.
-// It keeps the remaining contents of the file.
+// It keeps the remaining contents of the file intact.
 func (f *FrontMatter) UpdateMarkdown(filepath string) error {
 	file, err := os.OpenFile(filepath, os.O_RDWR, 0o644)
 	if err != nil {
@@ -115,7 +115,7 @@ func (f *FrontMatter) UpdateMarkdown(filepath string) error {
 	}
 	_, err = file.WriteAt(contents, 0)
 	if err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+		return fmt.Errorf("failed to write to file: %w", err)
 	}
 	return nil
 }
