@@ -43,7 +43,7 @@ func CreateUploadCmd() *cobra.Command {
 	return uploadCmd
 }
 
-func executeUpload(args UploadArgs) error { //nolint: funlen
+func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 	env := NewEnvArgs()
 
 	if args.debug {
@@ -66,6 +66,7 @@ func executeUpload(args UploadArgs) error { //nolint: funlen
 	log.Debugf("config file: %s", args.file)
 	configFile, err := os.Open(args.file)
 	if err != nil {
+		err = fmt.Errorf("failed to open config file: %w", err)
 		printer.PrettyErrorPrint(err)
 		return err
 	}
