@@ -53,16 +53,55 @@ updated_at: 2023-10-01T00:00:00Z
 	assert.Equal(t, expectedTime, fm.UpdatedAt, "expected UpdatedAt %v, got %v", expectedTime, fm.UpdatedAt)
 }
 
+func TestNewFrontMatterFromMarkdownIncludeUnknownTags(t *testing.T) {
+	content := `---
+title: Test Title
+path: /test/path
+created_at: 2023-10-01T00:00:00Z
+updated_at: 2023-10-01T00:00:00Z
+UnknownTag1: "unknown1"
+UnknownTag2: "unknown2"
+---`
+
+	tmpfile, err := os.CreateTemp("", "test*.md")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	if _, err := tmpfile.WriteString(content); err != nil {
+		t.Fatalf("failed to write to temp file: %v", err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		t.Fatalf("failed to close temp file: %v", err)
+	}
+
+	fm, err := NewFrontMatterFromMarkdown(tmpfile.Name())
+	if err != nil {
+		t.Fatalf("failed to create FrontMatter from markdown: %v", err)
+	}
+
+	assert.Contains(t, fm.UnknownTags, "UnknownTag1", "expected UnknownTag1 to be included in UnknownTags")
+	assert.Contains(t, fm.UnknownTags, "UnknownTag2", "expected UnknownTag1 to be included in UnknownTags")
+
+	assert.Equal(t, "unknown1", fm.UnknownTags["UnknownTag1"], "expected UnknownTag1 to be 'unknown', got %s", fm.UnknownTags["UnknownTag1"])
+	assert.Equal(t, "unknown2", fm.UnknownTags["UnknownTag2"], "expected UnknownTag1 to be 'unknown', got %s", fm.UnknownTags["UnknownTag1"])
+}
+
 func TestFrontMatterString(t *testing.T) {
 	fm := NewFrontMatter("Test Title", "/test/path")
 	fm.CreatedAt = NewSerializableTimeFromTime(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
 	fm.UpdatedAt = NewSerializableTimeFromTime(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
+	fm.UnknownTags["UnknownTag1"] = "unknown1"
+	fm.UnknownTags["UnknownTag2"] = "unknown2"
 
 	expected := `---
 title: Test Title
 path: /test/path
 created_at: 2025-01-01T00:00:00Z
 updated_at: 2025-01-01T00:00:00Z
+UnknownTag1: unknown1
+UnknownTag2: unknown2
 ---
 `
 
