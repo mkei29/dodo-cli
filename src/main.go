@@ -22,5 +22,6 @@ func main() {
 	rootCmd.AddCommand(CreateInitCmd())
 	rootCmd.AddCommand(CreateUploadCmd())
 	rootCmd.AddCommand(CreateVersionCmd())
+	rootCmd.AddCommand(CreateTouchCmd())
 	cobra.CheckErr(rootCmd.Execute())
 }
