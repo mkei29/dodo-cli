@@ -19,13 +19,16 @@ type UploadArgs struct {
 	endpoint string // server endpoint to upload
 	debug    bool   // server endpoint to upload
 	rootPath string // root path of the project
+	noColor  bool   // disable color output
 }
 
 func CreateUploadCmd() *cobra.Command {
 	opts := UploadArgs{}
 	uploadCmd := &cobra.Command{
-		Use:   "upload",
-		Short: "upload the project to dodo-doc",
+		Use:           "upload",
+		Short:         "upload the project to dodo-doc",
+		SilenceErrors: true,
+		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return executeUpload(opts)
 		},
@@ -36,10 +39,11 @@ func CreateUploadCmd() *cobra.Command {
 
 	uploadCmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
 	uploadCmd.Flags().StringVar(&opts.endpoint, "endpoint", "http://api.dodo-doc.com/project/upload", "endpoint to upload")
+	uploadCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
 	return uploadCmd
 }
 
-func executeUpload(args UploadArgs) error { //nolint: funlen
+func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 	env := NewEnvArgs()
 
 	if args.debug {
@@ -47,40 +51,48 @@ func executeUpload(args UploadArgs) error { //nolint: funlen
 		log.Debug("running in debug mode")
 	}
 
+	printer := NewPrinter(ErrorLevel)
+	if args.noColor {
+		printer = NewPrinter(NoColor)
+	}
+
 	err := CheckArgsAndEnv(args, env)
 	if err != nil {
-		log.Fatalf("%w", err)
+		printer.PrettyErrorPrint(err)
+		return err
 	}
 
 	// Read config file
 	log.Debugf("config file: %s", args.file)
 	configFile, err := os.Open(args.file)
 	if err != nil {
-		log.Fatal("internal error: failed to open config file")
+		err = fmt.Errorf("failed to open config file: %w", err)
+		printer.PrettyErrorPrint(err)
+		return err
 	}
 	defer configFile.Close()
 
-	config, err := ParseConfig(configFile)
+	config, err := ParseConfig(args.file, configFile)
 	if err != nil {
-		log.Errorf("internal error: failed to parse config file: %w", err)
-		return fmt.Errorf("failed to parse config file: %w", err)
+		printer.PrettyErrorPrint(err)
+		return fmt.Errorf("failed to parse config")
 	}
 
 	// Create Project struct from config.
 	project := NewMetadataProjectFromConfig(config)
 
 	// Create Page structs from config.
-	page, es := convertConfigPageToMetadataPage(args.rootPath, config)
-	if es.HasError() {
-		es.Log()
+	page, merr := convertConfigPageToMetadataPage(args.rootPath, config)
+	if merr != nil {
+		printer.PrettyErrorPrint(merr)
 		return fmt.Errorf("failed to convert config to page")
 	}
 	log.Debugf("successfully convert config to page. found %d pages", page.Count())
 
 	// Create Assets struct from config.
-	asset, es := convertConfigAssetToMetadataAsset(args.rootPath, config.Assets)
-	if es.HasError() {
-		es.Log()
+	asset, merr := convertConfigAssetToMetadataAsset(args.rootPath, config.Assets)
+	if merr != nil {
+		printer.PrettyErrorPrint(merr)
 		return fmt.Errorf("failed to convert config to asset")
 	}
 	log.Debugf("successfully convert assets to metadata. found %d assets", len(asset))
@@ -95,22 +107,22 @@ func executeUpload(args UploadArgs) error { //nolint: funlen
 	// Prepare archive file
 	archive, err := NewArchive(args.output)
 	if err != nil {
-		log.Error("internal error: failed to create an archive file")
+		printer.PrettyErrorPrint(merr)
+		return fmt.Errorf("failed to create an archive file")
 	}
 	defer archive.Close()
-	if es = archive.Archive(&metadata); es.HasError() {
-		es.Log()
-		log.Errorf("error raised during archiving\n")
-		return fmt.Errorf("failed to archive: %w", err)
+	if merr := archive.Archive(&metadata); merr != nil {
+		printer.PrettyErrorPrint(merr)
+		return fmt.Errorf("failed to archive documents")
 	}
 
 	// Upload the archive file
 	resp, err := uploadFile(args.endpoint, metadata, archive.File, env.APIKey)
 	if err != nil {
-		log.Errorf("internal error: ", err)
+		log.Errorf("%v", err)
 		return fmt.Errorf("failed to upload zip: %w", err)
 	}
-	log.Infof("successfully uploaded: %s", args.output)
+	log.Infof("successfully uploaded")
 	log.Infof("please open this link to view the document: %s", resp.DocumentURL)
 	return nil
 }
@@ -119,29 +131,29 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 	// Check if `file` is valid
 	_, err := os.Stat(args.file)
 	if err != nil && os.IsNotExist(err) {
-		return fmt.Errorf("specified `file` argument is invalid. please check the file exist. path: %s", args.file)
+		return fmt.Errorf("specified `file` argument is invalid. Please check the file exists. Path: %s", args.file)
 	}
 	if err != nil {
-		return fmt.Errorf("specified `file` argument is invalid. path: %s", args.file)
+		return fmt.Errorf("specified `file` argument is invalid. Path: %s", args.file)
 	}
 
 	// Check if the output path is valid
 	parentDir := filepath.Dir(args.output)
 	_, err = os.Stat(parentDir)
 	if err != nil && os.IsNotExist(err) {
-		return fmt.Errorf("specified output path is invalid. please check parent directory exist. path: %s", args.output)
+		return fmt.Errorf("specified output path is invalid. Please check the parent directory exists. Path: %s", args.output)
 	}
 	if err != nil {
-		return fmt.Errorf("the provided output path is invalid. path: %s", args.output)
+		return fmt.Errorf("the provided output path is invalid. Path: %s", args.output)
 	}
 
 	// Check if `root` is valid
 	_, err = os.Stat(args.rootPath)
 	if err != nil && os.IsNotExist(err) {
-		return fmt.Errorf("specified `root` argument is invalid. please check the directory exist. path: %s", args.rootPath)
+		return fmt.Errorf("specified `root` argument is invalid. Please check the directory exists. Path: %s", args.rootPath)
 	}
 	if err != nil {
-		return fmt.Errorf("the provided `root` argument is invalid. path: %s", args.rootPath)
+		return fmt.Errorf("the provided `root` argument is invalid. Path: %s", args.rootPath)
 	}
 
 	// Check if the api key exists
@@ -151,30 +163,36 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 	return nil
 }
 
-func convertConfigPageToMetadataPage(rootDir string, config *Config) (*Page, ErrorSet) {
-	page, es := CreatePageTree(*config, rootDir)
-	if es.HasError() {
-		return nil, es
+func convertConfigPageToMetadataPage(rootDir string, config *Config) (*Page, *MultiError) {
+	page, merr := CreatePageTree(config, rootDir)
+	if merr != nil {
+		return nil, merr
 	}
-	es = page.IsValid()
-	return page, es
+	if merr = page.IsValid(); merr != nil {
+		return nil, merr
+	}
+
+	return page, nil
 }
 
-func convertConfigAssetToMetadataAsset(rootDir string, assets []ConfigAsset) ([]MetadataAsset, ErrorSet) {
+func convertConfigAssetToMetadataAsset(rootDir string, assets []ConfigAsset) ([]MetadataAsset, *MultiError) {
 	// Create Assets struct from config.
-	es := NewErrorSet()
+	merr := NewMultiError()
 	metadataAssets := make([]MetadataAsset, 0, len(assets)*5)
 	for _, a := range assets {
 		files, err := a.List(rootDir)
 		if err != nil {
-			es.Add(err)
+			merr.Add(err)
 		}
 		// FIXME: This code could be cause too many allocations.
 		for _, f := range files {
 			metadataAssets = append(metadataAssets, NewMetadataAsset(f))
 		}
 	}
-	return metadataAssets, es
+	if merr.HasError() {
+		return nil, &merr
+	}
+	return metadataAssets, nil
 }
 
 func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) (*UploadResponse, error) {
@@ -185,7 +203,7 @@ func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error raised during communicating to the server: %w", err)
+		return nil, fmt.Errorf("error raised during communication with the server: %w", err)
 	}
 	defer resp.Body.Close()
 

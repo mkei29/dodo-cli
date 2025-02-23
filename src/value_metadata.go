@@ -29,22 +29,9 @@ type MetadataProject struct {
 }
 
 func NewMetadataProjectFromConfig(c *Config) MetadataProject {
-	if c.Project == nil {
-		return MetadataProject{}
-	}
-
-	name := ""
-	if c.Project.Name != nil {
-		name = *c.Project.Name
-	}
-	description := ""
-	if c.Project.Description != nil {
-		description = *c.Project.Description
-	}
-	version := ""
-	if c.Project.Version != nil {
-		version = *c.Project.Version
-	}
+	name := c.Project.Name
+	description := c.Project.Description
+	version := c.Project.Version
 
 	return MetadataProject{
 		Name:        name,

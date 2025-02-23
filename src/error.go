@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/caarlos0/log"
+	"github.com/goccy/go-yaml/ast"
 )
 
 type AppError struct {
@@ -18,44 +21,63 @@ func (e *AppError) Error() string {
 	return e.message
 }
 
-type ErrorSet struct {
+type MultiError struct {
 	errors []error
 }
 
-func NewErrorSet() ErrorSet {
-	return ErrorSet{
+func NewMultiError() MultiError {
+	return MultiError{
 		errors: []error{},
 	}
 }
 
-func (e *ErrorSet) Errors() []error {
+func (e *MultiError) Error() string {
+	message := fmt.Sprintf("%d errors: ", len(e.errors))
+	for _, err := range e.errors {
+		message += err.Error() + ", "
+	}
+	return message
+}
+
+func (e *MultiError) Errors() []error {
 	return e.errors
 }
 
-func (e *ErrorSet) Add(err error) {
+func (e *MultiError) Add(err error) {
 	e.errors = append(e.errors, err)
 }
 
-func (e *ErrorSet) Merge(errs ErrorSet) {
+func (e *MultiError) Merge(errs MultiError) {
 	e.errors = append(e.errors, errs.errors...)
 }
 
-func (e *ErrorSet) HasError() bool {
+func (e *MultiError) HasError() bool {
 	return len(e.errors) > 0
 }
 
-func (e *ErrorSet) Length() int {
+func (e *MultiError) Length() int {
 	return len(e.errors)
 }
 
-func (e *ErrorSet) Log() {
+func (e *MultiError) Summary() {
 	for _, err := range e.errors {
 		log.Error(err.Error())
 	}
 }
 
-func (e *ErrorSet) Summary() {
-	for _, err := range e.errors {
-		log.Debug(err.Error())
-	}
+type ParseError struct {
+	filepath string
+	message  string
+	line     string
+	node     ast.Node
+}
+
+func (e *ParseError) Error() string {
+	line := e.node.GetToken().Position.Line
+	return fmt.Sprintf("%s:%d: %s", e.filepath, line, e.message)
+}
+
+func (e *ParseError) Is(target error) bool {
+	_, ok := target.(*ParseError)
+	return ok
 }
