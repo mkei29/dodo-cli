@@ -21,6 +21,10 @@ func NewSerializableTime(s string) (SerializableTime, error) {
 	return st, nil
 }
 
+func NewSerializableTimeFromTime(t time.Time) SerializableTime {
+	return SerializableTime(t.Format(time.RFC3339))
+}
+
 // String converts the unix timestamp into a string.
 func (t SerializableTime) String() string {
 	return string(t)
