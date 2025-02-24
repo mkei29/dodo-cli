@@ -10,7 +10,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const TestCaseValid = `
+func createTempFile(t *testing.T, dir, path string) string {
+	t.Helper()
+	f, err := os.Create(filepath.Join(dir, path))
+	require.NoError(t, err)
+	defer f.Close()
+	return f.Name()
+}
+
+const TestCaseForDetailCheck = `
 version: 1
 project:
   name: "Test Project"
@@ -20,8 +28,6 @@ pages:
     title: "README1"
     updated_at: "2021-01-01T00:00:00Z"
   - markdown: "README2.md"
-    path: "readme1"
-    title: "README1"
   - match: "docs/*.md"
   - match: "docs/**.md"
 assets:
@@ -29,16 +35,26 @@ assets:
   - "images/**"
 `
 
-func createTempFile(t *testing.T, dir, path string) {
-	t.Helper()
-	f, err := os.Create(filepath.Join(dir, path))
-	require.NoError(t, err)
-	defer f.Close()
-}
+const Readme2Contents = `
+---
+title: "README2"
+path: "readme2"
+---
+`
 
 func TestParseConfigDetails(t *testing.T) {
 	t.Parallel()
-	conf, err := ParseConfig("config.yaml", strings.NewReader(TestCaseValid))
+
+	dir, err := os.MkdirTemp("", "")
+	require.NoError(t, err)
+	defer os.RemoveAll(dir)
+
+	createTempFile(t, dir, "README1.md")
+	readme2 := createTempFile(t, dir, "README2.md")
+	os.WriteFile(readme2, []byte(Readme2Contents), 0o600)
+
+	state := NewParseState("config.yaml", dir)
+	conf, err := ParseConfig(state, strings.NewReader(TestCaseForDetailCheck))
 	require.NoError(t, err)
 
 	// Check metadata
@@ -50,6 +66,9 @@ func TestParseConfigDetails(t *testing.T) {
 	assert.Equal(t, "README1", conf.Pages[0].Title)
 	assert.Equal(t, "2021-01-01T00:00:00Z", conf.Pages[0].UpdatedAt.String())
 	assert.True(t, conf.Pages[1].UpdatedAt.IsNull(), "UpdatedAt should be nil if there is no explicit value")
+	assert.Equal(t, "README2.md", conf.Pages[1].Markdown)
+	assert.Equal(t, "readme2", conf.Pages[1].Path)
+	assert.Equal(t, "README2", conf.Pages[1].Title)
 
 	// Check assets
 	assert.Equal(t, "assets/**", string(conf.Assets[0]))
@@ -175,8 +194,41 @@ assets:
 	- "assets/**"
 `
 
+// Directory Traversal Attack.
+const TestCaseWithDirectoryTraversal1 = `
+version: 1
+project:
+  name: "Test Project"
+pages:
+  - markdown: "../README1.md"
+    path: "readme1"
+    title: "README1"
+  - markdown: "README2.md"
+    path: "readme2"
+    title: "README2"
+`
+
+// Directory Traversal Attack.
+const TestCaseWithDirectoryTraversal2 = `
+version: 1
+project:
+  name: "Test Project"
+pages:
+  - markdown: "README1.md"
+    path: "readme1"
+    title: "README1"
+  - markdown: "./dir1/.././../README2.md"
+    path: "readme2"
+    title: "README2"
+`
+
 func TestParseConfig(t *testing.T) {
-	t.Parallel()
+	dir, err := os.MkdirTemp("", "")
+	require.NoError(t, err)
+	defer os.RemoveAll(dir)
+
+	createTempFile(t, dir, "README1.md")
+	createTempFile(t, dir, "README2.md")
 
 	testCases := []struct {
 		name     string
@@ -234,13 +286,25 @@ func TestParseConfig(t *testing.T) {
 			input:    TestCaseWithSortOrderWithoutSortKey,
 			expected: false,
 		},
+		{
+			name:     "invalid config: including directory traversal1",
+			input:    TestCaseWithDirectoryTraversal1,
+			expected: false,
+		},
+		{
+			name:     "invalid config: including directory traversal2",
+			input:    TestCaseWithDirectoryTraversal1,
+			expected: false,
+		},
 	}
 
 	for _, tc := range testCases {
 		testCase := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			_, err := ParseConfig("config.yaml", strings.NewReader(testCase.input))
+			// DO NOT parallel this test.
+			// If you parallel this test, the temp file cleanup will be cause before testing.
+			state := NewParseState("config.yaml", dir)
+			_, err := ParseConfig(state, strings.NewReader(testCase.input))
 			if testCase.expected {
 				require.NoError(t, err)
 			} else {

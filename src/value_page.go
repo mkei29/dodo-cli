@@ -105,7 +105,7 @@ func listPageHeader(list []PageSummary, p *Page) []PageSummary {
 
 // Check if the page is valid.
 // This function checks the following conditions:
-// 1. all page have necessary fields.
+// 1. All pages have necessary fields.
 // 2. There are no duplicated paths.
 func (p *Page) IsValid() *MultiError {
 	errorSet := NewMultiError()
@@ -129,11 +129,11 @@ func (p *Page) IsValid() *MultiError {
 
 func (p *Page) isValid(isRoot bool, errorSet *MultiError) {
 	if isRoot && p.Type != PageTypeRootNode {
-		errorSet.Add(NewAppError("Type for root node should be Root"))
+		errorSet.Add(NewAppError("Type for root node should be RootNode"))
 		return
 	}
 	if !isRoot && p.Type == PageTypeRootNode {
-		errorSet.Add(NewAppError("Type for non-root node should not be Root"))
+		errorSet.Add(NewAppError("Type for non-root node should not be RootNode"))
 		return
 	}
 	if p.Type == PageTypeLeafNode && p.Path == "" {
@@ -142,7 +142,7 @@ func (p *Page) isValid(isRoot bool, errorSet *MultiError) {
 
 	matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", p.Path)
 	if err != nil || !matched {
-		errorSet.Add(NewAppError(fmt.Sprintf("The path `%s` contains invalid characters. File paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", p.Filepath)))
+		errorSet.Add(NewAppError(fmt.Sprintf("The path `%s` contains invalid characters. Paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", p.Filepath)))
 	}
 	for _, c := range p.Children {
 		c.isValid(false, errorSet)
@@ -174,7 +174,7 @@ func (p *Page) buildString(depth int) string {
 	return strings.Join(lines, "\n")
 }
 
-// Count number of pages.
+// Count the number of pages.
 func (p *Page) Count() int {
 	return p.buildCount() - 1
 }
@@ -299,13 +299,13 @@ func transformMatch(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
 	merr := NewMultiError()
 	dirPath := filepath.Clean(filepath.Join(rootDir, c.Match))
 	if err := IsUnderRootPath(rootDir, dirPath); err != nil {
-		merr.Add(NewAppError(fmt.Sprintf("invalid configuration: path should be under the rootDir: path: %s", dirPath)))
+		merr.Add(fmt.Errorf("invalid configuration: path should be under the rootDir: path: %s", dirPath))
 		return nil, &merr
 	}
 
 	matches, err := zglob.Glob(dirPath)
 	if err != nil {
-		merr.Add(NewAppError(fmt.Sprintf("internal error:  error raised during globbing %s", dirPath)))
+		merr.Add(fmt.Errorf("internal error: error raised during globbing %s: %w", dirPath, err))
 		return nil, &merr
 	}
 
@@ -351,6 +351,6 @@ func transformDirectory(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
 	if merr.HasError() {
 		return nil, &merr
 	}
-	log.Debugf("Node Found. Type: Document, Title: %s", p.Title)
+	log.Debugf("Node Found. Type: Directory, Title: %s", p.Title)
 	return []Page{p}, nil
 }

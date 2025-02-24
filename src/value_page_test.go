@@ -55,7 +55,8 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 	prepareFile(t, dir, "README1.md", "content")
 	prepareFile(t, dir, "README2.md", "content")
 
-	conf, err := ParseConfig("config.yaml", strings.NewReader(TestCaseCreatePageWithMarkdown))
+	state := NewParseState("config.yaml", dir)
+	conf, err := ParseConfig(state, strings.NewReader(TestCaseCreatePageWithMarkdown))
 	require.NoError(t, err)
 
 	page, merr := CreatePageTree(conf, dir)
@@ -127,7 +128,8 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 	---
 	`)
 
-	conf, err := ParseConfig("config.yaml", strings.NewReader(TestCaseCreatePageTreeMatch))
+	state := NewParseState("config.yaml", dir)
+	conf, err := ParseConfig(state, strings.NewReader(TestCaseCreatePageTreeMatch))
 	require.NoError(t, err, "should not return error")
 
 	page, merr := CreatePageTree(conf, dir)
@@ -171,7 +173,8 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	---
 	`)
 
-	conf, err := ParseConfig("config.yaml", strings.NewReader(TestCaseCreatePageHybridCase))
+	state := NewParseState("config.yaml", dir)
+	conf, err := ParseConfig(state, strings.NewReader(TestCaseCreatePageHybridCase))
 	require.NoError(t, err, "should not return error")
 
 	page, merr := CreatePageTree(conf, dir)
@@ -214,7 +217,8 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 	---
 	`)
 
-	conf, err := ParseConfig("config.yaml", strings.NewReader(TestCaseCreatePageWithDirectory))
+	state := NewParseState("config.yaml", dir)
+	conf, err := ParseConfig(state, strings.NewReader(TestCaseCreatePageWithDirectory))
 	require.NoError(t, err)
 
 	page, merr := CreatePageTree(conf, dir)
@@ -230,34 +234,6 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 	assert.Equal(t, "README1", page1.Title)
 	assert.Equal(t, "readme1", page1.Path)
 }
-
-// Directory Traversal Attack.
-const TestCasePageMalicious1 = `
-version: 1
-project:
-  name: "Test Project"
-pages:
-  - markdown: "../TARGET1.md"
-    path: "target1"
-    title: "TARGET1"
-  - markdown: "README1.md"
-    path: "readme1"
-    title: "README1"
-`
-
-// Directory Traversal Attack.
-const TestCasePageMalicious2 = `
-version: 1
-project:
-  name: "Test Project"
-pages:
-  - markdown: "README1.md"
-    path: "readme1"
-    title: "README1"
-  - markdown: "./dir1/.././../TARGET1.md"
-    path: "target1"
-    title: "TARGET1"
-`
 
 // Directory Traversal Attack.
 const TestCasePageMalicious3 = `
@@ -290,22 +266,21 @@ func TestCreatePageTreeWithMaliciousFilepath(t *testing.T) {
 	prepareFile(t, dir, "README1.md", "content")
 
 	cases := []string{
-		TestCasePageMalicious1,
-		TestCasePageMalicious2,
 		TestCasePageMalicious3,
 		TestCasePageMalicious4,
 	}
 
+	state := NewParseState("config.yaml", dir)
 	for i, c := range cases {
 		testID := i + 1
 		testCase := c
 		t.Run(fmt.Sprintf("pass when malicious filepath was given. ID: %d", testID), func(t *testing.T) {
-			conf, err := ParseConfig("config.yaml", strings.NewReader(testCase))
-			require.NoError(t, err, "should not return error %v", err)
+			_, err := ParseConfig(state, strings.NewReader(testCase))
+			require.NotNil(t, err, "should return error")
 
-			_, merr := CreatePageTree(conf, dir)
-			assert.NotNil(t, merr, "should fail when malicious filepath was given")
-			assert.True(t, merr.HasError(), "should fail when malicious filepath was given")
+			// _, merr := CreatePageTree(conf, dir)
+			//assert.NotNil(t, merr, "should fail when malicious filepath was given")
+			//assert.True(t, merr.HasError(), "should fail when malicious filepath was given")
 		})
 	}
 }
@@ -503,7 +478,8 @@ func TestIsValid(t *testing.T) {
 			prepareFile(t, dir, "README1.md", "")
 			prepareFile(t, dir, "README2.md", "")
 
-			conf, err := ParseConfig("config.yaml", strings.NewReader(c.content))
+			state := NewParseState("config.yaml", dir)
+			conf, err := ParseConfig(state, strings.NewReader(c.content))
 			require.NoError(t, err, "should not return error: %v", err)
 			page, merr := CreatePageTree(conf, dir)
 			require.Nil(t, merr, "CreatePageTree should not failed if the valid case is specified: %v", err)

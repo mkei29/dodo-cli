@@ -84,6 +84,7 @@ type ParseState struct {
 	filepath               string // The name of the file being parsed.
 	config                 Config // The config object being generated.
 	contents               []byte // The contents of the file being parsed.
+	rootPath               string
 	isVersionAlreadyParsed bool
 	isProjectAlreadyParsed bool
 	isPagesAlreadyParsed   bool
@@ -91,10 +92,10 @@ type ParseState struct {
 	errorSet               MultiError
 }
 
-func NewParseState(filepath string, contents []byte) *ParseState {
+func NewParseState(filepath, workingDir string) *ParseState {
 	return &ParseState{
 		filepath: filepath,
-		contents: contents,
+		rootPath: workingDir,
 	}
 }
 
@@ -117,21 +118,40 @@ func (s *ParseState) getLineFromNode(node ast.Node) string {
 	return string(lines[lineNumber])
 }
 
+func (s *ParseState) getSecurePath(path string) (string, error) {
+	absRootPath, err := filepath.Abs(s.rootPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get the absolute path of the working directory: %w", err)
+	}
+
+	absPath, err := filepath.Abs(filepath.Join(s.rootPath, path))
+	if err != nil {
+		return "", fmt.Errorf("failed to get the absolute path of the specified file: %w", err)
+	}
+
+	absRootPath = filepath.Clean(absRootPath)
+	absPath = filepath.Clean(absPath)
+
+	if !strings.HasPrefix(absPath, absRootPath) {
+		return "", fmt.Errorf("the file being parsed is not under the root directory: %s", absPath)
+	}
+	return absPath, nil
+}
+
 // ParseConfig takes a reader and parses it into a Config struct.
 // While parsing, it validates the config at the same time.
 // This is because we want to prvide a user-friendly error message.
 //
 // This function respects the following implementation:
 // https://github.com/goccy/go-yaml/blob/abc70836f5a5623a92cf51d4bf40cbaf8fed2faa/decode.go
-func ParseConfig(filepath string, reader io.Reader) (*Config, error) {
+func ParseConfig(state *ParseState, reader io.Reader) (*Config, error) {
 	buf := new(bytes.Buffer)
 	_, err := io.Copy(buf, reader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read a document config: %w", err)
 	}
-
 	contents := buf.Bytes()
-	state := NewParseState(filepath, contents)
+	state.contents = contents
 
 	// NOTE: The role of parser.Mode(0) is little bit unclear.
 	// I couldn't find any documentation about it.
@@ -455,10 +475,55 @@ func parseConfigPageMarkdown(state *ParseState, mapping *ast.MappingNode) Config
 			state.errorSet.Add(state.buildParseError(fmt.Sprintf("a markdown style page cannot accept the key: %s", key), item))
 		}
 	}
-	// Ideally, we should return an error if any of the required fields are missing.
-	// But in the current implementation, some fields will be populated at a later stage.
-	// So, we can't validate them here.
+
+	// If the markdown has a frontmatter, populate the empty fields with it.
+	// Then validate the fields.
+	fillFieldsFromMarkdown(state, &configPage, mapping)
+	validateMarkdownPage(state, &configPage, mapping)
 	return configPage
+}
+
+func fillFieldsFromMarkdown(state *ParseState, configPage *ConfigPage, mapping *ast.MappingNode) { //nolint: cyclop
+	if configPage.Markdown == "" {
+		state.errorSet.Add(state.buildParseError("the `markdown` field is required", mapping))
+		return
+	}
+	clean, err := state.getSecurePath(configPage.Markdown)
+	if err != nil {
+		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
+		return
+	}
+
+	// First, populate the fields from the markdown front matter.
+	p, err := NewFrontMatterFromMarkdown(clean)
+	if err != nil {
+		message := fmt.Sprintf("cannot read the markdown file: %s, %v", configPage.Markdown, err.Error())
+		state.errorSet.Add(state.buildParseError(message, mapping))
+		return
+	}
+
+	if configPage.Title == "" && p.Title != "" {
+		configPage.Title = p.Title
+	}
+	if configPage.Path == "" && p.Path != "" {
+		configPage.Path = p.Path
+	}
+	if configPage.Description == "" && p.Description != "" {
+		configPage.Description = p.Description
+	}
+	if !configPage.UpdatedAt.HasValue() && !p.UpdatedAt.HasValue() {
+		configPage.UpdatedAt = p.UpdatedAt
+	}
+	// TODO: add createdAt
+}
+
+func validateMarkdownPage(state *ParseState, configPage *ConfigPage, mapping *ast.MappingNode) {
+	if configPage.Title == "" {
+		state.errorSet.Add(state.buildParseError("the `title` field is required", mapping))
+	}
+	if configPage.Path == "" {
+		state.errorSet.Add(state.buildParseError("the `path` field is required", mapping))
+	}
 }
 
 func parseConfigPageMatch(state *ParseState, mapping *ast.MappingNode) ConfigPage { //nolint: cyclop

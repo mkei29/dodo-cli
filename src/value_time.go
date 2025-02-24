@@ -39,6 +39,10 @@ func (t SerializableTime) Time() (time.Time, error) {
 	return tt, nil
 }
 
+func (t *SerializableTime) HasValue() bool {
+	return *t != ""
+}
+
 func (t *SerializableTime) IsNull() bool {
 	return *t == ""
 }

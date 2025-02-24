@@ -32,7 +32,7 @@ pages:
     title: "Release Note"
   - directory: "For Developers"
     children:
-      - markdown: docs/internal/release
+      - markdown: docs/internal/release.md
         path: "release_flow"
         title: "Release Flow"
  

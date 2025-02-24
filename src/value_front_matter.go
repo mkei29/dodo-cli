@@ -17,6 +17,7 @@ const (
 
 	FrontMatterKeyTitle     = "title"
 	FrontMatterKeyPath      = "path"
+	FrontMatterDescription  = "description"
 	FrontMatterKeyCreatedAt = "created_at"
 	FrontMatterKeyUpdatedAt = "updated_at"
 )
@@ -25,6 +26,7 @@ const (
 type FrontMatter struct {
 	Title       string
 	Path        string
+	Description string
 	CreatedAt   SerializableTime
 	UpdatedAt   SerializableTime
 	UnknownTags map[string]interface{}
@@ -35,6 +37,7 @@ func NewFrontMatter(title string, path string) *FrontMatter {
 	return &FrontMatter{
 		Title:       title,
 		Path:        path,
+		Description: "",
 		CreatedAt:   NewSerializableTimeFromTime(now),
 		UpdatedAt:   NewSerializableTimeFromTime(now),
 		UnknownTags: make(map[string]interface{}),
@@ -69,6 +72,8 @@ func NewFrontMatterFromMarkdown(filepath string) (*FrontMatter, error) { //nolin
 			matter.Title = v
 		case FrontMatterKeyPath:
 			matter.Path = v
+		case FrontMatterDescription:
+			matter.Description = v
 		case FrontMatterKeyCreatedAt:
 			if st, err := NewSerializableTime(v); err == nil {
 				matter.CreatedAt = st
@@ -132,6 +137,7 @@ func (f *FrontMatter) String() string {
 	text += fmt.Sprintf("%s\n", FrontMatterStart)
 	text += fmt.Sprintf("title: %s\n", f.Title)
 	text += fmt.Sprintf("path: %s\n", f.Path)
+	text += fmt.Sprintf("description: %s\n", f.Description)
 	text += fmt.Sprintf("created_at: %s\n", f.CreatedAt)
 	text += fmt.Sprintf("updated_at: %s\n", f.UpdatedAt)
 	for _, k := range sortedKeys {
