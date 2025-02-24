@@ -45,14 +45,14 @@ func NewPrinter(styleIdx int) *Printer {
 }
 
 // PrettyPrint prints the error in a human-readable format.
-func (p *Printer) PrettyErrorPrint(err error) {
+func (p *Printer) PrintError(err error) {
 	// if the error is a MultiError, call PrettyPrint on each error.
 	// MultiError doesn't implement Unwrap, so we can't use errors.Is.
 
 	var merr *MultiError
 	if errors.As(err, &merr) {
 		for _, e := range merr.Errors() {
-			p.PrettyErrorPrint(e)
+			p.PrintError(e)
 		}
 		return
 	}
