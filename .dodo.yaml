@@ -30,4 +30,9 @@ pages:
   - markdown: docs/release_note.md
     path: "release_note"
     title: "Release Note"
+  - directory: "For Developers"
+    children:
+      - markdown: docs/internal/release
+        path: "release_flow"
+        title: "Release Flow"
  

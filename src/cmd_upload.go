@@ -30,7 +30,7 @@ func CreateUploadCmd() *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return executeUpload(opts)
+			return executeUploadWrapper(opts)
 		},
 	}
 	uploadCmd.Flags().StringVarP(&opts.file, "config", "c", ".dodo.yaml", "Path to the configuration file")
@@ -43,9 +43,9 @@ func CreateUploadCmd() *cobra.Command {
 	return uploadCmd
 }
 
-func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
+func executeUploadWrapper(args UploadArgs) error {
+	// Initialize logger and so on, then execute the main function.
 	env := NewEnvArgs()
-
 	if args.debug {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("running in debug mode")
@@ -58,24 +58,29 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 
 	err := CheckArgsAndEnv(args, env)
 	if err != nil {
-		printer.PrettyErrorPrint(err)
+		printer.PrintError(err)
 		return err
 	}
 
+	if err := executeUpload(args, env); err != nil {
+		printer.PrintError(err)
+		return err
+	}
+	return nil
+}
+
+func executeUpload(args UploadArgs, env EnvArgs) error {
 	// Read config file
 	log.Debugf("config file: %s", args.file)
 	configFile, err := os.Open(args.file)
 	if err != nil {
-		err = fmt.Errorf("failed to open config file: %w", err)
-		printer.PrettyErrorPrint(err)
-		return err
+		return fmt.Errorf("failed to open the config file: %w", err)
 	}
 	defer configFile.Close()
 
 	config, err := ParseConfig(args.file, configFile)
 	if err != nil {
-		printer.PrettyErrorPrint(err)
-		return fmt.Errorf("failed to parse config")
+		return err
 	}
 
 	// Create Project struct from config.
@@ -84,16 +89,14 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 	// Create Page structs from config.
 	page, merr := convertConfigPageToMetadataPage(args.rootPath, config)
 	if merr != nil {
-		printer.PrettyErrorPrint(merr)
-		return fmt.Errorf("failed to convert config to page")
+		return merr
 	}
 	log.Debugf("successfully convert config to page. found %d pages", page.Count())
 
 	// Create Assets struct from config.
 	asset, merr := convertConfigAssetToMetadataAsset(args.rootPath, config.Assets)
 	if merr != nil {
-		printer.PrettyErrorPrint(merr)
-		return fmt.Errorf("failed to convert config to asset")
+		return merr
 	}
 	log.Debugf("successfully convert assets to metadata. found %d assets", len(asset))
 
@@ -107,20 +110,17 @@ func executeUpload(args UploadArgs) error { //nolint: funlen, cyclop
 	// Prepare archive file
 	archive, err := NewArchive(args.output)
 	if err != nil {
-		printer.PrettyErrorPrint(merr)
-		return fmt.Errorf("failed to create an archive file")
+		return err
 	}
 	defer archive.Close()
 	if merr := archive.Archive(&metadata); merr != nil {
-		printer.PrettyErrorPrint(merr)
-		return fmt.Errorf("failed to archive documents")
+		return merr
 	}
 
 	// Upload the archive file
 	resp, err := uploadFile(args.endpoint, metadata, archive.File, env.APIKey)
 	if err != nil {
-		log.Errorf("%v", err)
-		return fmt.Errorf("failed to upload zip: %w", err)
+		return err
 	}
 	log.Infof("successfully uploaded")
 	log.Infof("please open this link to view the document: %s", resp.DocumentURL)
@@ -131,7 +131,7 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 	// Check if `file` is valid
 	_, err := os.Stat(args.file)
 	if err != nil && os.IsNotExist(err) {
-		return fmt.Errorf("specified `file` argument is invalid. Please check the file exists. Path: %s", args.file)
+		return fmt.Errorf("specified `file` argument is invalid. Please check if the file exists. Path: %s", args.file)
 	}
 	if err != nil {
 		return fmt.Errorf("specified `file` argument is invalid. Path: %s", args.file)
@@ -141,7 +141,7 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 	parentDir := filepath.Dir(args.output)
 	_, err = os.Stat(parentDir)
 	if err != nil && os.IsNotExist(err) {
-		return fmt.Errorf("specified output path is invalid. Please check the parent directory exists. Path: %s", args.output)
+		return fmt.Errorf("specified output path is invalid. Please check if the parent directory exists. Path: %s", args.output)
 	}
 	if err != nil {
 		return fmt.Errorf("the provided output path is invalid. Path: %s", args.output)
@@ -150,7 +150,7 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 	// Check if `root` is valid
 	_, err = os.Stat(args.rootPath)
 	if err != nil && os.IsNotExist(err) {
-		return fmt.Errorf("specified `root` argument is invalid. Please check the directory exists. Path: %s", args.rootPath)
+		return fmt.Errorf("specified `root` argument is invalid. Please check if the directory exists. Path: %s", args.rootPath)
 	}
 	if err != nil {
 		return fmt.Errorf("the provided `root` argument is invalid. Path: %s", args.rootPath)
@@ -203,7 +203,7 @@ func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error raised during communication with the server: %w", err)
+		return nil, fmt.Errorf("error occurred during communication with the server: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -213,7 +213,7 @@ func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) 
 
 	data, err := ParseUploadResponse(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
+		return nil, fmt.Errorf("failed to parse the response: %w", err)
 	}
 	return data, nil
 }
@@ -239,7 +239,7 @@ func newFileUploadRequest(uri string, metadata Metadata, zipFile *os.File, apiKe
 		}
 		_, err = metadataPart.Write(serialized)
 		if err != nil {
-			return nil, fmt.Errorf("failed to write the metadata to the multipart section: %w", err)
+			return nil, fmt.Errorf("failed to write metadata to the multipart section: %w", err)
 		}
 
 		// Write archived documents
