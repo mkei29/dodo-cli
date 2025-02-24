@@ -75,7 +75,12 @@ func executeTouchNew(args TouchArgs) error {
 	}
 	defer file.Close()
 
-	matter := NewFrontMatter(args.title, args.filepath)
+	filepath := args.filepath
+	if args.path != "" {
+		filepath = args.path
+	}
+
+	matter := NewFrontMatter(args.title, filepath)
 	if _, err := file.WriteString(matter.String()); err != nil {
 		return fmt.Errorf("failed to write front matter: %w", err)
 	}
