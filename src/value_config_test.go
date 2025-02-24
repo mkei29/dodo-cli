@@ -10,29 +10,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createTempFile(t *testing.T, dir, path string) string {
-	t.Helper()
-	f, err := os.Create(filepath.Join(dir, path))
-	require.NoError(t, err)
-	defer f.Close()
-	return f.Name()
-}
-
-const TestCaseForDetailCheck = `
-version: 1
-project:
-  name: "Test Project"
-pages:
-  - markdown: "README1.md"
-    path: "readme1"
-    title: "README1"
-    updated_at: "2021-01-01T00:00:00Z"
-  - markdown: "README2.md"
-  - match: "docs/*.md"
-  - match: "docs/**.md"
-assets:
-  - "assets/**"
-  - "images/**"
+// Readme1Contents and Readme2Contents are used in multiple tests in this file.
+const Readme1Contents = `
+---
+title: "README1"
+path: "readme1"
+---
 `
 
 const Readme2Contents = `
@@ -42,7 +25,22 @@ path: "readme2"
 ---
 `
 
-func TestParseConfigDetails(t *testing.T) {
+const TestCaseForDetailCheckMarkdown = `
+version: 1
+project:
+  name: "Test Project"
+pages:
+  - markdown: "README1.md"
+    path: "readme1"
+    title: "README1"
+    updated_at: "2021-01-01T00:00:00Z"
+  - markdown: "README2.md"
+assets:
+  - "assets/**"
+  - "images/**"
+`
+
+func TestParseConfigDetailsMarkdown(t *testing.T) {
 	t.Parallel()
 
 	dir, err := os.MkdirTemp("", "")
@@ -54,18 +52,21 @@ func TestParseConfigDetails(t *testing.T) {
 	os.WriteFile(readme2, []byte(Readme2Contents), 0o600)
 
 	state := NewParseState("config.yaml", dir)
-	conf, err := ParseConfig(state, strings.NewReader(TestCaseForDetailCheck))
+	conf, err := ParseConfig(state, strings.NewReader(TestCaseForDetailCheckMarkdown))
 	require.NoError(t, err)
 
 	// Check metadata
 	assert.Equal(t, "1", conf.Version)
 
-	// Check pages
+	// Check README1
 	assert.Equal(t, "README1.md", conf.Pages[0].Markdown)
 	assert.Equal(t, "readme1", conf.Pages[0].Path)
 	assert.Equal(t, "README1", conf.Pages[0].Title)
 	assert.Equal(t, "2021-01-01T00:00:00Z", conf.Pages[0].UpdatedAt.String())
 	assert.True(t, conf.Pages[1].UpdatedAt.IsNull(), "UpdatedAt should be nil if there is no explicit value")
+
+	// Check README2
+	// There are no fields in the YAML file, but we can read the fields from the markdown file.
 	assert.Equal(t, "README2.md", conf.Pages[1].Markdown)
 	assert.Equal(t, "readme2", conf.Pages[1].Path)
 	assert.Equal(t, "README2", conf.Pages[1].Title)
@@ -73,6 +74,43 @@ func TestParseConfigDetails(t *testing.T) {
 	// Check assets
 	assert.Equal(t, "assets/**", string(conf.Assets[0]))
 	assert.Equal(t, "images/**", string(conf.Assets[1]))
+}
+
+const TestCaseForDetailCheckMatch = `
+version: 1
+project:
+  name: "Test Project"
+pages:
+  - match: "./*.md"
+`
+
+func TestParseConfigDetailsMatch(t *testing.T) {
+	t.Parallel()
+
+	dir, err := os.MkdirTemp("", "")
+	require.NoError(t, err)
+	defer os.RemoveAll(dir)
+
+	createTempFile(t, dir, "README1.md")
+	readme2 := createTempFile(t, dir, "README2.md")
+	os.WriteFile(readme2, []byte(Readme2Contents), 0o600)
+
+	state := NewParseState("config.yaml", dir)
+	conf, err := ParseConfig(state, strings.NewReader(TestCaseForDetailCheckMarkdown))
+	require.NoError(t, err)
+
+	// Check metadata
+	assert.Equal(t, "1", conf.Version)
+
+	// Check README1
+	assert.Equal(t, "README1.md", conf.Pages[0].Markdown)
+	assert.Equal(t, "readme1", conf.Pages[0].Path)
+	assert.Equal(t, "README1", conf.Pages[0].Title)
+
+	// Check README2
+	assert.Equal(t, "README2.md", conf.Pages[1].Markdown)
+	assert.Equal(t, "readme2", conf.Pages[1].Path)
+	assert.Equal(t, "README2", conf.Pages[1].Title)
 }
 
 // Valid Case.
@@ -93,8 +131,8 @@ project:
   name: "Test Project"
 pages:
 	- match: "./docs/*.md"
-	- sort_key: "title"
-	- sort_order: "asc"
+	  sort_key: "title"
+	  sort_order: "asc"
 assets:
 	- "assets/**"
 `
@@ -135,7 +173,7 @@ project:
   name: "Test Project"
 pages:
 	- path: "readme2"
-	- title: "README2"
+	  title: "README2"
 `
 
 // Invalid Case with children in the markdown item.
@@ -173,9 +211,9 @@ project:
   name: "Test Project"
 pages:
 	- markdown: "README2.md"
-	- path: "readme2"
-	- title: "README2"
-	- updated_at: "2021-01-01T00:00:00Z"
+	  path: "readme2"
+	  title: "README2"
+	  updated_at: "2021-01-01T00:00:00Z"
 assets:
 	- "assets/**"
 assets:
@@ -189,7 +227,7 @@ project:
   name: "Test Project"
 pages:
 	- match: "./docs/*.md"
-	- sort_order: "asc"
+	  sort_order: "asc"
 assets:
 	- "assets/**"
 `
@@ -200,12 +238,9 @@ version: 1
 project:
   name: "Test Project"
 pages:
-  - markdown: "../README1.md"
+  - markdown: "../forbid/README1.md"
     path: "readme1"
     title: "README1"
-  - markdown: "README2.md"
-    path: "readme2"
-    title: "README2"
 `
 
 // Directory Traversal Attack.
@@ -214,21 +249,51 @@ version: 1
 project:
   name: "Test Project"
 pages:
-  - markdown: "README1.md"
-    path: "readme1"
-    title: "README1"
-  - markdown: "./dir1/.././../README2.md"
+  - markdown: "./.././forbid/README1.md"
     path: "readme2"
     title: "README2"
 `
 
+// Directory Traversal Attack.
+const TestCasePageDirectoryTraversal3 = `
+version: 1
+project:
+  name: "Test Project"
+pages:
+  - match: "../forbid/*.md"
+`
+
+// Directory Traversal Attack.
+const TestCasePageDirectoryTraversal4 = `
+version: 1
+project:
+  name: "Test Project"
+pages:
+  - markdown: "README1.md"
+    path: "readme1"
+    title: "README1"
+  - match: "./.././forbid/*.md"
+`
+
 func TestParseConfig(t *testing.T) {
+	// Create a temporary directory.
 	dir, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
-	createTempFile(t, dir, "README1.md")
-	createTempFile(t, dir, "README2.md")
+	// Create a working directory.
+	workingDir := filepath.Join(dir, "working")
+	require.NoError(t, os.Mkdir(workingDir, 0o755))
+	f := createTempFile(t, workingDir, "README1.md")
+	require.NoError(t, os.WriteFile(f, []byte(Readme1Contents), 0o600))
+	f = createTempFile(t, workingDir, "README2.md")
+	require.NoError(t, os.WriteFile(f, []byte(Readme2Contents), 0o600))
+
+	// Create a temporary directory to test the directory traversal attack.
+	forbidDir := filepath.Join(dir, "forbid")
+	require.NoError(t, os.Mkdir(forbidDir, 0o755))
+	f = createTempFile(t, forbidDir, "README1.md")
+	require.NoError(t, os.WriteFile(f, []byte(Readme1Contents), 0o600))
 
 	testCases := []struct {
 		name     string
@@ -237,15 +302,14 @@ func TestParseConfig(t *testing.T) {
 	}{
 		{
 			name:     "valid config with markdown",
-			input:    TestCaseCreatePageWithMarkdown,
+			input:    TestCaseParseMarkdown,
 			expected: true,
 		},
 		{
 			name:     "valid config with match",
-			input:    TestCaseCreatePageTreeMatch,
+			input:    TestCaseForDetailCheckMatch,
 			expected: true,
 		},
-
 		{
 			name:     "invalid config: unknown version",
 			input:    TestCaseWithUnknownVersion,
@@ -293,7 +357,17 @@ func TestParseConfig(t *testing.T) {
 		},
 		{
 			name:     "invalid config: including directory traversal2",
-			input:    TestCaseWithDirectoryTraversal1,
+			input:    TestCaseWithDirectoryTraversal2,
+			expected: false,
+		},
+		{
+			name:     "invalid config: including directory traversal3",
+			input:    TestCasePageDirectoryTraversal3,
+			expected: false,
+		},
+		{
+			name:     "invalid config: including directory traversal4",
+			input:    TestCasePageDirectoryTraversal4,
 			expected: false,
 		},
 	}
@@ -301,9 +375,9 @@ func TestParseConfig(t *testing.T) {
 	for _, tc := range testCases {
 		testCase := tc
 		t.Run(tc.name, func(t *testing.T) {
-			// DO NOT parallel this test.
-			// If you parallel this test, the temp file cleanup will be cause before testing.
-			state := NewParseState("config.yaml", dir)
+			// DO NOT parallelize this test.
+			// If you parallelize this test, the temp file cleanup will occur before testing.
+			state := NewParseState("config.yaml", workingDir)
 			_, err := ParseConfig(state, strings.NewReader(testCase.input))
 			if testCase.expected {
 				require.NoError(t, err)
@@ -346,4 +420,12 @@ func TestDirectoryTraversal(t *testing.T) {
 	c := ConfigAsset("../../image*.png")
 	_, err = c.List(subdir)
 	require.Error(t, err)
+}
+
+func createTempFile(t *testing.T, dir, path string) string {
+	t.Helper()
+	f, err := os.Create(filepath.Join(dir, path))
+	require.NoError(t, err)
+	defer f.Close()
+	return f.Name()
 }

@@ -3,16 +3,11 @@ package main
 import (
 	"crypto/sha256"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 
-	"github.com/adrg/frontmatter"
 	"github.com/caarlos0/log"
-	"github.com/mattn/go-zglob"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -65,27 +60,18 @@ type Page struct {
 	Children    []Page           `json:"children"`
 }
 
-func NewLeafNodeFromFrontMatter(filePath string) (*Page, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open file: %w", err)
+func NewLeafNodeFromConfigPge(config *ConfigPage) Page {
+	page := Page{
+		Type:        PageTypeLeafNode,
+		Filepath:    config.Markdown,
+		Hash:        fmt.Sprintf("%x", sha256.Sum256([]byte(config.Markdown))),
+		Path:        config.Path,
+		Title:       config.Title,
+		Description: config.Description,
+		UpdatedAt:   config.UpdatedAt,
+		Children:    []Page{},
 	}
-	defer file.Close()
-
-	formats := []*frontmatter.Format{
-		frontmatter.NewFormat("---", "---", yaml.Unmarshal),
-	}
-	page := Page{}
-	_, err = frontmatter.Parse(file, &page, formats...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse front matter: %w", err)
-	}
-
-	page.Type = PageTypeLeafNode
-	page.Filepath = filePath
-	page.Hash = fmt.Sprintf("%x", sha256.Sum256([]byte(filePath)))
-	page.Children = []Page{}
-	return &page, nil
+	return page
 }
 
 // List PageSummary of the page includes.
@@ -192,34 +178,6 @@ func (p *Page) Add(page Page) {
 	p.Children = append(p.Children, page)
 }
 
-func SortPageSlice(sortKey, sortOrder string, pages []Page) error {
-	if sortKey == "" && sortOrder == "" {
-		return nil
-	}
-	if sortKey == "" {
-		return fmt.Errorf("sort key is not provided")
-	}
-	// Check sortOrder
-	isASC := true
-	if sortOrder != "" {
-		switch strings.ToLower(sortOrder) {
-		case "asc":
-			break
-		case "desc":
-			isASC = false
-		default:
-			return fmt.Errorf("invalid sort order: `%s`", sortOrder)
-		}
-	}
-	if sortKey == "title" {
-		sort.Slice(pages, func(i, j int) bool {
-			return (pages[i].Title < pages[j].Title) == isASC
-		})
-		return nil
-	}
-	return fmt.Errorf("invalid sort key: %s", sortKey)
-}
-
 func CreatePageTree(config *Config, rootDir string) (*Page, *MultiError) {
 	errorSet := NewMultiError()
 	root := Page{
@@ -247,9 +205,6 @@ func buildPage(rootDir string, c ConfigPage) ([]Page, *MultiError) {
 	if c.MatchMarkdown() {
 		return transformMarkdown(rootDir, &c)
 	}
-	if c.MatchMatch() {
-		return transformMatch(rootDir, &c)
-	}
 
 	if c.MatchDirectory() {
 		return transformDirectory(rootDir, &c)
@@ -265,69 +220,14 @@ func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
 	filepath := filepath.Clean(filepath.Join(rootDir, c.Markdown))
 
 	if err := IsUnderRootPath(rootDir, filepath); err != nil {
-		merr.Add(NewAppError(fmt.Sprintf("path should be under the rootDir. passed: %s", filepath)))
+		merr.Add(fmt.Errorf("path should be under the rootDir. passed: %s", filepath))
 		return nil, &merr
 	}
 
 	// First, populate the fields from the markdown front matter.
-	p, err := NewLeafNodeFromFrontMatter(filepath)
-	if err != nil {
-		merr.Add(err)
-		return nil, &merr
-	}
-
-	// Second, populate the fields from the configuration.
-	if c.Title != "" {
-		p.Title = c.Title
-	}
-	if c.Path != "" {
-		p.Path = c.Path
-	}
-	if c.Description != "" {
-		p.Description = c.Description
-	}
-	if c.UpdatedAt != "" {
-		p.UpdatedAt = c.UpdatedAt
-	}
-
+	p := NewLeafNodeFromConfigPge(c)
 	log.Debugf("Node Found. Type: Markdown, Filepath: '%s', Title: '%s', Path: '%s'", p.Filepath, p.Title, p.Path)
-	return []Page{*p}, nil
-}
-
-func transformMatch(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
-	pages := make([]Page, 0)
-	merr := NewMultiError()
-	dirPath := filepath.Clean(filepath.Join(rootDir, c.Match))
-	if err := IsUnderRootPath(rootDir, dirPath); err != nil {
-		merr.Add(fmt.Errorf("invalid configuration: path should be under the rootDir: path: %s", dirPath))
-		return nil, &merr
-	}
-
-	matches, err := zglob.Glob(dirPath)
-	if err != nil {
-		merr.Add(fmt.Errorf("internal error: error raised during globbing %s: %w", dirPath, err))
-		return nil, &merr
-	}
-
-	for _, m := range matches {
-		p, err := NewLeafNodeFromFrontMatter(m)
-		if err != nil {
-			merr.Add(err)
-			continue
-		}
-		log.Debugf("Node Found. Type: Markdown, Filepath: %s, Title: %s, Path: %s", p.Filepath, p.Title, p.Path)
-		pages = append(pages, *p)
-	}
-
-	if err := SortPageSlice(c.SortKey, c.SortOrder, pages); err != nil {
-		merr.Add(NewAppError(fmt.Sprintf("failed to sort pages: %v", err)))
-		return nil, &merr
-	}
-
-	if merr.HasError() {
-		return nil, &merr
-	}
-	return pages, nil
+	return []Page{p}, nil
 }
 
 func transformDirectory(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
