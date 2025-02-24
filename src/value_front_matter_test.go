@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewFrontMatter(t *testing.T) {
@@ -15,14 +16,16 @@ func TestNewFrontMatter(t *testing.T) {
 
 	assert.Equal(t, title, fm.Title, "expected title to be %s, got %s", title, fm.Title)
 	assert.Equal(t, path, fm.Path, "expected path to be %s, got %s", path, fm.Path)
-	assert.False(t, fm.CreatedAt.IsNull(), "expected CreatedAt to be set, got zero value")
-	assert.False(t, fm.UpdatedAt.IsNull(), "expected UpdatedAt to be set, got zero value")
+	assert.False(t, fm.CreatedAt.IsZero(), "expected CreatedAt to be set, got zero value")
+	assert.False(t, fm.UpdatedAt.IsZero(), "expected UpdatedAt to be set, got zero value")
+	assert.Equal(t, "", fm.Description, "expected description to be empty, got %s", fm.Description)
 }
 
 func TestNewFrontMatterFromMarkdown(t *testing.T) {
 	content := `---
 title: Test Title
 path: /test/path
+description: Test Description
 created_at: 2023-10-01T00:00:00Z
 updated_at: 2023-10-01T00:00:00Z
 ---`
@@ -47,8 +50,10 @@ updated_at: 2023-10-01T00:00:00Z
 
 	assert.Equal(t, "Test Title", fm.Title, "expected title 'Test Title', got %s", fm.Title)
 	assert.Equal(t, "/test/path", fm.Path, "expected path '/test/path', got %s", fm.Path)
+	assert.Equal(t, "Test Description", fm.Description, "expected description 'Test Description', got %s", fm.Description)
 
-	expectedTime := SerializableTime("2023-10-01T00:00:00Z")
+	expectedTime, err := NewSerializableTime("2023-10-01T00:00:00Z")
+	require.NoError(t, err)
 	assert.Equal(t, expectedTime, fm.CreatedAt, "expected CreatedAt %v, got %v", expectedTime, fm.CreatedAt)
 	assert.Equal(t, expectedTime, fm.UpdatedAt, "expected UpdatedAt %v, got %v", expectedTime, fm.UpdatedAt)
 }
@@ -57,6 +62,7 @@ func TestNewFrontMatterFromMarkdownWithUnknownTags(t *testing.T) {
 	content := `---
 title: Test Title
 path: /test/path
+description: Test Description
 created_at: 2023-10-01T00:00:00Z
 updated_at: 2023-10-01T00:00:00Z
 UnknownTag1: "unknown1"
@@ -86,10 +92,12 @@ UnknownTag2: "unknown2"
 
 	assert.Equal(t, "unknown1", fm.UnknownTags["UnknownTag1"], "expected UnknownTag1 to be 'unknown1', got %s", fm.UnknownTags["UnknownTag1"])
 	assert.Equal(t, "unknown2", fm.UnknownTags["UnknownTag2"], "expected UnknownTag2 to be 'unknown2', got %s", fm.UnknownTags["UnknownTag2"])
+	assert.Equal(t, "Test Description", fm.Description, "expected description 'Test Description', got %s", fm.Description)
 }
 
 func TestFrontMatterString(t *testing.T) {
 	fm := NewFrontMatter("Test Title", "/test/path")
+	fm.Description = "Test Description"
 	fm.CreatedAt = NewSerializableTimeFromTime(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
 	fm.UpdatedAt = NewSerializableTimeFromTime(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
 	fm.UnknownTags["UnknownTag1"] = "unknown1"
@@ -98,6 +106,7 @@ func TestFrontMatterString(t *testing.T) {
 	expected := `---
 title: Test Title
 path: /test/path
+description: Test Description
 created_at: 2025-01-01T00:00:00Z
 updated_at: 2025-01-01T00:00:00Z
 UnknownTag1: unknown1

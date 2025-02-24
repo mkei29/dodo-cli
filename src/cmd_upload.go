@@ -78,7 +78,8 @@ func executeUpload(args UploadArgs, env EnvArgs) error {
 	}
 	defer configFile.Close()
 
-	config, err := ParseConfig(args.file, configFile)
+	state := NewParseState(args.file, "./")
+	config, err := ParseConfig(state, configFile)
 	if err != nil {
 		return err
 	}

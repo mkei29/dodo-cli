@@ -5,40 +5,37 @@ import (
 	"time"
 )
 
-// Serializable is a custom type for string to process time in json and yaml format.
-//
-// Reference:
-// https://kenzo0107.github.io/2020/05/19/2020-05-20-go-json-time/
-// https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshaler
-type SerializableTime string
+// SerializableTime is a custom type to process time in json and yaml format.
+type SerializableTime struct {
+	time.Time
+}
 
 func NewSerializableTime(s string) (SerializableTime, error) {
-	st := SerializableTime(s)
-	_, err := st.Time()
-	if err != nil {
-		return SerializableTime(""), fmt.Errorf("failed to unmarshal time: %w", err)
+	// If the string is empty, return an empty time.
+	if s == "" {
+		return SerializableTime{}, nil
 	}
-	return st, nil
+
+	// In other cases, parse the string into a time.
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return SerializableTime{}, fmt.Errorf("failed to unmarshal time: %w", err)
+	}
+	return SerializableTime{t}, nil
 }
 
 func NewSerializableTimeFromTime(t time.Time) SerializableTime {
-	return SerializableTime(t.Format(time.RFC3339))
+	return SerializableTime{t}
 }
 
-// String converts the unix timestamp into a string.
+// String converts the time into a string.
 func (t SerializableTime) String() string {
-	return string(t)
-}
-
-// Time returns a `time.Time` representation of this value.
-func (t SerializableTime) Time() (time.Time, error) {
-	tt, err := time.Parse(time.RFC3339, string(t))
-	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to parse time: %w", err)
+	if t.IsZero() {
+		return ""
 	}
-	return tt, nil
+	return t.Format(time.RFC3339)
 }
 
-func (t *SerializableTime) IsNull() bool {
-	return *t == ""
+func (t *SerializableTime) HasValue() bool {
+	return !t.IsZero()
 }
