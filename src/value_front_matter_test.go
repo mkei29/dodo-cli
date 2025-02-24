@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewFrontMatter(t *testing.T) {
@@ -15,8 +16,8 @@ func TestNewFrontMatter(t *testing.T) {
 
 	assert.Equal(t, title, fm.Title, "expected title to be %s, got %s", title, fm.Title)
 	assert.Equal(t, path, fm.Path, "expected path to be %s, got %s", path, fm.Path)
-	assert.False(t, fm.CreatedAt.IsNull(), "expected CreatedAt to be set, got zero value")
-	assert.False(t, fm.UpdatedAt.IsNull(), "expected UpdatedAt to be set, got zero value")
+	assert.False(t, fm.CreatedAt.IsZero(), "expected CreatedAt to be set, got zero value")
+	assert.False(t, fm.UpdatedAt.IsZero(), "expected UpdatedAt to be set, got zero value")
 	assert.Equal(t, "", fm.Description, "expected description to be empty, got %s", fm.Description)
 }
 
@@ -51,7 +52,8 @@ updated_at: 2023-10-01T00:00:00Z
 	assert.Equal(t, "/test/path", fm.Path, "expected path '/test/path', got %s", fm.Path)
 	assert.Equal(t, "Test Description", fm.Description, "expected description 'Test Description', got %s", fm.Description)
 
-	expectedTime := SerializableTime("2023-10-01T00:00:00Z")
+	expectedTime, err := NewSerializableTime("2023-10-01T00:00:00Z")
+	require.NoError(t, err)
 	assert.Equal(t, expectedTime, fm.CreatedAt, "expected CreatedAt %v, got %v", expectedTime, fm.CreatedAt)
 	assert.Equal(t, expectedTime, fm.UpdatedAt, "expected UpdatedAt %v, got %v", expectedTime, fm.UpdatedAt)
 }

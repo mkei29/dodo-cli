@@ -75,17 +75,17 @@ func NewFrontMatterFromMarkdown(filepath string) (*FrontMatter, error) { //nolin
 		case FrontMatterDescription:
 			matter.Description = v
 		case FrontMatterKeyCreatedAt:
-			if st, err := NewSerializableTime(v); err == nil {
-				matter.CreatedAt = st
-				continue
+			st, err := NewSerializableTime(v)
+			if err != nil {
+				return nil, fmt.Errorf("`created_at` should follow the RFC3339 format. Got: %s", v)
 			}
-			return nil, fmt.Errorf("failed to parse created_at: %w", err)
+			matter.CreatedAt = st
 		case FrontMatterKeyUpdatedAt:
-			if st, err := NewSerializableTime(v); err == nil {
-				matter.UpdatedAt = st
-				continue
+			st, err := NewSerializableTime(v)
+			if err != nil {
+				return nil, fmt.Errorf("`updated_at` should follow the RFC3339 format. Got: %s", v)
 			}
-			return nil, fmt.Errorf("failed to parse updated_at: %w", err)
+			matter.UpdatedAt = st
 		default:
 			matter.UnknownTags[k] = v
 		}

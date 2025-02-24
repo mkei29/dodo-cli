@@ -63,7 +63,7 @@ func TestParseConfigDetailsMarkdown(t *testing.T) {
 	assert.Equal(t, "readme1", conf.Pages[0].Path)
 	assert.Equal(t, "README1", conf.Pages[0].Title)
 	assert.Equal(t, "2021-01-01T00:00:00Z", conf.Pages[0].UpdatedAt.String())
-	assert.True(t, conf.Pages[1].UpdatedAt.IsNull(), "UpdatedAt should be nil if there is no explicit value")
+	assert.True(t, conf.Pages[1].UpdatedAt.IsZero(), "UpdatedAt should be nil if there is no explicit value")
 
 	// Check README2
 	// There are no fields in the YAML file, but we can read the fields from the markdown file.

@@ -11,7 +11,7 @@ func TestNewSerializableTime(t *testing.T) {
 		hasError bool
 	}{
 		{"2023-10-10T10:10:10Z", "2023-10-10T10:10:10Z", false},
-		{"", "", true},
+		{"", "", false},
 		{"invalid-time", "", true},
 	}
 

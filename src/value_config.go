@@ -637,7 +637,8 @@ func buildConfigPageFromMatchStatement(state *ParseState, mapping *ast.MappingNo
 	for _, m := range matches {
 		matter, err := NewFrontMatterFromMarkdown(m)
 		if err != nil {
-			state.errorSet.Add(err)
+			message := fmt.Sprintf("%s: %s", err.Error(), m)
+			state.errorSet.Add(state.buildParseError(message, mapping))
 			continue
 		}
 
