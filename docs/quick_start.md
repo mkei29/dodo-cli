@@ -25,15 +25,7 @@ https://www.dodo-doc.com/dashboard
 Clicking the `New API Key` button in the upper right corner of the project screen will generate a new API Key.
 The newly issued API Key will be displayed at the top of the screen. Please copy and store it securely.
 
-:::message info
-The API Key is only displayed once and cannot be viewed again after you close the screen.
-:::
-
 :::message warning
-The API Key is only displayed once and cannot be viewed again after you close the screen.
-:::
-
-:::message alert
 The API Key is only displayed once and cannot be viewed again after you close the screen.
 :::
 
@@ -78,8 +70,9 @@ Run the following command to set the API Key as an environment variable:
 ```bash
 export DODO_API_KEY="<Your initially obtained API Key>"
 ```
-!note
+:::message info
 If you're uploading continuously from a local environment, using tools like (direnv)[https://direnv.net/] can be convenient.
+:::
 
 Now you're all set for uploading.
 Let's run the following command to actually upload the documents:
