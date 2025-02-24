@@ -156,9 +156,9 @@ func (s *ParseState) getSecurePath(path string) (string, error) {
 
 // ParseConfig takes a reader and parses it into a Config struct.
 // While parsing, it validates the config at the same time.
-// This is because we want to prvide a user-friendly error message.
+// This is to provide a user-friendly error message.
 //
-// This function respects the following implementation:
+// This function follows the implementation at:
 // https://github.com/goccy/go-yaml/blob/abc70836f5a5623a92cf51d4bf40cbaf8fed2faa/decode.go
 func ParseConfig(state *ParseState, reader io.Reader) (*Config, error) {
 	buf := new(bytes.Buffer)
@@ -241,7 +241,7 @@ func parseRootItem(state *ParseState, node ast.Node) {
 
 func parseVersion(state *ParseState, node *ast.MappingValueNode) {
 	// This function should be called only once.
-	// Receive an object like the following:
+	// Receives an object like the following:
 	//
 	// version: "1"
 	//
@@ -278,7 +278,7 @@ func parseVersion(state *ParseState, node *ast.MappingValueNode) {
 
 func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolint: cyclop
 	// This function should be called only once.
-	// Receive an object like the following:
+	// Receives an object like the following:
 	//
 	// project:
 	//   name: "My Project"
@@ -336,7 +336,7 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 
 func parseConfigPage(state *ParseState, node *ast.MappingValueNode) {
 	// This function should be called only once.
-	// Receive an object like the following:
+	// Receives an object like the following:
 	//
 	// pages:
 	//   - markdown: "README1.md"
@@ -359,7 +359,7 @@ func parseConfigPage(state *ParseState, node *ast.MappingValueNode) {
 }
 
 func parseConfigPageSequence(state *ParseState, sequence *ast.SequenceNode) []ConfigPage {
-	// Receive an object like the following:
+	// Receives an object like the following:
 	//
 	// xxx:
 	//   - markdown: "README1.md"
@@ -433,7 +433,7 @@ func estimateConfigPageType(mapping *ast.MappingNode) int {
 }
 
 func parseConfigPageMarkdown(state *ParseState, mapping *ast.MappingNode) ConfigPage { //nolint: cyclop, funlen
-	// a markdown object has the following fields:
+	// A markdown object has the following fields:
 	// {
 	//   "markdown": "README1.md",
 	//   "title": "README1",
@@ -441,6 +441,7 @@ func parseConfigPageMarkdown(state *ParseState, mapping *ast.MappingNode) Config
 	//   "description": "This is README1",
 	//   "updated_at": "2021-01-01T00:00:00Z"
 	// }
+
 	configPage := ConfigPage{}
 
 	for _, item := range mapping.Values {
@@ -561,7 +562,7 @@ func validateMarkdownPage(state *ParseState, configPage *ConfigPage, mapping *as
 }
 
 func parseConfigPageMatch(state *ParseState, mapping *ast.MappingNode) []ConfigPage { //nolint: cyclop
-	// a match object has the following fields:
+	// A match object has the following fields:
 	// {
 	//   "match": "docs/*.md",
 	//   "sort_key": "title",
@@ -649,7 +650,7 @@ func buildConfigPageFromMatchStatement(state *ParseState, mapping *ast.MappingNo
 			CreatedAt:   matter.CreatedAt,
 		}
 
-		if ok := validateMarkdownPage(state, &p, mapping); !ok {
+		if ok := validateMatchPage(state, &p, mapping); !ok {
 			continue
 		}
 		log.Debugf("Node Found. Type: Markdown, Filepath: %s, Title: %s, Path: %s", p.Markdown, p.Title, p.Path)
@@ -660,6 +661,23 @@ func buildConfigPageFromMatchStatement(state *ParseState, mapping *ast.MappingNo
 		return nil
 	}
 	return pages
+}
+
+func validateMatchPage(state *ParseState, configPage *ConfigPage, mapping *ast.MappingNode) bool {
+	// Almost the same as validateMarkdownPage.
+	// But the error message is different.
+	ok := true
+	if configPage.Title == "" {
+		message := fmt.Sprintf("the `title` field should exist in the markdown file when you use `match`: %s", configPage.Markdown)
+		state.errorSet.Add(state.buildParseError(message, mapping))
+		ok = false
+	}
+	if configPage.Path == "" {
+		message := fmt.Sprintf("the `path` field should exist in the markdown file when you use `match`: %s", configPage.Markdown)
+		state.errorSet.Add(state.buildParseError(message, mapping))
+		ok = false
+	}
+	return ok
 }
 
 func sortPageSlice(sortKey, sortOrder string, pages []ConfigPage) error {
@@ -694,7 +712,7 @@ func sortPageSlice(sortKey, sortOrder string, pages []ConfigPage) error {
 }
 
 func parseConfigPageDirectory(state *ParseState, mapping *ast.MappingNode) ConfigPage {
-	// a directory object has the following fields:
+	// A directory object has the following fields:
 	//
 	// {
 	//   "directory": "path/to/directory",
@@ -736,7 +754,7 @@ func parseConfigPageDirectory(state *ParseState, mapping *ast.MappingNode) Confi
 
 func parseConfigAssets(state *ParseState, node *ast.MappingValueNode) {
 	// This function should be called only once.
-	// Receive an object like the following:
+	// Receives an object like the following:
 	//
 	// assets:
 	//   - "assets/**"
