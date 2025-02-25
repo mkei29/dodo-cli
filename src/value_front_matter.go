@@ -32,14 +32,19 @@ type FrontMatter struct {
 	UnknownTags map[string]interface{}
 }
 
-func NewFrontMatter(title string, path string) *FrontMatter {
-	now := time.Now()
+func NewFrontMatter(title string, path string, now ...time.Time) *FrontMatter {
+	var currentTime time.Time
+	if len(now) > 0 {
+		currentTime = now[0]
+	} else {
+		currentTime = time.Now()
+	}
 	return &FrontMatter{
 		Title:       title,
 		Path:        path,
 		Description: "",
-		CreatedAt:   NewSerializableTimeFromTime(now),
-		UpdatedAt:   NewSerializableTimeFromTime(now),
+		CreatedAt:   NewSerializableTimeFromTime(currentTime),
+		UpdatedAt:   NewSerializableTimeFromTime(currentTime),
 		UnknownTags: make(map[string]interface{}),
 	}
 }

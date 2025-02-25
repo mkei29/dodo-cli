@@ -117,6 +117,7 @@ UnknownTag2: "unknown2"
 
 func TestFrontMatterString(t *testing.T) {
 	fm := NewFrontMatter("Test Title", "/test/path")
+
 	fm.Description = "Test Description"
 	fm.CreatedAt = NewSerializableTimeFromTime(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
 	fm.UpdatedAt = NewSerializableTimeFromTime(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
