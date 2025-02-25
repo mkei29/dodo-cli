@@ -100,9 +100,6 @@ func TestParseConfigDetailsMatch(t *testing.T) {
 
 	state := NewParseState("config.yaml", dir)
 	conf, err := ParseConfig(state, strings.NewReader(TestCaseForDetailCheckMatch))
-	if merr, ok := err.(*MultiError); ok {
-		merr.Summary()
-	}
 	require.NoError(t, err)
 
 	// Check metadata

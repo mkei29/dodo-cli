@@ -688,7 +688,6 @@ func sortPageSlice(sortKey, sortOrder string, pages []ConfigPage) error { //noli
 	if sortKey == "" {
 		return fmt.Errorf("sort key is not provided")
 	}
-
 	// Check sortOrder
 	isASC := true
 	if sortOrder != "" {
