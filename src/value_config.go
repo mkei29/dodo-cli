@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -78,6 +79,25 @@ func (c *ConfigPage) MatchMarkdown() bool {
 
 func (c *ConfigPage) MatchDirectory() bool {
 	return c.Directory != ""
+}
+
+func (c *ConfigPage) isValidTitle() error {
+	if c.Title == "" {
+		return fmt.Errorf("the `title` field is required")
+	}
+	return nil
+}
+
+func (c *ConfigPage) isValidPath() error {
+	// The path must contain only alphanumeric characters, periods (.), underscores (_), and hyphens (-).
+	if c.Path == "" {
+		return fmt.Errorf("the `path` field is required")
+	}
+	matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", c.Path)
+	if err != nil || !matched {
+		return fmt.Errorf("the path `%s` contains invalid characters. Paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", c.Path)
+	}
+	return nil
 }
 
 type ConfigAsset string
@@ -550,12 +570,12 @@ func fillFieldsFromMarkdown(state *ParseState, configPage *ConfigPage, mapping *
 
 func validateMarkdownPage(state *ParseState, configPage *ConfigPage, mapping *ast.MappingNode) bool {
 	ok := true
-	if configPage.Title == "" {
-		state.errorSet.Add(state.buildParseError("the `title` field is required", mapping))
+	if err := configPage.isValidTitle(); err != nil {
+		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
 		ok = false
 	}
-	if configPage.Path == "" {
-		state.errorSet.Add(state.buildParseError("the `path` field is required", mapping))
+	if err := configPage.isValidPath(); err != nil {
+		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
 		ok = false
 	}
 	return ok
@@ -668,13 +688,13 @@ func validateMatchPage(state *ParseState, configPage *ConfigPage, mapping *ast.M
 	// Almost the same as validateMarkdownPage.
 	// But the error message is different.
 	ok := true
-	if configPage.Title == "" {
-		message := fmt.Sprintf("the `title` field must exist in the markdown file when you use `match`: %s", configPage.Markdown)
+	if err := configPage.isValidTitle(); err != nil {
+		message := fmt.Sprintf("%v: %s", err, configPage.Markdown)
 		state.errorSet.Add(state.buildParseError(message, mapping))
 		ok = false
 	}
-	if configPage.Path == "" {
-		message := fmt.Sprintf("the `path` field must exist in the markdown file when you use `match`: %s", configPage.Markdown)
+	if err := configPage.isValidPath(); err != nil {
+		message := fmt.Sprintf("%v: %s", err, configPage.Markdown)
 		state.errorSet.Add(state.buildParseError(message, mapping))
 		ok = false
 	}

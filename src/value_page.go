@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/caarlos0/log"
@@ -124,11 +123,6 @@ func (p *Page) isValid(isRoot bool, errorSet *MultiError) {
 	}
 	if p.Type == PageTypeLeafNode && p.Path == "" {
 		errorSet.Add(NewAppError("'path' is required for leaf node"))
-	}
-
-	matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", p.Path)
-	if err != nil || !matched {
-		errorSet.Add(NewAppError(fmt.Sprintf("The path `%s` contains invalid characters. Paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", p.Filepath)))
 	}
 	for _, c := range p.Children {
 		c.isValid(false, errorSet)
