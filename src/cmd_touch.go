@@ -19,6 +19,7 @@ type TouchArgs struct {
 	path     string
 	debug    bool
 	noColor  bool
+	now      string
 }
 
 func CreateTouchCmd() *cobra.Command {
@@ -38,6 +39,7 @@ func CreateTouchCmd() *cobra.Command {
 	touchCmd.Flags().StringVarP(&opts.path, "path", "p", "", "the URL path of the file")
 	touchCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
 	touchCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
+	touchCmd.Flags().StringVar(&opts.now, "now", "", "the current time in RFC3339 format")
 	return touchCmd
 }
 
@@ -51,6 +53,14 @@ func executeTouchWrapper(args TouchArgs) error {
 	printer := NewPrinter(ErrorLevel)
 	if args.noColor {
 		printer = NewPrinter(NoColor)
+	}
+
+	if args.now != "" {
+		_, err := time.Parse(time.RFC3339, args.now)
+		if err != nil {
+			printer.printError(fmt.Errorf("invalid time format: %w", err))
+			return fmt.Errorf("invalid time format: %w", err)
+		}
 	}
 
 	if _, err := os.Stat(args.filepath); os.IsNotExist(err) {
@@ -80,7 +90,12 @@ func executeTouchNew(args TouchArgs) error {
 		filepath = args.path
 	}
 
-	matter := NewFrontMatter(args.title, filepath)
+	now, err := parseTime(args.now)
+	if err != nil {
+		return err
+	}
+	matter := NewFrontMatter(args.title, filepath, now)
+
 	if _, err := file.WriteString(matter.String()); err != nil {
 		return fmt.Errorf("failed to write front matter: %w", err)
 	}
@@ -102,8 +117,25 @@ func executeTouchUpdate(args TouchArgs) error {
 	if args.path != "" {
 		matter.Path = args.path
 	}
-	matter.UpdatedAt = NewSerializableTimeFromTime(time.Now())
+
+	// Update time
+	now, err := parseTime(args.now)
+	if err != nil {
+		return err
+	}
+	matter.UpdatedAt = NewSerializableTimeFromTime(now)
 
 	// Rewrite a markdown
 	return matter.UpdateMarkdown(args.filepath)
+}
+
+func parseTime(timeStr string) (time.Time, error) {
+	if timeStr == "" {
+		return time.Now(), nil
+	}
+	t, err := time.Parse(time.RFC3339, timeStr)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse time: %w", err)
+	}
+	return t, nil
 }
