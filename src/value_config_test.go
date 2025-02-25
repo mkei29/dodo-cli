@@ -82,6 +82,8 @@ project:
   name: "Test Project"
 pages:
   - match: "./*.md"
+    sort_key: "title"
+    sort_order: "asc"
 `
 
 func TestParseConfigDetailsMatch(t *testing.T) {
@@ -91,26 +93,65 @@ func TestParseConfigDetailsMatch(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
-	createTempFile(t, dir, "README1.md")
+	readme1 := createTempFile(t, dir, "README1.md")
+	os.WriteFile(readme1, []byte(Readme1Contents), 0o600)
 	readme2 := createTempFile(t, dir, "README2.md")
 	os.WriteFile(readme2, []byte(Readme2Contents), 0o600)
 
 	state := NewParseState("config.yaml", dir)
-	conf, err := ParseConfig(state, strings.NewReader(TestCaseForDetailCheckMarkdown))
+	conf, err := ParseConfig(state, strings.NewReader(TestCaseForDetailCheckMatch))
 	require.NoError(t, err)
 
 	// Check metadata
 	assert.Equal(t, "1", conf.Version)
 
 	// Check README1
-	assert.Equal(t, "README1.md", conf.Pages[0].Markdown)
+	assert.Equal(t, readme1, conf.Pages[0].Markdown)
 	assert.Equal(t, "readme1", conf.Pages[0].Path)
 	assert.Equal(t, "README1", conf.Pages[0].Title)
 
 	// Check README2
-	assert.Equal(t, "README2.md", conf.Pages[1].Markdown)
+	assert.Equal(t, readme2, conf.Pages[1].Markdown)
 	assert.Equal(t, "readme2", conf.Pages[1].Path)
 	assert.Equal(t, "README2", conf.Pages[1].Title)
+}
+
+func TestSortPageSlice(t *testing.T) {
+	// Test sorting by title
+	pages := []ConfigPage{
+		{Title: "B"},
+		{Title: "A"},
+	}
+	err := sortPageSlice("title", "asc", pages)
+	require.NoError(t, err)
+	assert.Equal(t, "A", pages[0].Title)
+	assert.Equal(t, "B", pages[1].Title)
+
+	st1, err := NewSerializableTime("2021-01-02T00:00:00Z")
+	require.NoError(t, err)
+	st2, err := NewSerializableTime("2021-01-01T00:00:00Z")
+	require.NoError(t, err)
+
+	// Test sorting by updated_at
+	pages = []ConfigPage{
+		{UpdatedAt: st1},
+		{UpdatedAt: st2},
+	}
+
+	err = sortPageSlice("updated_at", "asc", pages)
+	require.NoError(t, err)
+	assert.Equal(t, "2021-01-01T00:00:00Z", pages[0].UpdatedAt.String())
+	assert.Equal(t, "2021-01-02T00:00:00Z", pages[1].UpdatedAt.String())
+
+	// Test sorting by created_at
+	pages = []ConfigPage{
+		{CreatedAt: st1},
+		{CreatedAt: st2},
+	}
+	err = sortPageSlice("created_at", "asc", pages)
+	require.NoError(t, err)
+	assert.Equal(t, "2021-01-01T00:00:00Z", pages[0].CreatedAt.String())
+	assert.Equal(t, "2021-01-02T00:00:00Z", pages[1].CreatedAt.String())
 }
 
 // Valid Case.
