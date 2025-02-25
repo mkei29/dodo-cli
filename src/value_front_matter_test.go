@@ -58,6 +58,26 @@ updated_at: 2023-10-01T00:00:00Z
 	assert.Equal(t, expectedTime, fm.UpdatedAt, "expected UpdatedAt %v, got %v", expectedTime, fm.UpdatedAt)
 }
 
+func TestNewFrontMatterFromMarkdownWithoutFrontMater(t *testing.T) {
+	content := "Test Content"
+
+	tmpfile, err := os.CreateTemp("", "test*.md")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	if _, err := tmpfile.WriteString(content); err != nil {
+		t.Fatalf("failed to write to temp file: %v", err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		t.Fatalf("failed to close temp file: %v", err)
+	}
+
+	_, err = NewFrontMatterFromMarkdown(tmpfile.Name())
+	require.NoError(t, err, "expected no error when creating FrontMatter from empty file")
+}
+
 func TestNewFrontMatterFromMarkdownWithUnknownTags(t *testing.T) {
 	content := `---
 title: Test Title

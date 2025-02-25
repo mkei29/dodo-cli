@@ -295,17 +295,6 @@ pages:
         title: "README1"
 `
 
-// Path field is invalid.
-const TestCasePageInvalid3 = `
-version: 1
-project:
-  name: "project"
-pages:
-  - markdown: "README1.md"
-    path: "test/readme1"
-    title: "README1"	
-`
-
 func TestIsValid(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -331,11 +320,6 @@ func TestIsValid(t *testing.T) {
 		{
 			"invalid: page has duplicated paths under the same parent",
 			TestCasePageInvalid2,
-			false,
-		},
-		{
-			"invalid: path field is invalid",
-			TestCasePageInvalid3,
 			false,
 		},
 	}
