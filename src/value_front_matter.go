@@ -77,13 +77,13 @@ func NewFrontMatterFromMarkdown(filepath string) (*FrontMatter, error) { //nolin
 		case FrontMatterKeyCreatedAt:
 			st, err := NewSerializableTime(v)
 			if err != nil {
-				return nil, fmt.Errorf("`created_at` should follow the RFC3339 format. Got: %s", v)
+				return nil, fmt.Errorf("`created_at` must follow the RFC3339 format. Got: %s", v)
 			}
 			matter.CreatedAt = st
 		case FrontMatterKeyUpdatedAt:
 			st, err := NewSerializableTime(v)
 			if err != nil {
-				return nil, fmt.Errorf("`updated_at` should follow the RFC3339 format. Got: %s", v)
+				return nil, fmt.Errorf("`updated_at` must follow the RFC3339 format. Got: %s", v)
 			}
 			matter.UpdatedAt = st
 		default:

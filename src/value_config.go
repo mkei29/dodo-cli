@@ -85,7 +85,7 @@ type ConfigAsset string
 func (m ConfigAsset) List(rootDir string) ([]string, error) {
 	globPath := filepath.Clean(filepath.Join(rootDir, string(m)))
 	if err := IsUnderRootPath(rootDir, globPath); err != nil {
-		return nil, fmt.Errorf("invalid configuration: path should be under the root directory: path: %s", globPath)
+		return nil, fmt.Errorf("invalid configuration: path must be under the root directory: path: %s", globPath)
 	}
 
 	matches, err := zglob.Glob(globPath)
@@ -192,7 +192,7 @@ func parseRoot(state *ParseState, root *ast.File) {
 
 	body, ok := root.Docs[0].Body.(*ast.MappingNode)
 	if !ok {
-		state.errorSet.Add(state.buildParseError("the root node should be of mapping type", root.Docs[0].Body))
+		state.errorSet.Add(state.buildParseError("the root node must be of mapping type", root.Docs[0].Body))
 		return
 	}
 
@@ -254,7 +254,7 @@ func parseVersion(state *ParseState, node *ast.MappingValueNode) {
 
 	intNode, ok := node.Value.(*ast.IntegerNode)
 	if !ok {
-		state.errorSet.Add(state.buildParseError("`version` should have an integer value", node.Value))
+		state.errorSet.Add(state.buildParseError("`version` must have an integer value", node.Value))
 		return
 	}
 
@@ -296,7 +296,7 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 	// And all of them are string type.
 	children, ok := node.Value.(*ast.MappingNode)
 	if !ok {
-		state.errorSet.Add(state.buildParseError("the `project` should have a mapping value", node.Value))
+		state.errorSet.Add(state.buildParseError("the `project` must have a mapping value", node.Value))
 		return
 	}
 
@@ -306,21 +306,21 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 		case "name":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`name` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`name` field must be a string", item.Value))
 				continue
 			}
 			state.config.Project.Name = v.Value
 		case "description":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`description` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`description` field must be a string", item.Value))
 				continue
 			}
 			state.config.Project.Description = v.Value
 		case "version":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`version` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`version` field must be a string", item.Value))
 				continue
 			}
 			state.config.Project.Version = v.Value
@@ -330,7 +330,7 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 	}
 
 	if state.config.Project.Name == "" {
-		state.errorSet.Add(state.buildParseError("the `project` should have a `name` field longer than 1 character", node))
+		state.errorSet.Add(state.buildParseError("the `project` must have a `name` field longer than 1 character", node))
 	}
 }
 
@@ -352,7 +352,7 @@ func parseConfigPage(state *ParseState, node *ast.MappingValueNode) {
 
 	sequence, ok := node.Value.(*ast.SequenceNode)
 	if !ok {
-		state.errorSet.Add(state.buildParseError("the `pages` field should be a sequence type", node.Value))
+		state.errorSet.Add(state.buildParseError("the `pages` field must be a sequence type", node.Value))
 		return
 	}
 	state.config.Pages = parseConfigPageSequence(state, sequence)
@@ -371,7 +371,7 @@ func parseConfigPageSequence(state *ParseState, sequence *ast.SequenceNode) []Co
 	for _, item := range sequence.Values {
 		pageNode, ok := item.(*ast.MappingNode)
 		if !ok {
-			state.errorSet.Add(state.buildParseError("each item in the `pages` sequence should be of mapping type", item))
+			state.errorSet.Add(state.buildParseError("each item in the `pages` sequence must be of mapping type", item))
 			continue
 		}
 
@@ -451,52 +451,52 @@ func parseConfigPageMarkdown(state *ParseState, mapping *ast.MappingNode) Config
 		case ConfigPageKeyMarkdown:
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`markdown` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`markdown` field must be a string", item.Value))
 				continue
 			}
 			configPage.Markdown = v.Value
 		case ConfigPageKeyTitle:
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`title` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`title` field must be a string", item.Value))
 				continue
 			}
 			configPage.Title = v.Value
 		case ConfigPageKeyPath:
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`path` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`path` field must be a string", item.Value))
 				continue
 			}
 			configPage.Path = v.Value
 		case ConfigPageKeyDescription:
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`description` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`description` field must be a string", item.Value))
 				continue
 			}
 			configPage.Description = v.Value
 		case ConfigPageKeyUpdatedAt:
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`updated_at` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`updated_at` field must be a string", item.Value))
 				continue
 			}
 			st, err := NewSerializableTime(v.Value)
 			if err != nil {
-				state.errorSet.Add(state.buildParseError("`updated_at` field should follow RFC3339", v))
+				state.errorSet.Add(state.buildParseError("`updated_at` field must follow RFC3339", v))
 				continue
 			}
 			configPage.UpdatedAt = st
 		case ConfigPageKeyCreatedAt:
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`created_at` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`created_at` field must be a string", item.Value))
 				continue
 			}
 			st, err := NewSerializableTime(v.Value)
 			if err != nil {
-				state.errorSet.Add(state.buildParseError("`created_at` field should follow RFC3339", v))
+				state.errorSet.Add(state.buildParseError("`created_at` field must follow RFC3339", v))
 				continue
 			}
 			configPage.CreatedAt = st
@@ -579,31 +579,31 @@ func parseConfigPageMatch(state *ParseState, mapping *ast.MappingNode) []ConfigP
 		case ConfigPageMatchKeyMatch:
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`match` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`match` field must be a string", item.Value))
 				continue
 			}
 			match = v.Value
 		case ConfigPageMatchKeySortKey:
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`sort_key` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`sort_key` field must be a string", item.Value))
 				continue
 			}
 			text := strings.ToLower(v.Value)
 			if text != "title" && text != "updated_at" && text != "created_at" {
-				state.errorSet.Add(state.buildParseError("`sort_key` should be either `title` or `updated_at`", item.Value))
+				state.errorSet.Add(state.buildParseError("`sort_key` must be either `title` or `updated_at`", item.Value))
 				continue
 			}
 			sortKey = text
 		case ConfigPageMatchKeySortOrder:
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`sort_order` should be either `asc` or `desc`", item.Value))
+				state.errorSet.Add(state.buildParseError("`sort_order` must be either `asc` or `desc`", item.Value))
 				continue
 			}
 			text := strings.ToLower(v.Value)
 			if text != "asc" && text != "desc" {
-				state.errorSet.Add(state.buildParseError("`sort_order` should be either `asc` or `desc`", item.Value))
+				state.errorSet.Add(state.buildParseError("`sort_order` must be either `asc` or `desc`", item.Value))
 				continue
 			}
 			sortOrder = text
@@ -614,7 +614,7 @@ func parseConfigPageMatch(state *ParseState, mapping *ast.MappingNode) []ConfigP
 
 	// Validate the fields.
 	if sortKey == "" && sortOrder != "" {
-		state.errorSet.Add(state.buildParseError("`sort_key` should not be empty if you specify `sort_order`", mapping))
+		state.errorSet.Add(state.buildParseError("`sort_key` must not be empty if you specify `sort_order`", mapping))
 		return nil
 	}
 	return buildConfigPageFromMatchStatement(state, mapping, match, sortKey, sortOrder)
@@ -669,25 +669,26 @@ func validateMatchPage(state *ParseState, configPage *ConfigPage, mapping *ast.M
 	// But the error message is different.
 	ok := true
 	if configPage.Title == "" {
-		message := fmt.Sprintf("the `title` field should exist in the markdown file when you use `match`: %s", configPage.Markdown)
+		message := fmt.Sprintf("the `title` field must exist in the markdown file when you use `match`: %s", configPage.Markdown)
 		state.errorSet.Add(state.buildParseError(message, mapping))
 		ok = false
 	}
 	if configPage.Path == "" {
-		message := fmt.Sprintf("the `path` field should exist in the markdown file when you use `match`: %s", configPage.Markdown)
+		message := fmt.Sprintf("the `path` field must exist in the markdown file when you use `match`: %s", configPage.Markdown)
 		state.errorSet.Add(state.buildParseError(message, mapping))
 		ok = false
 	}
 	return ok
 }
 
-func sortPageSlice(sortKey, sortOrder string, pages []ConfigPage) error {
+func sortPageSlice(sortKey, sortOrder string, pages []ConfigPage) error { //nolint: cyclop
 	if sortKey == "" && sortOrder == "" {
 		return nil
 	}
 	if sortKey == "" {
 		return fmt.Errorf("sort key is not provided")
 	}
+
 	// Check sortOrder
 	isASC := true
 	if sortOrder != "" {
@@ -707,8 +708,18 @@ func sortPageSlice(sortKey, sortOrder string, pages []ConfigPage) error {
 		})
 		return nil
 	}
-	// TODO: Implement the sort by `updated_at`.
-	// TODO: Implement the sort by `created_at`.
+	if sortKey == "updated_at" {
+		sort.Slice(pages, func(i, j int) bool {
+			return (pages[i].UpdatedAt.Before(pages[j].UpdatedAt.Time)) == isASC
+		})
+		return nil
+	}
+	if sortKey == "created_at" {
+		sort.Slice(pages, func(i, j int) bool {
+			return (pages[i].CreatedAt.Before(pages[j].CreatedAt.Time)) == isASC
+		})
+		return nil
+	}
 	return fmt.Errorf("invalid sort key: %s", sortKey)
 }
 
@@ -731,14 +742,14 @@ func parseConfigPageDirectory(state *ParseState, mapping *ast.MappingNode) Confi
 		case "directory":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`directory` field should be a string", item.Value))
+				state.errorSet.Add(state.buildParseError("`directory` field must be a string", item.Value))
 				continue
 			}
 			configPage.Directory = v.Value
 		case "children":
 			v, ok := item.Value.(*ast.SequenceNode)
 			if !ok {
-				state.errorSet.Add(state.buildParseError("`children` field should be a sequence", item.Value))
+				state.errorSet.Add(state.buildParseError("`children` field must be a sequence", item.Value))
 				continue
 			}
 			configPage.Children = parseConfigPageSequence(state, v)
@@ -769,7 +780,7 @@ func parseConfigAssets(state *ParseState, node *ast.MappingValueNode) {
 
 	sequence, ok := node.Value.(*ast.SequenceNode)
 	if !ok {
-		state.errorSet.Add(state.buildParseError("the `assets` field should be a sequence type", node.Value))
+		state.errorSet.Add(state.buildParseError("the `assets` field must be a sequence type", node.Value))
 		return
 	}
 
@@ -777,7 +788,7 @@ func parseConfigAssets(state *ParseState, node *ast.MappingValueNode) {
 	for _, item := range sequence.Values {
 		v, ok := item.(*ast.StringNode)
 		if !ok {
-			state.errorSet.Add(state.buildParseError("an item in the `sequence` field should have a string type", item))
+			state.errorSet.Add(state.buildParseError("an item in the `sequence` field must have a string type", item))
 			continue
 		}
 		assets = append(assets, ConfigAsset(v.Value))
