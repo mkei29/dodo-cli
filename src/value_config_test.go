@@ -316,6 +316,17 @@ pages:
   - match: "./.././forbid/*.md"
 `
 
+// Path field is invalid.
+const TestCasePageInvalidPath = `
+version: 1
+project:
+  name: "project"
+pages:
+  - markdown: "README1.md"
+    path: "test/readme1"
+    title: "README1"	
+`
+
 func TestParseConfig(t *testing.T) {
 	// Create a temporary directory.
 	dir, err := os.MkdirTemp("", "")
@@ -409,6 +420,11 @@ func TestParseConfig(t *testing.T) {
 		{
 			name:     "invalid config: including directory traversal4",
 			input:    TestCasePageDirectoryTraversal4,
+			expected: false,
+		},
+		{
+			name:     "invalid config: path field is invalid",
+			input:    TestCasePageInvalidPath,
 			expected: false,
 		},
 	}
