@@ -140,11 +140,11 @@ func (f *FrontMatter) String() string {
 
 	var text string
 	text += fmt.Sprintf("%s\n", FrontMatterStart)
-	text += fmt.Sprintf("title: %s\n", f.Title)
-	text += fmt.Sprintf("path: %s\n", f.Path)
-	text += fmt.Sprintf("description: %s\n", f.Description)
-	text += fmt.Sprintf("created_at: %s\n", f.CreatedAt)
-	text += fmt.Sprintf("updated_at: %s\n", f.UpdatedAt)
+	text += fmt.Sprintf("title: \"%s\"\n", f.Title)
+	text += fmt.Sprintf("path: \"%s\"\n", f.Path)
+	text += fmt.Sprintf("description: \"%s\"\n", f.Description)
+	text += fmt.Sprintf("created_at: \"%s\"\n", f.CreatedAt)
+	text += fmt.Sprintf("updated_at: \"%s\"\n", f.UpdatedAt)
 	for _, k := range sortedKeys {
 		text += fmt.Sprintf("%s: %s\n", k, f.UnknownTags[k])
 	}

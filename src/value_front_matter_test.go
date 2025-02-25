@@ -125,11 +125,11 @@ func TestFrontMatterString(t *testing.T) {
 	fm.UnknownTags["UnknownTag2"] = "unknown2"
 
 	expected := `---
-title: Test Title
-path: /test/path
-description: Test Description
-created_at: 2025-01-01T00:00:00Z
-updated_at: 2025-01-01T00:00:00Z
+title: "Test Title"
+path: "/test/path"
+description: "Test Description"
+created_at: "2025-01-01T00:00:00Z"
+updated_at: "2025-01-01T00:00:00Z"
 UnknownTag1: unknown1
 UnknownTag2: unknown2
 ---
