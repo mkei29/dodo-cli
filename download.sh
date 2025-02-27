@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION="0.0.8"
+VERSION="0.0.9"
 OS=$(uname -s)
 LOCAL_ARCH=$(uname -m)
 
