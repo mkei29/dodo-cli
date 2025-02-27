@@ -8,17 +8,21 @@ updated_at: 2025-02-26T00:44:06+09:00
 
 # `check` Command
 
-The `check` command is used to validate the configuration file for dodo-doc.
+The `check` command is used to validate the configuration file for dodo-doc. It ensures that all required fields are present and correctly formatted, helping to prevent errors during document processing.
 
 ## Flags
-* `-c, --config string`
-  Path to the configuration file (default is ".dodo.yaml").
+* `-c, --config string`  
+  Path to the configuration file (default is ".dodo.yaml"). Use this flag to specify a different configuration file if needed.
 
-* `--debug`
-  Enable debug mode.
+* `--debug`  
+  Enable debug mode. This provides additional output useful for troubleshooting.
 
-* `--no-color`
-  Disable color output.
+* `--no-color`  
+  Disable color output. Useful for environments that do not support colored text.
+
+## Error Handling
+
+The `check` command will output errors if the configuration file does not meet the required standards. Common errors include missing fields and incorrect date formats. Ensure that all fields follow the expected format to avoid these errors.
 
 ## Examples
 
@@ -41,4 +45,3 @@ $ dodo-cli check
     >     - match: "/yyy/*"
 Error: 79 errors: 
 ```
-

@@ -41,7 +41,7 @@ func CreateInitCmd() *cobra.Command {
 		},
 	}
 	initCmd.Flags().StringVarP(&opts.configPath, "config", "c", ".dodo.yaml", "Path to the configuration file")
-	initCmd.Flags().StringVarP(&opts.workingDir, "workingDir", "w", ".", "Defines the root path of the project for the command's execution context")
+	initCmd.Flags().StringVarP(&opts.workingDir, "working-dir", "w", ".", "Defines the root path of the project for the command's execution context")
 	initCmd.Flags().BoolVarP(&opts.force, "force", "f", false, "Overwrite the configuration file if it already exists")
 	initCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode")
 	initCmd.Flags().StringVar(&opts.projectName, "project-name", "", "Project Name")
