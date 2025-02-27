@@ -33,7 +33,10 @@ pages:
 
   - directory: "CLI Commands"
     children:
+      - markdown: docs/command_init.md
+      - markdown: docs/command_upload.md
       - markdown: docs/command_check.md
+      - markdown: docs/command_touch.md
   - directory: "For Developers"
     children:
       - markdown: docs/internal/release.md
