@@ -29,6 +29,7 @@ const TestCaseForDetailCheckMarkdown = `
 version: 1
 project:
   name: "Test Project"
+  repository: "https://github.com/mkei29/dodo-cli"
 pages:
   - markdown: "README1.md"
     path: "readme1"
@@ -57,6 +58,8 @@ func TestParseConfigDetailsMarkdown(t *testing.T) {
 
 	// Check metadata
 	assert.Equal(t, "1", conf.Version)
+	assert.Equal(t, "Test Project", conf.Project.Name)
+	assert.Equal(t, "https://github.com/mkei29/dodo-cli", conf.Project.Repository)
 
 	// Check README1
 	assert.Equal(t, "README1.md", conf.Pages[0].Markdown)
@@ -196,6 +199,17 @@ project:
 	version: "1.0.0"
 pages:
 	- markdown: "README2.md"
+`
+
+const TestCaseParseInvalidRepositoryURL = `
+version: 1
+project:
+  name: "Test Project"
+	repository: "xxxx",
+pages:
+  - markdown: "README2.md"
+    path: "readme2"
+    title: "README2"
 `
 
 const TestCaseWithUnknownField = `
@@ -370,6 +384,11 @@ func TestParseConfig(t *testing.T) {
 		{
 			name:     "invalid config: empty project name",
 			input:    TestCaseWithEmptyProjectName,
+			expected: false,
+		},
+		{
+			name:     "invalid config: invalid repository URL",
+			input:    TestCaseParseInvalidRepositoryURL,
 			expected: false,
 		},
 		{

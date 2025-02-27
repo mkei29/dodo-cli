@@ -26,17 +26,15 @@ type MetadataProject struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Version     string `json:"version"`
+	Repository  string `json:"repository"`
 }
 
 func NewMetadataProjectFromConfig(c *Config) MetadataProject {
-	name := c.Project.Name
-	description := c.Project.Description
-	version := c.Project.Version
-
 	return MetadataProject{
-		Name:        name,
-		Description: description,
-		Version:     version,
+		Name:        c.Project.Name,
+		Description: c.Project.Description,
+		Version:     c.Project.Version,
+		Repository:  c.Project.Repository,
 	}
 }
 

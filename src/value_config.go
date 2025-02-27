@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -54,6 +55,7 @@ type ConfigProject struct {
 	Name        string
 	Description string
 	Version     string
+	Repository  string
 }
 
 type ConfigPage struct {
@@ -296,7 +298,7 @@ func parseVersion(state *ParseState, node *ast.MappingValueNode) {
 	state.config.Version = strconv.Itoa(versionNum)
 }
 
-func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolint: cyclop
+func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolint: cyclop, funlen
 	// This function should be called only once.
 	// Receives an object like the following:
 	//
@@ -344,13 +346,30 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 				continue
 			}
 			state.config.Project.Version = v.Value
+		case "repository":
+			v, ok := item.Value.(*ast.StringNode)
+			if !ok {
+				state.errorSet.Add(state.buildParseError("`repository` field must be a string", item.Value))
+				continue
+			}
+			state.config.Project.Repository = v.Value
 		default:
 			state.errorSet.Add(state.buildParseError(fmt.Sprintf("the `project` does not accept the key: %s", key), item))
 		}
 	}
 
+	// Validate the fields.
 	if state.config.Project.Name == "" {
 		state.errorSet.Add(state.buildParseError("the `project` must have a `name` field longer than 1 character", node))
+	}
+
+	// Validate the repository field.
+	repoURL := state.config.Project.Repository
+	if repoURL != "" {
+		_, err := url.ParseRequestURI(repoURL)
+		if err != nil {
+			state.errorSet.Add(state.buildParseError("the `repository` field must be a valid URL", node))
+		}
 	}
 }
 
