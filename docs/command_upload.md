@@ -21,7 +21,7 @@ The `upload` command is used to upload the project to dodo-doc. It facilitates t
   Enable debug mode. Provides additional output for troubleshooting.
 
 * `-o, --output string`  
-  Archive file path (Deprecated). This flag is no longer recommended for use. Consider using the `--endpoint` flag for specifying upload destinations.
+  Archive file path (Deprecated). 
 
 * `--endpoint string`  
   Endpoint to upload (default is "http://api.dodo-doc.com/project/upload"). Use this flag to specify a custom upload endpoint if needed.
