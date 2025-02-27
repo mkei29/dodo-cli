@@ -1,5 +1,5 @@
-This page explains the specifications of `.dodo.yaml`.
-Below is a sample `.dodo.yaml` file that will be used in the explanations on this page.
+# Overview
+This document outlines the specifications of the `.dodo.yaml` configuration file used in dodo. Below is a sample `.dodo.yaml` file that will be referenced throughout this guide.
 
 ```yaml
 version: 1
@@ -20,23 +20,21 @@ pages:
         title: "GitHub Actions"
 ```
 
-The YAML file consists of three main sections.
+The YAML file is divided into three main sections:
 
-* `version`: Represents the version of the `.dodo.yaml` specification.
-* `project`: Section for configuring the project.
-* `pages`: Section specifying the structure of the documentation.
+* **`version`**: Specifies the version of the `.dodo.yaml` specification.
+* **`project`**: Configures project-specific settings.
+* **`pages`**: Defines the structure and content of the documentation.
 
-Let's now delve into the details of each section.
+Let's explore each section in detail.
 
-# Version
-This item represents the version of the `.dodo.yaml` specification.
-Currently, only `1` can be specified.
+## Version
+The `version` field indicates the version of the `.dodo.yaml` specification. Currently, only `1` is supported.
 
-While dodo strives to maintain backward compatibility with `.dodo.yaml`, there is a possibility of providing a new specification for a better experience in the future.
-In case multiple specifications are provided in the future, you can specify which version to use in this item.
+> **Note**: While dodo aims to maintain backward compatibility, future updates may introduce new specifications. You can specify the desired version in this field when multiple versions are available.
 
-# Project
-By modifying the items in this section, you can set the name and description that will be displayed at the top left of the document.
+## Project
+The `project` section allows you to set the name and description displayed at the top left of the document.
 
 ```yaml
 project:
@@ -44,17 +42,17 @@ project:
   description: The dodo documentation
 ```
 
-* `name` (string, Required): Name of the document. The name displayed on the document will be this value. If not specified, the document name set on the dodo dashboard will be used.
-* `description` (string, Required): Description of the document. The description displayed on the document will be this value. If not specified, an empty string will be used.
+* **`name`** (string, Required): The document's name. If not specified, the name set on the dodo dashboard will be used.
+* **`description`** (string, Required): The document's description. If not specified, an empty string will be used.
 
-# Pages
-By modifying the items in this section, you can configure the content and layout of the document.
-In the `pages` section, you can specify nodes in the format of `markdown`, `match`, or `directory` in an array.
+## Pages
+The `pages` section configures the content and layout of the document. You can specify nodes in the format of `markdown`, `match`, or `directory` within an array.
 
-The `pages` section must have at least one element.
-When a user accesses the root of the document, they will be redirected to the first node specified in `pages`.
+::: message info
+> The `pages` section must contain at least one element. When users access the root of the document, they are redirected to the first node specified in `pages`.
+:::
 
-With this YAML file, when uploading a document to dodo, the hosted document will have the following layout:
+With this YAML configuration, the hosted document will have the following layout:
 
 ```
 |- "What is dodo?" /what_is_dodo
@@ -63,9 +61,10 @@ With this YAML file, when uploading a document to dodo, the hosted document will
 |  |- "GitHub Actions" "/cicd_github"
 ```
 
-An important point is that the path of each document will not form a hierarchical structure but will be placed directly under the root, even if directories are used.
-Therefore, if there are documents with the same `path`, an error will occur during upload.
+::: message info
 
+Document paths do not form a hierarchical structure; they are placed directly under the root. If documents share the same `path`, an error will occur during upload.
+:::
 
 ### Markdown Node
 Nodes containing `markdown` entries are considered as `markdown` nodes.
@@ -77,11 +76,11 @@ A `markdown` node represents a single document.
   path: "what_is_dodo"
 ```
 
-* `markdown` (string, Required): File path to the Markdown content of the document.
-* `title` (string, Required): Title of the document.
-* `path` (string, Required): Path of the uploaded document's URL. Only alphanumeric characters can be specified.
-* `description` (string, Optional): Description of the document. The appearance of the document does not change in the management entry.
-* `updated_at` (string, Optional): Date when the document was updated. The appearance of the document does not change in the management entry.
+* **`markdown`** (string, Required): File path to the Markdown content.
+* **`title`** (string, Required): Document title.
+* **`path`** (string, Required): URL path for the document. Only alphanumeric characters are allowed.
+* **`description`** (string, Optional): Document description. Does not affect appearance in the management entry.
+* **`updated_at`** (string, Optional): Document update date. Does not affect appearance in the management entry.
 
 ### Match Node
 Nodes containing a `match` entry are considered as `match` nodes.
