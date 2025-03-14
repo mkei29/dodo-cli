@@ -23,6 +23,7 @@ func (m *Metadata) Serialize() ([]byte, error) {
 }
 
 type MetadataProject struct {
+	ProjectID   string `json:"project_id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Version     string `json:"version"`
@@ -31,6 +32,7 @@ type MetadataProject struct {
 
 func NewMetadataProjectFromConfig(c *Config) MetadataProject {
 	return MetadataProject{
+		ProjectID:   c.Project.ProjectID,
 		Name:        c.Project.Name,
 		Description: c.Project.Description,
 		Version:     c.Project.Version,
