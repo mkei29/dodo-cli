@@ -39,7 +39,7 @@ func CreateUploadCmd() *cobra.Command {
 	uploadCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
 
 	uploadCmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
-	uploadCmd.Flags().StringVar(&opts.endpoint, "endpoint", "http://api.dodo-doc.com/project/upload", "endpoint to upload")
+	uploadCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://api.dodo-doc.com/project/upload", "endpoint to upload")
 	uploadCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
 	return uploadCmd
 }
