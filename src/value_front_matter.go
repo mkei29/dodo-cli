@@ -139,7 +139,7 @@ func (f *FrontMatter) String() string {
 	sort.Strings(sortedKeys)
 
 	var text string
-	text += fmt.Sprintf("%s\n", FrontMatterStart)
+	text += FrontMatterStart + "\n"
 	text += fmt.Sprintf("title: \"%s\"\n", f.Title)
 	text += fmt.Sprintf("path: \"%s\"\n", f.Path)
 	text += fmt.Sprintf("description: \"%s\"\n", f.Description)
@@ -148,6 +148,6 @@ func (f *FrontMatter) String() string {
 	for _, k := range sortedKeys {
 		text += fmt.Sprintf("%s: %s\n", k, f.UnknownTags[k])
 	}
-	text += fmt.Sprintf("%s\n", FrontMatterEnd)
+	text += FrontMatterEnd + "\n"
 	return text
 }

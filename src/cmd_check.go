@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -21,7 +22,7 @@ func CreateCheckCmd() *cobra.Command {
 		Short:         "check the configuration file for dodo-doc",
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return executeCheckWrapper(opts)
 		},
 	}
@@ -85,6 +86,7 @@ func executeCheck(args CheckArgs) error {
 		return fmt.Errorf("asset validation failed: %w", merr)
 	}
 	log.Debugf("successfully validated assets to metadata. found %d assets", len(asset))
+	log.Debugf("project_name: %s", config.Project.Name)
 
 	log.Infof("configuration file is valid")
 	return nil
@@ -102,7 +104,7 @@ func CheckArgsAndEnvForCheck(args CheckArgs, env EnvArgs) error {
 
 	// Check if the api key exists
 	if env.APIKey == "" {
-		return fmt.Errorf("the API key is empty. Please set the environment variable DODO_API_KEY")
+		return errors.New("the API key is empty. Please set the environment variable DODO_API_KEY")
 	}
 	return nil
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -85,7 +86,7 @@ func (c *ConfigPage) MatchDirectory() bool {
 
 func (c *ConfigPage) isValidTitle() error {
 	if c.Title == "" {
-		return fmt.Errorf("the `title` field is required")
+		return errors.New("the `title` field is required")
 	}
 	return nil
 }
@@ -93,7 +94,7 @@ func (c *ConfigPage) isValidTitle() error {
 func (c *ConfigPage) isValidPath() error {
 	// The path must contain only alphanumeric characters, periods (.), underscores (_), and hyphens (-).
 	if c.Path == "" {
-		return fmt.Errorf("the `path` field is required")
+		return errors.New("the `path` field is required")
 	}
 	matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", c.Path)
 	if err != nil || !matched {
@@ -226,13 +227,13 @@ func parseRoot(state *ParseState, root *ast.File) {
 	// Check if all required fields are parsed.
 	// NOTE: The `assets` field is optional.
 	if !state.isVersionAlreadyParsed {
-		state.errorSet.Add(fmt.Errorf("the `version` field is required"))
+		state.errorSet.Add(errors.New("the `version` field is required"))
 	}
 	if !state.isProjectAlreadyParsed {
-		state.errorSet.Add(fmt.Errorf("the `project` field is required"))
+		state.errorSet.Add(errors.New("the `project` field is required"))
 	}
 	if !state.isPagesAlreadyParsed {
-		state.errorSet.Add(fmt.Errorf("the `pages` field is required"))
+		state.errorSet.Add(errors.New("the `pages` field is required"))
 	}
 }
 
@@ -354,7 +355,7 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 			}
 			state.config.Project.Repository = v.Value
 		default:
-			state.errorSet.Add(state.buildParseError(fmt.Sprintf("the `project` does not accept the key: %s", key), item))
+			state.errorSet.Add(state.buildParseError("the `project` does not accept the key: "+key, item))
 		}
 	}
 
@@ -540,7 +541,7 @@ func parseConfigPageMarkdown(state *ParseState, mapping *ast.MappingNode) Config
 			}
 			configPage.CreatedAt = st
 		default:
-			state.errorSet.Add(state.buildParseError(fmt.Sprintf("a markdown style page cannot accept the key: %s", key), item))
+			state.errorSet.Add(state.buildParseError("a markdown style page cannot accept the key: "+key, item))
 		}
 	}
 
@@ -725,7 +726,7 @@ func sortPageSlice(sortKey, sortOrder string, pages []ConfigPage) error { //noli
 		return nil
 	}
 	if sortKey == "" {
-		return fmt.Errorf("sort key is not provided")
+		return errors.New("sort key is not provided")
 	}
 	// Check sortOrder
 	isASC := true

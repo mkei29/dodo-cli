@@ -15,7 +15,7 @@ func CreateVersionCmd() *cobra.Command {
 	uploadCmd := &cobra.Command{
 		Use:   "version",
 		Short: "show the version of the client",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return executeVersion()
 		},
 	}

@@ -30,7 +30,7 @@ func CreateTouchCmd() *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		Args:          cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			opts.filepath = args[0]
 			return executeTouchWrapper(opts)
 		},
