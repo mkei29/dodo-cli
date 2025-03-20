@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -26,7 +27,7 @@ func CreateSearchCmd() *cobra.Command {
 		},
 	}
 	searchCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode")
-	searchCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com/search", "Server endpoint to search")
+	searchCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com/search/v1", "Server endpoint to search")
 	return searchCmd
 }
 
@@ -59,7 +60,7 @@ func executeSearch(cmd *cobra.Command, args SearchArgs) error {
 	log.Infof("Using endpoint: %s", args.endpoint)
 
 	// Call the function to send the search request
-	_, err := sendSearchRequest(env, uri)
+	_, err := sendSearchRequest(env, uri, query)
 	if err != nil {
 		return fmt.Errorf("failed to execute search: %w", err)
 	}
@@ -67,8 +68,16 @@ func executeSearch(cmd *cobra.Command, args SearchArgs) error {
 	return nil
 }
 
-func sendSearchRequest(env EnvArgs, uri string) ([]SearchRecord, error) {
-	req, err := http.NewRequest(http.MethodPost, uri, nil)
+func sendSearchRequest(env EnvArgs, uri, query string) ([]SearchRecord, error) {
+	body := SearchPostRequest{
+		Query: query,
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal search request body: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, uri, strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a new upload request from body: %w", err)
 	}
