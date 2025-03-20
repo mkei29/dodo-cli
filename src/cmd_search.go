@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -48,21 +49,23 @@ func executeSearch(cmd *cobra.Command, args SearchArgs) error {
 	query := strings.Join(args.query, " ")
 	query = strings.TrimSpace(query)
 	if query == "" {
-		return fmt.Errorf("search query cannot be empty")
+		return errors.New("search query cannot be empty")
 	}
 
 	log.Infof("Searching for '%s'", query)
 	if args.endpoint == "" {
-		return fmt.Errorf("endpoint cannot be empty")
+		return errors.New("endpoint cannot be empty")
 	}
 
-	uri := fmt.Sprintf("%s?q=%s", args.endpoint, query)
-	log.Infof("Using endpoint: %s", args.endpoint)
-
 	// Call the function to send the search request
-	_, err := sendSearchRequest(env, uri, query)
+	log.Infof("Using endpoint: %s", args.endpoint)
+	records, err := sendSearchRequest(env, args.endpoint, query)
 	if err != nil {
 		return fmt.Errorf("failed to execute search: %w", err)
+	}
+
+	for _, record := range records {
+		log.Infof("Found: %s", record.Title)
 	}
 
 	return nil
@@ -90,6 +93,12 @@ func sendSearchRequest(env EnvArgs, uri, query string) ([]SearchRecord, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to send a request to the server: %w", err)
 	}
+	defer resp.Body.Close()
 	log.Infof("Response status: %s", resp.Status)
-	return nil, nil
+
+	data := SearchPostResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, fmt.Errorf("failed to parse the response: %w", err)
+	}
+	return data.Records, nil
 }

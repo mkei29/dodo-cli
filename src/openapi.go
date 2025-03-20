@@ -24,9 +24,12 @@ type SearchPostResponseError struct {
 
 // SearchRecord defines model for search_record.
 type SearchRecord struct {
-	Body  string `json:"body"`
-	Id    string `json:"id"`
-	Title string `json:"title"`
+	Contents    string `json:"contents"`
+	Id          string `json:"id"`
+	ProjectId   string `json:"project_id"`
+	ProjectSlug string `json:"project_slug"`
+	Title       string `json:"title"`
+	Url         string `json:"url"`
 }
 
 // SearchContentsJSONRequestBody defines body for SearchContents for application/json ContentType.
