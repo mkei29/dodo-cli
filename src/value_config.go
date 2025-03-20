@@ -53,6 +53,7 @@ type Config struct {
 }
 
 type ConfigProject struct {
+	ProjectID   string
 	Name        string
 	Description string
 	Version     string
@@ -304,6 +305,7 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 	// Receives an object like the following:
 	//
 	// project:
+	//   project_id: "project_123"
 	//   name: "My Project"
 	//   description: "This is my project"
 	//   version: "1.0.0"
@@ -326,6 +328,13 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 	for _, item := range children.Values {
 		key := item.Key.String()
 		switch key {
+		case "project_id":
+			v, ok := item.Value.(*ast.StringNode)
+			if !ok {
+				state.errorSet.Add(state.buildParseError("`project_id` field must be a string", item.Value))
+				continue
+			}
+			state.config.Project.ProjectID = v.Value
 		case "name":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
@@ -357,6 +366,10 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 		default:
 			state.errorSet.Add(state.buildParseError("the `project` does not accept the key: "+key, item))
 		}
+	}
+
+	if state.config.Project.ProjectID == "" {
+		state.errorSet.Add(state.buildParseError("the `project` must have a `project_id` field longer than 1 character", node))
 	}
 
 	// Validate the fields.

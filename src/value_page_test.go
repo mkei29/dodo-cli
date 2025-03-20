@@ -37,6 +37,7 @@ func prepareFile(t *testing.T, rootDir, filename, content string) {
 const TestCaseCreatePageWithMarkdown = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
   - markdown: "README1.md"
@@ -82,6 +83,7 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 const TestCaseCreatePageTreeMatch = `
 version: 1
 project:
+  project_id: "project_id"
   name: "project"
 pages:
   - match: "./**/README*.md"
@@ -155,6 +157,7 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 const TestCaseCreatePageHybridCase = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
   - markdown: "README.md"
@@ -196,6 +199,7 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 const TestCaseCreatePageWithDirectory = `
 version: 1
 project:
+  project_id: "project_id"
   name: "project"
 pages:
   - directory: "directory"
@@ -238,6 +242,7 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 const TestCasePageValid1 = `
 version: 1
 project:
+  project_id: "project_id"
   name: "project"
 pages:
   - markdown: "README1.md"
@@ -251,6 +256,7 @@ pages:
 const TestCasePageValid2 = `
 version: 1
 project:
+  project_id: "project_id"
   name: "project"
 pages:
   - directory: "DIR1"
@@ -269,6 +275,7 @@ pages:
 const TestCasePageInvalid1 = `
 version: 1
 project:
+  project_id: "project_id"
   name: "project"
 pages:
   - markdown: "README1.md"
@@ -283,6 +290,7 @@ pages:
 const TestCasePageInvalid2 = `
 version: 1
 project:
+  project_id: "project_id"
   name: "project"
 pages:
   - directory: "DIR1"

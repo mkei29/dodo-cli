@@ -28,6 +28,7 @@ path: "readme2"
 const TestCaseForDetailCheckMarkdown = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
   repository: "https://github.com/mkei29/dodo-cli"
 pages:
@@ -82,6 +83,7 @@ func TestParseConfigDetailsMarkdown(t *testing.T) {
 const TestCaseForDetailCheckMatch = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
   - match: "./*.md"
@@ -161,6 +163,7 @@ func TestSortPageSlice(t *testing.T) {
 const TestCaseParseMarkdown = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
   - markdown: "README2.md"
@@ -172,6 +175,7 @@ pages:
 const TestCaseWithMatchPage = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
 	- match: "./docs/*.md"
@@ -185,6 +189,7 @@ assets:
 const TestCaseWithUnknownVersion = `
 version: 2
 project:
+  project_id: "project_id"
 	name: "Test Project"
 pages:
 	- markdown: "README2.md"
@@ -194,6 +199,7 @@ pages:
 const TestCaseWithEmptyProjectName = `
 version: 1
 project:
+  project_id: "project_id"
 	name: ""
 	description: "This is a test project."
 	version: "1.0.0"
@@ -204,6 +210,7 @@ pages:
 const TestCaseParseInvalidRepositoryURL = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 	repository: "xxxx",
 pages:
@@ -215,6 +222,7 @@ pages:
 const TestCaseWithUnknownField = `
 version: 1
 project:
+  project_id: "project_id"
 	name: "Test Project"
 pages:
 	- markdown: "README2.md"
@@ -225,6 +233,7 @@ unknown: "unknown"
 const TestCaseWithUnknownPageType = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
 	- path: "readme2"
@@ -236,6 +245,7 @@ pages:
 const TestCaseWithBrokenMarkdownPage = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
   - markdown: "README1.md"
@@ -251,6 +261,7 @@ pages:
 const TestCaseWithUnknownUpdatedAtFormat = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
   - markdown: "README2.md"
@@ -263,6 +274,7 @@ pages:
 const TestCaseWithMultipleAssets = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
 	- markdown: "README2.md"
@@ -279,6 +291,7 @@ assets:
 const TestCaseWithSortOrderWithoutSortKey = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
 	- match: "./docs/*.md"
@@ -291,6 +304,7 @@ assets:
 const TestCaseWithDirectoryTraversal1 = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
   - markdown: "../forbid/README1.md"
@@ -302,6 +316,7 @@ pages:
 const TestCaseWithDirectoryTraversal2 = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
   - markdown: "./.././forbid/README1.md"
@@ -313,6 +328,7 @@ pages:
 const TestCasePageDirectoryTraversal3 = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
   - match: "../forbid/*.md"
@@ -322,6 +338,7 @@ pages:
 const TestCasePageDirectoryTraversal4 = `
 version: 1
 project:
+  project_id: "project_id"
   name: "Test Project"
 pages:
   - markdown: "README1.md"
@@ -334,6 +351,7 @@ pages:
 const TestCasePageInvalidPath = `
 version: 1
 project:
+  project_id: "project_id"
   name: "project"
 pages:
   - markdown: "README1.md"
