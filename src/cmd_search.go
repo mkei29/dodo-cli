@@ -2,14 +2,19 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/caarlos0/log"
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
+
+var docStyle = lipgloss.NewStyle().Margin(1, 2)
 
 type SearchArgs struct {
 	query    []string // search query
@@ -32,9 +37,122 @@ func CreateSearchCmd() *cobra.Command {
 	return searchCmd
 }
 
-func executeSearch(cmd *cobra.Command, args SearchArgs) error {
-	// Initialize logger and so on, then execute the main function.
+type item struct {
+	title       string
+	description string
+	url         string
+}
 
+func (i item) FilterValue() string { return i.title }
+
+func (i item) Title() string { return i.title }
+
+func (i item) Description() string { return i.description }
+
+type model struct {
+	textInput textinput.Model
+	list      list.Model
+	choices   []list.Item
+	selected  map[int]struct{}
+	args      *SearchArgs
+	envArgs   *EnvArgs
+	// configurations
+}
+
+func initialModel(args SearchArgs, env EnvArgs) model {
+	ti := textinput.New()
+	ti.Placeholder = "Search..."
+	ti.Focus()
+	ti.CharLimit = 156
+	ti.Width = 20
+
+	// Set appropriate dimensions for the list
+	items := []list.Item{}
+	l := list.New(items, list.NewDefaultDelegate(), 50, 40) // Width: 30, Height: 10
+	l.Title = ""
+	l.SetShowTitle(false)
+	l.SetFilteringEnabled(false)
+	l.DisableQuitKeybindings()
+
+	return model{
+		textInput: ti,
+		list:      l,
+		choices:   items,
+		selected:  make(map[int]struct{}),
+		envArgs:   &env,
+		args:      &args,
+	}
+}
+
+func (m model) Init() tea.Cmd {
+	return textinput.Blink
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if msg.Type == tea.KeyCtrlC {
+			return m, tea.Quit
+		}
+		if msg.Type == tea.KeyEnter {
+			return m.updateEnter(msg)
+		}
+		switch msg.String() {
+		case "/":
+			m.textInput.Focus()
+			query := m.textInput.Value()
+			if query != "" {
+				m.list.SetItems(m.choices)
+			}
+			m.list.CursorUp()
+		case "down":
+			m.list.CursorDown()
+			m.textInput.Blur()
+		}
+	}
+
+	// Update both textInput and list
+	var cmd tea.Cmd
+	var listCmd tea.Cmd
+	m.textInput, cmd = m.textInput.Update(msg)
+	m.list, listCmd = m.list.Update(msg)
+	return m, tea.Batch(cmd, listCmd)
+}
+
+func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) {
+	query := m.textInput.Value()
+	records, err := sendSearchRequest(m.envArgs, m.args.endpoint, query)
+	if err != nil {
+		log.Errorf("failed to execute search: %s", err)
+	}
+
+	// Update the list
+	items := make([]list.Item, len(records))
+	for i, record := range records {
+		items[i] = item{
+			title:       record.Title,
+			description: record.Contents,
+			url:         record.Url,
+		}
+	}
+	m.list.SetItems(items)
+
+	var cmd tea.Cmd
+	var listCmd tea.Cmd
+	m.textInput, cmd = m.textInput.Update(msg)
+	m.list, listCmd = m.list.Update(msg)
+	return m, tea.Batch(cmd, listCmd)
+}
+
+func (m model) View() string {
+	return fmt.Sprintf(
+		"Search: %s\n%s\n",
+		m.textInput.View(),
+		docStyle.Render(m.list.View()),
+	)
+}
+
+func executeSearch(cmd *cobra.Command, args SearchArgs) error {
 	if args.debug {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("running in debug mode")
@@ -46,32 +164,15 @@ func executeSearch(cmd *cobra.Command, args SearchArgs) error {
 		log.Debug("running in debug mode")
 	}
 
-	query := strings.Join(args.query, " ")
-	query = strings.TrimSpace(query)
-	if query == "" {
-		return errors.New("search query cannot be empty")
+	p := tea.NewProgram(initialModel(args, env))
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Error starting program: %s\n", err)
+		return err
 	}
-
-	log.Infof("Searching for '%s'", query)
-	if args.endpoint == "" {
-		return errors.New("endpoint cannot be empty")
-	}
-
-	// Call the function to send the search request
-	log.Infof("Using endpoint: %s", args.endpoint)
-	records, err := sendSearchRequest(env, args.endpoint, query)
-	if err != nil {
-		return fmt.Errorf("failed to execute search: %w", err)
-	}
-
-	for _, record := range records {
-		log.Infof("Found: %s", record.Title)
-	}
-
 	return nil
 }
 
-func sendSearchRequest(env EnvArgs, uri, query string) ([]SearchRecord, error) {
+func sendSearchRequest(env *EnvArgs, uri, query string) ([]SearchRecord, error) {
 	body := SearchPostRequest{
 		Query: query,
 	}
@@ -94,7 +195,6 @@ func sendSearchRequest(env EnvArgs, uri, query string) ([]SearchRecord, error) {
 		return nil, fmt.Errorf("failed to send a request to the server: %w", err)
 	}
 	defer resp.Body.Close()
-	log.Infof("Response status: %s", resp.Status)
 
 	data := SearchPostResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
