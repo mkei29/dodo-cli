@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -17,8 +18,6 @@ import (
 	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 )
-
-var docStyle = lipgloss.NewStyle().Margin(1, 2)
 
 type SearchArgs struct {
 	query    []string // search query
@@ -68,7 +67,6 @@ type model struct {
 }
 
 func initialModel(args SearchArgs, env EnvArgs) model {
-
 	listStyles := initListStyles()
 
 	w, h, _ := term.GetSize(os.Stdout.Fd())
@@ -106,9 +104,8 @@ func (m model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		m.errorMessage = ""
 		if msg.Type == tea.KeyCtrlC {
 			return m, tea.Quit
@@ -119,8 +116,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch msg.String() {
 		case "/":
+			// If the / key is pressed, just focus the text input and don't propagate the key event to the list and text input
 			m.textInputActive = true
 			m.textInput.Focus()
+			return m, m.textInput.Cursor.BlinkCmd()
 		case "up":
 			m.textInputActive = false
 			m.textInput.Blur()
@@ -138,7 +137,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmd, listCmd)
 }
 
-func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
 	if !m.textInputActive {
 		selectedItem, ok := m.list.SelectedItem().(item)
 		if !ok {
@@ -179,7 +178,7 @@ func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	text := fmt.Sprintf("Search %s\n\n", m.textInput.View())
-	text += fmt.Sprintf("%s\n", m.list.View())
+	text += m.list.View() + "\n"
 
 	if m.errorMessage != "" {
 		text += m.listStyles.StatusBar.Render(fmt.Sprintf("Error: %s\n", m.errorMessage))
@@ -195,7 +194,7 @@ func initListStyles() list.Styles {
 	return styles
 }
 
-func executeSearch(cmd *cobra.Command, args SearchArgs) error {
+func executeSearch(_ *cobra.Command, args SearchArgs) error {
 	if args.debug {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("running in debug mode")
@@ -209,8 +208,7 @@ func executeSearch(cmd *cobra.Command, args SearchArgs) error {
 
 	p := tea.NewProgram(initialModel(args, env))
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Error starting program: %s\n", err)
-		return err
+		return fmt.Errorf("failed to run the program: %w", err)
 	}
 	return nil
 }
@@ -247,14 +245,19 @@ func sendSearchRequest(env *EnvArgs, uri, query string) ([]SearchRecord, error) 
 }
 
 func openBrowser(url string) error {
+	var err error
 	switch runtime.GOOS {
 	case "linux":
-		return exec.Command("xdg-open", url).Start()
+		err = exec.Command("xdg-open", url).Start()
 	case "windows":
-		return exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
 	case "darwin":
-		return exec.Command("open", url).Start()
+		err = exec.Command("open", url).Start()
 	default:
-		return fmt.Errorf("unsupported platform")
+		err = errors.New("unsupported platform")
 	}
+	if err != nil {
+		return errors.New("failed to open the document in the browser")
+	}
+	return nil
 }
