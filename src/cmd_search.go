@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/caarlos0/log"
@@ -11,6 +14,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 )
 
@@ -50,37 +54,51 @@ func (i item) Title() string { return i.title }
 func (i item) Description() string { return i.description }
 
 type model struct {
-	textInput textinput.Model
-	list      list.Model
-	choices   []list.Item
-	selected  map[int]struct{}
-	args      *SearchArgs
-	envArgs   *EnvArgs
+	textInput       textinput.Model
+	textInputActive bool
+	list            list.Model
+	choices         []list.Item
+	selected        map[int]struct{}
+	errorMessage    string
+
 	// configurations
+	args       *SearchArgs
+	envArgs    *EnvArgs
+	listStyles list.Styles
 }
 
 func initialModel(args SearchArgs, env EnvArgs) model {
+
+	listStyles := initListStyles()
+
+	w, h, _ := term.GetSize(os.Stdout.Fd())
 	ti := textinput.New()
 	ti.Placeholder = "Search..."
 	ti.Focus()
-	ti.CharLimit = 156
-	ti.Width = 20
+	ti.CharLimit = 255
+	ti.Width = w
 
 	// Set appropriate dimensions for the list
 	items := []list.Item{}
-	l := list.New(items, list.NewDefaultDelegate(), 50, 40) // Width: 30, Height: 10
+	l := list.New(items, list.NewDefaultDelegate(), w-2, h-4) // Width: 30, Height: 10
 	l.Title = ""
+	l.Styles = listStyles
 	l.SetShowTitle(false)
 	l.SetFilteringEnabled(false)
+	l.SetShowStatusBar(false)
+	l.SetShowHelp(false)
 	l.DisableQuitKeybindings()
 
 	return model{
-		textInput: ti,
-		list:      l,
-		choices:   items,
-		selected:  make(map[int]struct{}),
-		envArgs:   &env,
-		args:      &args,
+		textInput:       ti,
+		textInputActive: true,
+		list:            l,
+		choices:         items,
+		selected:        make(map[int]struct{}),
+		errorMessage:    "",
+		envArgs:         &env,
+		args:            &args,
+		listStyles:      listStyles,
 	}
 }
 
@@ -91,22 +109,23 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		m.errorMessage = ""
 		if msg.Type == tea.KeyCtrlC {
 			return m, tea.Quit
 		}
 		if msg.Type == tea.KeyEnter {
 			return m.updateEnter(msg)
 		}
+
 		switch msg.String() {
 		case "/":
+			m.textInputActive = true
 			m.textInput.Focus()
-			query := m.textInput.Value()
-			if query != "" {
-				m.list.SetItems(m.choices)
-			}
-			m.list.CursorUp()
+		case "up":
+			m.textInputActive = false
+			m.textInput.Blur()
 		case "down":
-			m.list.CursorDown()
+			m.textInputActive = false
 			m.textInput.Blur()
 		}
 	}
@@ -120,10 +139,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if !m.textInputActive {
+		selectedItem, ok := m.list.SelectedItem().(item)
+		if !ok {
+			m.errorMessage = "No item selected"
+			return m, nil
+		}
+		err := openBrowser(selectedItem.url)
+		if err != nil {
+			m.errorMessage = fmt.Sprintf("failed to open browser: %s", err)
+		}
+		return m, tea.Quit
+	}
+
+	m.textInput.Blur()
 	query := m.textInput.Value()
 	records, err := sendSearchRequest(m.envArgs, m.args.endpoint, query)
 	if err != nil {
-		log.Errorf("failed to execute search: %s", err)
+		m.errorMessage = fmt.Sprintf("failed to execute search: %s", err)
 	}
 
 	// Update the list
@@ -145,11 +178,21 @@ func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return fmt.Sprintf(
-		"Search: %s\n%s\n",
-		m.textInput.View(),
-		docStyle.Render(m.list.View()),
-	)
+	text := fmt.Sprintf("Search %s\n\n", m.textInput.View())
+	text += fmt.Sprintf("%s\n", m.list.View())
+
+	if m.errorMessage != "" {
+		text += m.listStyles.StatusBar.Render(fmt.Sprintf("Error: %s\n", m.errorMessage))
+	} else {
+		text += m.listStyles.StatusBar.Render(fmt.Sprintln("Press Enter to search, ↑/↓ to navigate, / to focus search field, and Ctrl-C exit."))
+	}
+	return text
+}
+
+func initListStyles() list.Styles {
+	styles := list.DefaultStyles()
+	styles.StatusBar = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"})
+	return styles
 }
 
 func executeSearch(cmd *cobra.Command, args SearchArgs) error {
@@ -201,4 +244,17 @@ func sendSearchRequest(env *EnvArgs, uri, query string) ([]SearchRecord, error) 
 		return nil, fmt.Errorf("failed to parse the response: %w", err)
 	}
 	return data.Records, nil
+}
+
+func openBrowser(url string) error {
+	switch runtime.GOOS {
+	case "linux":
+		return exec.Command("xdg-open", url).Start()
+	case "windows":
+		return exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		return exec.Command("open", url).Start()
+	default:
+		return fmt.Errorf("unsupported platform")
+	}
 }
