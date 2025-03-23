@@ -51,7 +51,7 @@ func CreateSearchCmd() *cobra.Command {
 		},
 	}
 	searchCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode")
-	searchCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com/search/v1", "Server endpoint to search")
+	searchCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com/search/v1", "Server endpoint for search")
 	return searchCmd
 }
 
@@ -133,7 +133,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
 
 		switch msg.String() {
 		case "/":
-			// If the / key is pressed, just focus the text input and don't propagate the key event to the list and text input
+			// If the / key is pressed, focus the text input without propagating the key event to the list and text input
 			m.textInputActive = true
 			m.textInput.Focus()
 			return m, m.textInput.Cursor.BlinkCmd()
@@ -158,12 +158,12 @@ func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
 	if !m.textInputActive {
 		selectedItem, ok := m.list.SelectedItem().(searchItem)
 		if !ok {
-			m.errorMessage = "No item selected"
+			m.errorMessage = "No item is selected"
 			return m, nil
 		}
 		err := openBrowser(selectedItem.url)
 		if err != nil {
-			m.errorMessage = fmt.Sprintf("failed to open browser: %s", err)
+			m.errorMessage = fmt.Sprintf("Failed to open the browser: %s", err)
 		}
 		return m, tea.Quit
 	}
@@ -173,7 +173,7 @@ func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
 
 	records, err := sendSearchRequest(m.envArgs, m.args.endpoint, query)
 	if err != nil {
-		m.errorMessage = fmt.Sprintf("failed to execute search: %s", err)
+		m.errorMessage = fmt.Sprintf("Failed to execute the search: %s", err)
 	}
 
 	// Update the list
@@ -219,7 +219,7 @@ func (m model) View() string {
 	return text
 }
 
-// Implementations for the list item UI
+// Implementations for the list item UI.
 type searchItemDelegate struct {
 	styles searchItemDelegateStyles
 }
@@ -231,7 +231,7 @@ func newSearchItemDelegate() searchItemDelegate {
 }
 
 func (d searchItemDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
-	// This function assume that the item has searchItem type.
+	// This function assumes that the item is of type searchItem.
 	sitem, ok := item.(searchItem)
 	if !ok {
 		return
@@ -249,7 +249,7 @@ func (d searchItemDelegate) Render(w io.Writer, m list.Model, index int, item li
 	if len(lines) > 2 {
 		lines = lines[:2]
 		lastLine := lines[1]
-		lines[1] = fmt.Sprintf("%s...", lastLine[:len(lastLine)-5])
+		lines[1] = lastLine[:len(lastLine)-5] + "..."
 	}
 	adjustedDescription := strings.Join(lines, "\n")
 
@@ -268,7 +268,7 @@ func (d searchItemDelegate) Render(w io.Writer, m list.Model, index int, item li
 }
 
 func (d searchItemDelegate) Height() int {
-	// Return the height of each list item including spacing
+	// Return the height of each list item, including spacing
 	return 4
 }
 
@@ -277,7 +277,7 @@ func (d searchItemDelegate) Spacing() int {
 	return 1
 }
 
-func (d searchItemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd {
+func (d searchItemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd {
 	// Handle item-level updates if necessary
 	return nil
 }
@@ -375,12 +375,12 @@ func sendSearchRequest(env *EnvArgs, uri, query string) ([]SearchRecord, error) 
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal search request body: %w", err)
+		return nil, fmt.Errorf("failed to marshal the search request body: %w", err)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, uri, strings.NewReader(string(bodyBytes)))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a new upload request from body: %w", err)
+		return nil, fmt.Errorf("failed to create a new request from the body: %w", err)
 	}
 	bearer := "Bearer " + env.APIKey
 	req.Header.Set("Content-Type", "application/json")
