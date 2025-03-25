@@ -1,6 +1,6 @@
 version: 1
 project:
-  project_id: dodo
+  project_id: "document"
   name: dodo
   description: The dodo documentation
   version: 0.0.1

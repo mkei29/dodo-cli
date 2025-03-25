@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -29,7 +30,7 @@ func CreateUploadCmd() *cobra.Command {
 		Short:         "upload the project to dodo-doc",
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return executeUploadWrapper(opts)
 		},
 	}
@@ -38,7 +39,7 @@ func CreateUploadCmd() *cobra.Command {
 	uploadCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
 
 	uploadCmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
-	uploadCmd.Flags().StringVar(&opts.endpoint, "endpoint", "http://api.dodo-doc.com/project/upload", "endpoint to upload")
+	uploadCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://api.dodo-doc.com/project/upload", "endpoint to upload")
 	uploadCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
 	return uploadCmd
 }
@@ -159,7 +160,7 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 
 	// Check if the api key exists
 	if env.APIKey == "" {
-		return fmt.Errorf("the API key is empty. Please set the environment variable DODO_API_KEY")
+		return errors.New("the API key is empty. Please set the environment variable DODO_API_KEY")
 	}
 	return nil
 }
@@ -268,7 +269,7 @@ func newFileUploadRequest(uri string, metadata Metadata, zipFile *os.File, apiKe
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a new upload request from body: %w", err)
 	}
-	bearer := fmt.Sprintf("Bearer %s", apiKey)
+	bearer := "Bearer " + apiKey
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("Authorization", bearer)
 	return req, nil

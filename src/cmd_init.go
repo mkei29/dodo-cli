@@ -36,7 +36,7 @@ func CreateInitCmd() *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Create a new configuration file for the project.",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return executeInit(opts)
 		},
 	}

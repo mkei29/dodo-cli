@@ -23,11 +23,11 @@ linters:
     - errchkjson
     - errname
     - errorlint
-    - execinquery
+    # - execinquery  # Deprecated
     - exhaustive
     # - exhaustivestruct
     # - exhaustruct
-    - exportloopref
+    # - exportloopref  # Deprecated
     - forbidigo
     # - forcetypeassert
     - funlen
@@ -53,7 +53,7 @@ linters:
     # - gomoddirectives
     - gomodguard
     - goprintffuncname
-    - gosec
+    # - gosec  # Too many false positives
     - gosimple
     - gosmopolitan
     - govet
@@ -100,7 +100,7 @@ linters:
     - stylecheck
     - tagalign
     # - tagliatelle
-    - tenv
+    # - tenv  # Deprecated
     - testableexamples
     - testifylint
     - testpackage
