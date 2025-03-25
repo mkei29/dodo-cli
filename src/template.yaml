@@ -1,5 +1,6 @@
 version: 1
 project:
+  project_id: {{ .ProjectID }}
   name: {{ .ProjectName }}
   version: {{ .Version }}
   description: {{ .Description }}

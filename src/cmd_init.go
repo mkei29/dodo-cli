@@ -16,23 +16,25 @@ import (
 //go:embed template.yaml
 var configTemplate string
 
-type InitArgs struct {
+type initArgs struct {
 	configPath  string // config file path
 	workingDir  string // root path of the project
 	force       bool   // overwrite the configuration file if it already exists
 	debug       bool   // server endpoint to upload
+	projectID   string
 	projectName string
 	description string
 }
 
-type InitParameter struct {
+type initParameter struct {
+	ProjectID   string
 	ProjectName string
 	Version     string
 	Description string
 }
 
 func CreateInitCmd() *cobra.Command {
-	opts := InitArgs{}
+	opts := initArgs{}
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Create a new configuration file for the project.",
@@ -44,12 +46,13 @@ func CreateInitCmd() *cobra.Command {
 	initCmd.Flags().StringVarP(&opts.workingDir, "working-dir", "w", ".", "Defines the root path of the project for the command's execution context")
 	initCmd.Flags().BoolVarP(&opts.force, "force", "f", false, "Overwrite the configuration file if it already exists")
 	initCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode")
+	initCmd.Flags().StringVar(&opts.projectID, "project-id", "", "Project ID")
 	initCmd.Flags().StringVar(&opts.projectName, "project-name", "", "Project Name")
 	initCmd.Flags().StringVar(&opts.description, "description", "", "Project Name")
 	return initCmd
 }
 
-func executeInit(args InitArgs) error {
+func executeInit(args initArgs) error {
 	if args.debug {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("running in debug mode")
@@ -63,7 +66,8 @@ func executeInit(args InitArgs) error {
 		return fmt.Errorf("configuration file already exists: %s", configPath)
 	}
 
-	params, err := receiveUserInput(args.projectName, args.description)
+	fmt.Println("projectID", args.projectID)
+	params, err := receiveUserInput(args.projectID, args.projectName, args.description)
 	if err != nil {
 		return fmt.Errorf("something went wrong during the user typing value: %w", err)
 	}
@@ -83,11 +87,23 @@ func executeInit(args InitArgs) error {
 	return nil
 }
 
-func receiveUserInput(projectNameArgs, descriptionArgs string) (*InitParameter, error) {
+func receiveUserInput(projectIDArgs, projectNameArgs, descriptionArgs string) (*initParameter, error) {
+	projectID := projectIDArgs
 	projectName := projectNameArgs
 	description := descriptionArgs
 
 	var err error
+	if projectID == "" {
+		projectIDPrompt := promptui.Prompt{
+			Label:   "Project ID",
+			Default: "",
+		}
+		projectID, err = projectIDPrompt.Run()
+		if err != nil {
+			return nil, fmt.Errorf("prompt failed: %w", err)
+		}
+	}
+
 	if projectName == "" {
 		projectNamePrompt := promptui.Prompt{
 			Label:   "Project Name",
@@ -110,7 +126,8 @@ func receiveUserInput(projectNameArgs, descriptionArgs string) (*InitParameter, 
 		}
 	}
 
-	params := InitParameter{
+	params := initParameter{
+		ProjectID:   projectID,
 		ProjectName: projectName,
 		Version:     "1",
 		Description: description,
@@ -118,13 +135,13 @@ func receiveUserInput(projectNameArgs, descriptionArgs string) (*InitParameter, 
 	return &params, nil
 }
 
-func generateConfigContent(placeholder InitParameter) (string, error) {
-	template, err := template.New("config").Parse(configTemplate)
+func generateConfigContent(placeholder initParameter) (string, error) {
+	t, err := template.New("config").Parse(configTemplate)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template: %w", err)
 	}
 	w := &bytes.Buffer{}
-	if err := template.Execute(w, placeholder); err != nil {
+	if err := t.Execute(w, placeholder); err != nil {
 		return "", fmt.Errorf("failed to populate variables into the template: %w", err)
 	}
 	return w.String(), nil
