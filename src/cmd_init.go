@@ -66,7 +66,6 @@ func executeInit(args initArgs) error {
 		return fmt.Errorf("configuration file already exists: %s", configPath)
 	}
 
-	fmt.Println("projectID", args.projectID)
 	params, err := receiveUserInput(args.projectID, args.projectName, args.description)
 	if err != nil {
 		return fmt.Errorf("something went wrong during the user typing value: %w", err)
