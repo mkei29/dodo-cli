@@ -95,7 +95,8 @@ func initialModel(args SearchArgs, env EnvArgs) model {
 
 	// Set appropriate dimensions for the list
 	items := []list.Item{}
-	l := list.New(items, newSearchItemDelegate(), w-2, h-4) // Width: 30, Height: 10
+	listDelegate := newSearchItemDelegate(false)
+	l := list.New(items, listDelegate, w-2, h-4) // Width: 30, Height: 10
 	l.Title = ""
 	l.Styles = listStyles
 	l.SetShowTitle(false)
@@ -130,19 +131,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
 		if msg.Type == tea.KeyEnter {
 			return m.updateEnter(msg)
 		}
+		if msg.Type == tea.KeyEscape {
+			return m.updateEscape()
+		}
 
 		switch msg.String() {
 		case "/":
-			// If the / key is pressed, focus the text input without propagating the key event to the list and text input
-			m.textInputActive = true
-			m.textInput.Focus()
-			return m, m.textInput.Cursor.BlinkCmd()
+			return m.updateEscape()
 		case "up":
-			m.textInputActive = false
-			m.textInput.Blur()
+			return m.updateKeyUpDown(msg)
 		case "down":
-			m.textInputActive = false
-			m.textInput.Blur()
+			return m.updateKeyUpDown(msg)
 		}
 	}
 
@@ -154,8 +153,32 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
 	return m, tea.Batch(cmd, listCmd)
 }
 
+func (m model) updateKeyUpDown(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
+	if m.textInputActive {
+		m.textInputActive = false
+		m.list.SetDelegate(newSearchItemDelegate(true))
+		m.list.ResetSelected()
+		m.textInput.Blur()
+		return m, nil
+	}
+	// Update both textInput and list
+	var cmd tea.Cmd
+	var listCmd tea.Cmd
+	m.textInput, cmd = m.textInput.Update(msg)
+	m.list, listCmd = m.list.Update(msg)
+	return m, tea.Batch(cmd, listCmd)
+}
+
+func (m model) updateEscape() (tea.Model, tea.Cmd) { //nolint: ireturn
+	m.textInputActive = true
+	m.list.SetDelegate(newSearchItemDelegate(false))
+	m.textInput.Focus()
+	return m, m.textInput.Cursor.BlinkCmd()
+}
+
 func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
 	if !m.textInputActive {
+		// In case the text input is not active, it means the list is focused.
 		selectedItem, ok := m.list.SelectedItem().(searchItem)
 		if !ok {
 			m.errorMessage = "No item is selected"
@@ -165,9 +188,11 @@ func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
 		if err != nil {
 			m.errorMessage = fmt.Sprintf("Failed to open the browser: %s", err)
 		}
-		return m, tea.Quit
+		return m, nil
 	}
 
+	// In case the text input is active.
+	m.list.SetDelegate(newSearchItemDelegate(true))
 	m.textInput.Blur()
 	query := m.textInput.Value()
 
@@ -196,6 +221,8 @@ func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
 		}
 	}
 	m.list.SetItems(items)
+	m.list.ResetSelected()
+	m.textInputActive = false
 
 	var cmd tea.Cmd
 	var listCmd tea.Cmd
@@ -221,12 +248,14 @@ func (m model) View() string {
 
 // Implementations for the list item UI.
 type searchItemDelegate struct {
-	styles searchItemDelegateStyles
+	focused bool
+	styles  searchItemDelegateStyles
 }
 
-func newSearchItemDelegate() searchItemDelegate {
+func newSearchItemDelegate(focused bool) searchItemDelegate {
 	return searchItemDelegate{
-		styles: newSearchItemStyles(),
+		focused: focused,
+		styles:  newSearchItemStyles(),
 	}
 }
 
@@ -253,7 +282,7 @@ func (d searchItemDelegate) Render(w io.Writer, m list.Model, index int, item li
 	}
 	adjustedDescription := strings.Join(lines, "\n")
 
-	isSelected := index == m.Index()
+	isSelected := index == m.Index() && d.focused
 	if isSelected {
 		title = d.styles.SelectedTitle.Render(sitem.title)
 		description = d.styles.SelectedDescription.Render(adjustedDescription)
