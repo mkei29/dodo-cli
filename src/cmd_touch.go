@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/caarlos0/log"
@@ -94,7 +96,9 @@ func executeTouchNew(args TouchArgs) error {
 	if err != nil {
 		return err
 	}
-	matter := NewFrontMatter(args.title, filepath, now)
+
+	sanitized := sanitizePath(filepath)
+	matter := NewFrontMatter(args.title, sanitized, now)
 
 	if _, err := file.WriteString(matter.String()); err != nil {
 		return fmt.Errorf("failed to write front matter: %w", err)
@@ -138,4 +142,21 @@ func parseTime(timeStr string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("failed to parse time: %w", err)
 	}
 	return t, nil
+}
+
+// remove the extension and replace / with _
+func sanitizePath(path string) string {
+	if path == "" {
+		return path
+	}
+	// Remove the extension
+	ext := filepath.Ext(path)
+	path = strings.TrimSuffix(path, ext)
+
+	// Replace '/' with '_'
+	path = strings.ReplaceAll(path, "/", "_")
+
+	// Remove leading '_'
+	path = strings.TrimPrefix(path, "_")
+	return path
 }
