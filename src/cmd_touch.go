@@ -144,7 +144,7 @@ func parseTime(timeStr string) (time.Time, error) {
 	return t, nil
 }
 
-// remove the extension and replace / with _
+// remove the extension and replace / with _.
 func sanitizePath(path string) string {
 	if path == "" {
 		return path
