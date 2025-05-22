@@ -1,16 +1,16 @@
-# This workflow is based on https://github.com/goreleaser/goreleaser-action
-name: release
+# This workflow combines release and publish-docs workflows
+name: release-and-publish
 on:
   push:
     branches:
       - main
-    paths:
-      - 'version.txt'
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
-  goreleaser:
+  release:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.modified, 'version.txt') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,3 +45,19 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+  publish-docs:
+    needs: release
+    if: ${{ always() && (needs.release.result == 'success' || needs.release.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install dodo CLI
+        run: |
+          curl https://raw.githubusercontent.com/toritoritori29/dodo-cli/main/download.sh | sh -
+      - name: Publish docs
+        run: |
+          ./dodo-cli upload
+        env:
+          DODO_API_KEY: ${{ secrets.DODO_ACCESS_KEY }}
