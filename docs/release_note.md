@@ -1,3 +1,6 @@
+# 2025/05/22
+* fix: the issue that `touch` command generate the slash including path.
+
 # 2025/03/25
 * feat: Introduced a `search` command to search documents from the CLI.
 * feat: Added the `project_id` field to the config file schema.
