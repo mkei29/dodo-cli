@@ -21,6 +21,7 @@ func main() {
 	}
 	rootCmd.AddCommand(CreateInitCmd())
 	rootCmd.AddCommand(CreateUploadCmd())
+	rootCmd.AddCommand(CreatePreviewCmd())
 	rootCmd.AddCommand(CreateVersionCmd())
 	rootCmd.AddCommand(CreateTouchCmd())
 	rootCmd.AddCommand(CreateCheckCmd())
