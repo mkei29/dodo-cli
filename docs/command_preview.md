@@ -1,14 +1,14 @@
 ---
-title: demo
-path: command_demo
+title: preview
+path: command_preview
 description: 
-created_at: 2025-05-25T16:15:00+09:00
-updated_at: 2025-05-25T16:15:00+09:00
+created_at: 2025-05-25T16:35:00+09:00
+updated_at: 2025-05-25T16:35:00+09:00
 ---
 
-# `demo` Command
+# `preview` Command
 
-The `demo` command is used to upload the project to dodo-doc's demo environment. It is an alias of the `upload` command with a different default endpoint. This command facilitates the transfer of your project's documentation to the dodo-doc demo platform for testing purposes before deploying to production.
+The `preview` command is used to upload the project to dodo-doc's preview environment. It is an alias of the `upload` command with a different default endpoint. This command facilitates the transfer of your project's documentation to the dodo-doc preview platform for testing purposes before deploying to production.
 
 ## Flags
 * `-c, --config string`  
@@ -32,7 +32,7 @@ The `demo` command is used to upload the project to dodo-doc's demo environment.
 ## Examples
 
 ```bash
-# Upload the document to dodo demo environment.
-$ dodo-cli demo
+# Upload the document to dodo preview environment.
+$ dodo-cli preview
   • successfully uploaded
-  • please open this link to view the document: https://xxx-demo.do.dodo-doc.com
+  • please open this link to view the document: https://xxx-preview.do.dodo-doc.com

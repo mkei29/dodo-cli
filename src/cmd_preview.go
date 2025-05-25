@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type DemoArgs struct {
+type PreviewArgs struct {
 	file     string // config file path
 	output   string // deprecated: the path to locate the archive file
 	endpoint string // server endpoint to upload
@@ -14,28 +14,28 @@ type DemoArgs struct {
 	noColor  bool   // disable color output
 }
 
-func CreateDemoCmd() *cobra.Command {
-	opts := DemoArgs{}
-	demoCmd := &cobra.Command{
-		Use:           "demo",
-		Short:         "upload the project to dodo-doc demo environment",
+func CreatePreviewCmd() *cobra.Command {
+	opts := PreviewArgs{}
+	previewCmd := &cobra.Command{
+		Use:           "preview",
+		Short:         "upload the project to dodo-doc preview environment",
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return executeDemoWrapper(opts)
+			return executePreviewWrapper(opts)
 		},
 	}
-	demoCmd.Flags().StringVarP(&opts.file, "config", "c", ".dodo.yaml", "Path to the configuration file")
-	demoCmd.Flags().StringVarP(&opts.rootPath, "workingDir", "w", ".", "Defines the root path of the project for the command's execution context")
-	demoCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
+	previewCmd.Flags().StringVarP(&opts.file, "config", "c", ".dodo.yaml", "Path to the configuration file")
+	previewCmd.Flags().StringVarP(&opts.rootPath, "workingDir", "w", ".", "Defines the root path of the project for the command's execution context")
+	previewCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
 
-	demoCmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
-	demoCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://api-demo.dodo-doc.com/project/upload", "endpoint to upload")
-	demoCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
-	return demoCmd
+	previewCmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
+	previewCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://api-demo.dodo-doc.com/project/upload", "endpoint to upload")
+	previewCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
+	return previewCmd
 }
 
-func executeDemoWrapper(args DemoArgs) error {
+func executePreviewWrapper(args PreviewArgs) error {
 	// Initialize logger and so on, then execute the main function.
 	env := NewEnvArgs()
 	if args.debug {
@@ -48,7 +48,7 @@ func executeDemoWrapper(args DemoArgs) error {
 		printer = NewPrinter(NoColor)
 	}
 
-	// Convert DemoArgs to UploadArgs for checking arguments
+	// Convert PreviewArgs to UploadArgs for checking arguments
 	uploadArgs := UploadArgs{
 		file:     args.file,
 		output:   args.output,
