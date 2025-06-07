@@ -1,3 +1,6 @@
+# 2025/06/07
+* feat: Added the `preview` command deploy the preview document.
+
 # 2025/05/22
 * fix: the issue that `touch` command generate the slash including path.
 
