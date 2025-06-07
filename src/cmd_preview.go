@@ -16,23 +16,19 @@ type PreviewArgs struct {
 
 func CreatePreviewCmd() *cobra.Command {
 	opts := PreviewArgs{}
-	previewCmd := &cobra.Command{
-		Use:           "preview",
-		Short:         "upload the project to dodo-doc preview environment",
-		SilenceErrors: true,
-		SilenceUsage:  true,
-		RunE: func(_ *cobra.Command, _ []string) error {
+	uploadOpts := UploadArgs(opts)
+	cmd := createUploadCommand(
+		"preview",
+		"upload the project to dodo-doc preview environment",
+		"https://api-demo.dodo-doc.com/project/upload",
+		&uploadOpts,
+		func(_ *cobra.Command, _ []string) error {
+			// Convert back to PreviewArgs
+			opts = PreviewArgs(uploadOpts)
 			return executePreviewWrapper(opts)
 		},
-	}
-	previewCmd.Flags().StringVarP(&opts.file, "config", "c", ".dodo.yaml", "Path to the configuration file")
-	previewCmd.Flags().StringVarP(&opts.rootPath, "workingDir", "w", ".", "Defines the root path of the project for the command's execution context")
-	previewCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
-
-	previewCmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
-	previewCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://api-demo.dodo-doc.com/project/upload", "endpoint to upload")
-	previewCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
-	return previewCmd
+	)
+	return cmd
 }
 
 func executePreviewWrapper(args PreviewArgs) error {
@@ -49,14 +45,7 @@ func executePreviewWrapper(args PreviewArgs) error {
 	}
 
 	// Convert PreviewArgs to UploadArgs for checking arguments
-	uploadArgs := UploadArgs{
-		file:     args.file,
-		output:   args.output,
-		endpoint: args.endpoint,
-		debug:    args.debug,
-		rootPath: args.rootPath,
-		noColor:  args.noColor,
-	}
+	uploadArgs := UploadArgs(args)
 
 	err := CheckArgsAndEnv(uploadArgs, env)
 	if err != nil {

@@ -23,25 +23,36 @@ type UploadArgs struct {
 	noColor  bool   // disable color output
 }
 
-func CreateUploadCmd() *cobra.Command {
-	opts := UploadArgs{}
-	uploadCmd := &cobra.Command{
-		Use:           "upload",
-		Short:         "upload the project to dodo-doc",
+// createUploadCommand creates a cobra command with common flags for upload operations.
+func createUploadCommand(use, short, defaultEndpoint string, opts *UploadArgs, runFunc func(*cobra.Command, []string) error) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:           use,
+		Short:         short,
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE:          runFunc,
+	}
+	cmd.Flags().StringVarP(&opts.file, "config", "c", ".dodo.yaml", "Path to the configuration file")
+	cmd.Flags().StringVarP(&opts.rootPath, "workingDir", "w", ".", "Defines the root path of the project for the command's execution context")
+	cmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
+
+	cmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
+	cmd.Flags().StringVar(&opts.endpoint, "endpoint", defaultEndpoint, "endpoint to upload")
+	cmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
+	return cmd
+}
+
+func CreateUploadCmd() *cobra.Command {
+	opts := UploadArgs{}
+	return createUploadCommand(
+		"upload",
+		"upload the project to dodo-doc",
+		"https://api.dodo-doc.com/project/upload",
+		&opts,
+		func(_ *cobra.Command, _ []string) error {
 			return executeUploadWrapper(opts)
 		},
-	}
-	uploadCmd.Flags().StringVarP(&opts.file, "config", "c", ".dodo.yaml", "Path to the configuration file")
-	uploadCmd.Flags().StringVarP(&opts.rootPath, "workingDir", "w", ".", "Defines the root path of the project for the command's execution context")
-	uploadCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
-
-	uploadCmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
-	uploadCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://api.dodo-doc.com/project/upload", "endpoint to upload")
-	uploadCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
-	return uploadCmd
+	)
 }
 
 func executeUploadWrapper(args UploadArgs) error {
