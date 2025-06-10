@@ -9,6 +9,7 @@ Create a new PR including following changes.
 
 * Bump the `version.txt`. (You can manually edit the file.)
 * Bump the version written in `download.sh`
+* Run `go generate ./src`
 * Update the `release_note.md` in the `docs` directory.
 
 After this PR merged, CI will automatically build a new version and publish it to GitHub.
