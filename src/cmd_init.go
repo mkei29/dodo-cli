@@ -16,7 +16,7 @@ import (
 //go:embed template.yaml
 var configTemplate string
 
-type initArgs struct {
+type InitArgs struct {
 	configPath  string // config file path
 	workingDir  string // root path of the project
 	force       bool   // overwrite the configuration file if it already exists
@@ -24,6 +24,20 @@ type initArgs struct {
 	projectID   string
 	projectName string
 	description string
+	noColor     bool // disable color output
+}
+
+// Implement LoggingConfig and PrinterConfig interface for InitArgs.
+func (opts *InitArgs) DisableLogging() bool {
+	return false
+}
+
+func (opts *InitArgs) EnableDebugMode() bool {
+	return opts.debug
+}
+
+func (opts *InitArgs) EnableColor() bool {
+	return !opts.noColor
 }
 
 type initParameter struct {
@@ -34,7 +48,7 @@ type initParameter struct {
 }
 
 func CreateInitCmd() *cobra.Command {
-	opts := initArgs{}
+	opts := InitArgs{}
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Create a new configuration file for the project.",
@@ -49,13 +63,13 @@ func CreateInitCmd() *cobra.Command {
 	initCmd.Flags().StringVar(&opts.projectID, "project-id", "", "Project ID")
 	initCmd.Flags().StringVar(&opts.projectName, "project-name", "", "Project Name")
 	initCmd.Flags().StringVar(&opts.description, "description", "", "Project Name")
+	initCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
 	return initCmd
 }
 
-func executeInit(args initArgs) error {
-	if args.debug {
-		log.SetLevel(log.DebugLevel)
-		log.Debug("running in debug mode")
+func executeInit(args InitArgs) error {
+	if err := InitLogger(&args); err != nil {
+		return fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
 	configPath := filepath.Join(args.workingDir, args.configPath)

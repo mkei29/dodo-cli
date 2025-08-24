@@ -15,6 +15,23 @@ type CheckArgs struct {
 	noColor    bool   // disable color output
 }
 
+// Implement LoggingConfig interface for CheckArgs.
+func (opts *CheckArgs) DisableLogging() bool {
+	return false
+}
+
+func (opts *CheckArgs) EnableDebugMode() bool {
+	return opts.debug
+}
+
+func (opts *CheckArgs) EnableColor() bool {
+	return !opts.noColor
+}
+
+func (opts *CheckArgs) EnablePrinter() bool {
+	return true
+}
+
 func CreateCheckCmd() *cobra.Command {
 	opts := CheckArgs{}
 	checkCmd := &cobra.Command{
@@ -33,20 +50,16 @@ func CreateCheckCmd() *cobra.Command {
 }
 
 func executeCheckWrapper(args CheckArgs) error {
-	// Initialize logger and so on, then execute the main function.
+	// Validate arguments and init the logger.
 	env := NewEnvArgs()
-	if args.debug {
-		log.SetLevel(log.DebugLevel)
-		log.Debug("running in debug mode")
-	}
-
 	printer := NewPrinter(ErrorLevel)
-	if args.noColor {
-		printer = NewPrinter(NoColor)
-	}
-
 	err := CheckArgsAndEnvForCheck(args, env)
 	if err != nil {
+		printer.PrintError(err)
+		return err
+	}
+	printer = NewPrinterFromArgs(&args)
+	if err := InitLogger(&args); err != nil {
 		printer.PrintError(err)
 		return err
 	}

@@ -10,8 +10,26 @@ type PreviewArgs struct {
 	output   string // deprecated: the path to locate the archive file
 	endpoint string // server endpoint to upload
 	debug    bool   // server endpoint to upload
+	format   string // output style for the command
 	rootPath string // root path of the project
 	noColor  bool   // disable color output
+}
+
+// Implement LoggingConfig and PrinterConfig interface for PreviewArgs.
+func (opts *PreviewArgs) DisableLogging() bool {
+	return opts.format == FormatJSON
+}
+
+func (opts *PreviewArgs) EnableDebugMode() bool {
+	return opts.debug
+}
+
+func (opts *PreviewArgs) EnableColor() bool {
+	return !opts.noColor
+}
+
+func (opts *PreviewArgs) EnablePrinter() bool {
+	return opts.format == FormatText
 }
 
 func CreatePreviewCmd() *cobra.Command {
@@ -20,7 +38,7 @@ func CreatePreviewCmd() *cobra.Command {
 	cmd := createUploadCommand(
 		"preview",
 		"upload the project to dodo-doc preview environment",
-		"https://api-demo.dodo-doc.com/project/upload",
+		"https://api.dodo-doc.com/project/upload/demo",
 		&uploadOpts,
 		func(_ *cobra.Command, _ []string) error {
 			// Convert back to PreviewArgs
@@ -34,28 +52,33 @@ func CreatePreviewCmd() *cobra.Command {
 func executePreviewWrapper(args PreviewArgs) error {
 	// Initialize logger and so on, then execute the main function.
 	env := NewEnvArgs()
-	if args.debug {
-		log.SetLevel(log.DebugLevel)
-		log.Debug("running in debug mode")
-	}
-
-	printer := NewPrinter(ErrorLevel)
-	if args.noColor {
-		printer = NewPrinter(NoColor)
-	}
-
-	// Convert PreviewArgs to UploadArgs for checking arguments
 	uploadArgs := UploadArgs(args)
 
+	// Parse the command line arguments and environment variables.
+	printer := NewPrinter(ErrorLevel)
 	err := CheckArgsAndEnv(uploadArgs, env)
 	if err != nil {
 		printer.PrintError(err)
 		return err
 	}
+	printer = NewPrinterFromArgs(&args)
+	jsonWriter := NewJSONWriterFromArgs(uploadArgs)
 
-	if err := executeUpload(uploadArgs, env); err != nil {
+	// Initialize the logging configuration from the command line arguments.
+	if err := InitLogger(&args); err != nil {
 		printer.PrintError(err)
+		jsonWriter.ShowFailedJSONText(err)
+	}
+
+	// Execute the upload operation.
+	url, err := executeUpload(uploadArgs, env)
+	if err != nil {
+		printer.PrintError(err)
+		jsonWriter.ShowFailedJSONText(err)
 		return err
 	}
+	log.Infof("successfully uploaded")
+	log.Infof("please open this link to view the document: %s", url)
+	jsonWriter.ShowSucceededJSONText(url)
 	return nil
 }
