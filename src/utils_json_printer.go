@@ -5,8 +5,6 @@ import (
 	"fmt"
 )
 
-// JSONFormat is a utility tool to manage the JSON output format for the upload command.
-
 const (
 	JSONLogLevelDisabled = 1
 	JSONLogLevelEnabled  = 2

@@ -33,7 +33,7 @@ type UploadArgs struct {
 
 // Implement LoggingConfig and PrinterConfig interface for UploadArgs.
 func (opts *UploadArgs) DisableLogging() bool {
-	return opts.format == "json"
+	return opts.format == FormatJSON
 }
 
 func (opts *UploadArgs) EnableDebugMode() bool {
@@ -45,7 +45,7 @@ func (opts *UploadArgs) EnableColor() bool {
 }
 
 func (opts *UploadArgs) EnablePrinter() bool {
-	return opts.format == "text"
+	return opts.format == FormatText
 }
 
 // createUploadCommand creates a cobra command with common flags for upload operations.
@@ -60,7 +60,7 @@ func createUploadCommand(use, short, defaultEndpoint string, opts *UploadArgs, r
 	cmd.Flags().StringVarP(&opts.file, "config", "c", ".dodo.yaml", "Path to the configuration file")
 	cmd.Flags().StringVarP(&opts.rootPath, "workingDir", "w", ".", "Defines the root path of the project for the command's execution context")
 	cmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
-	cmd.Flags().StringVar(&opts.format, "format", "text", "Output format for the command. Supported formats: text, json")
+	cmd.Flags().StringVar(&opts.format, "format", "text", "Output format for the command. Supported formats: {text, json}")
 
 	cmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
 	cmd.Flags().StringVar(&opts.endpoint, "endpoint", defaultEndpoint, "endpoint to upload")
