@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,11 +15,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	FormatText = "text"
+	FormatJSON = "json"
+)
+
 type UploadArgs struct {
 	file     string // config file path
 	output   string // deprecated: the path to locate the archive file
 	endpoint string // server endpoint to upload
 	debug    bool   // server endpoint to upload
+	format   string // output style for the command
 	rootPath string // root path of the project
 	noColor  bool   // disable color output
 }
@@ -35,6 +42,7 @@ func createUploadCommand(use, short, defaultEndpoint string, opts *UploadArgs, r
 	cmd.Flags().StringVarP(&opts.file, "config", "c", ".dodo.yaml", "Path to the configuration file")
 	cmd.Flags().StringVarP(&opts.rootPath, "workingDir", "w", ".", "Defines the root path of the project for the command's execution context")
 	cmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
+	cmd.Flags().StringVar(&opts.format, "format", "text", "Output format for the command. Supported formats: text, json")
 
 	cmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
 	cmd.Flags().StringVar(&opts.endpoint, "endpoint", defaultEndpoint, "endpoint to upload")
@@ -67,6 +75,14 @@ func executeUploadWrapper(args UploadArgs) error {
 	if args.noColor {
 		printer = NewPrinter(NoColor)
 	}
+	if args.format == FormatJSON {
+		printer.writer = io.Discard
+	}
+
+	jsonWriter := NewJSONWriter(JSONLogLevelDisabled)
+	if args.format == FormatJSON {
+		jsonWriter = NewJSONWriter(JSONLogLevelEnabled)
+	}
 
 	err := CheckArgsAndEnv(args, env)
 	if err != nil {
@@ -74,26 +90,29 @@ func executeUploadWrapper(args UploadArgs) error {
 		return err
 	}
 
-	if err := executeUpload(args, env); err != nil {
+	url, err := executeUpload(args, env)
+	if err != nil {
 		printer.PrintError(err)
+		jsonWriter.ShowFailedJSONText(err)
 		return err
 	}
+	jsonWriter.ShowSucceededJSONText(url)
 	return nil
 }
 
-func executeUpload(args UploadArgs, env EnvArgs) error {
+func executeUpload(args UploadArgs, env EnvArgs) (string, error) {
 	// Read config file
 	log.Debugf("config file: %s", args.file)
 	configFile, err := os.Open(args.file)
 	if err != nil {
-		return fmt.Errorf("failed to open the config file: %w", err)
+		return "", fmt.Errorf("failed to open the config file: %w", err)
 	}
 	defer configFile.Close()
 
 	state := NewParseState(args.file, "./")
 	config, err := ParseConfig(state, configFile)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Create Project struct from config.
@@ -102,14 +121,14 @@ func executeUpload(args UploadArgs, env EnvArgs) error {
 	// Create Page structs from config.
 	page, merr := convertConfigPageToMetadataPage(args.rootPath, config)
 	if merr != nil {
-		return merr
+		return "", merr
 	}
 	log.Debugf("successfully convert config to page. found %d pages", page.Count())
 
 	// Create Assets struct from config.
 	asset, merr := convertConfigAssetToMetadataAsset(args.rootPath, config.Assets)
 	if merr != nil {
-		return merr
+		return "", merr
 	}
 	log.Debugf("successfully convert assets to metadata. found %d assets", len(asset))
 
@@ -123,24 +142,27 @@ func executeUpload(args UploadArgs, env EnvArgs) error {
 	// Prepare archive file
 	archive, err := NewArchive(args.output)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer archive.Close()
 	if merr := archive.Archive(&metadata); merr != nil {
-		return merr
+		return "", merr
 	}
 
 	// Upload the archive file
 	resp, err := uploadFile(args.endpoint, metadata, archive.File, env.APIKey)
 	if err != nil {
-		return err
+		return "", err
 	}
-	log.Infof("successfully uploaded")
-	log.Infof("please open this link to view the document: %s", resp.DocumentURL)
-	return nil
+	return resp.DocumentURL, nil
 }
 
 func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
+	// Check if `format` and `debug` are compatible
+	if args.debug && args.format != "text" {
+		return errors.New("debug mode is only supported with text format")
+	}
+
 	// Check if `file` is valid
 	_, err := os.Stat(args.file)
 	if err != nil && os.IsNotExist(err) {
@@ -220,14 +242,16 @@ func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) 
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to upload file: %d", resp.StatusCode)
-	}
-
 	data, err := ParseUploadResponse(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse the response: %w", err)
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to upload file: Status %d,  %s", resp.StatusCode, data.Message)
+	}
+	log.Infof("successfully uploaded")
+	log.Infof("please open this link to view the document: %s", data.DocumentURL)
 	return data, nil
 }
 
@@ -284,4 +308,57 @@ func newFileUploadRequest(uri string, metadata Metadata, zipFile *os.File, apiKe
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("Authorization", bearer)
 	return req, nil
+}
+
+// JSONFormat is a utility tool to manage the JSON output format for the upload command.
+
+const (
+	JSONLogLevelDisabled = 1
+	JSONLogLevelEnabled  = 2
+)
+
+type JSONFormat struct {
+	Status      string `json:"status"`
+	DocumentURL string `json:"document_url"`
+	Error       string `json:"error,omitempty"`
+}
+
+type JSONWriter struct {
+	level int
+}
+
+func NewJSONWriter(level int) *JSONWriter {
+	return &JSONWriter{level: level}
+}
+
+func (j *JSONWriter) Write(p string) {
+	if j.level == JSONLogLevelEnabled {
+		fmt.Println(p) //nolint: forbidigo
+	}
+}
+
+func (j *JSONWriter) ShowSucceededJSONText(documentURL string) {
+	data := JSONFormat{
+		Status:      "success",
+		DocumentURL: documentURL,
+	}
+	// Convert data to JSON format
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+	j.Write(string(jsonData))
+}
+
+func (j *JSONWriter) ShowFailedJSONText(err error) {
+	data := JSONFormat{
+		Status: "failed",
+		Error:  err.Error(),
+	}
+	// Convert data to JSON format
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+	j.Write(string(jsonData))
 }

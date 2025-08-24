@@ -10,6 +10,7 @@ type PreviewArgs struct {
 	output   string // deprecated: the path to locate the archive file
 	endpoint string // server endpoint to upload
 	debug    bool   // server endpoint to upload
+	format   string // output style for the command
 	rootPath string // root path of the project
 	noColor  bool   // disable color output
 }
@@ -53,7 +54,7 @@ func executePreviewWrapper(args PreviewArgs) error {
 		return err
 	}
 
-	if err := executeUpload(uploadArgs, env); err != nil {
+	if _, err := executeUpload(uploadArgs, env); err != nil {
 		printer.PrintError(err)
 		return err
 	}
