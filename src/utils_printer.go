@@ -25,6 +25,11 @@ var Styles = [...]StyleFormat{ //nolint: gochecknoglobals
 	},
 }
 
+type PrinterConfig interface {
+	EnableColor() bool
+	EnablePrinter() bool
+}
+
 type StyleFormat struct {
 	Primary   lipgloss.Style
 	Secondary lipgloss.Style
@@ -42,6 +47,17 @@ func NewPrinter(styleIdx int) *Printer {
 		padding: 3,
 		style:   Styles[styleIdx],
 	}
+}
+
+func NewPrinterFromArgs(args PrinterConfig) *Printer {
+	printer := NewPrinter(ErrorLevel)
+	if !args.EnableColor() {
+		printer.SetStyle(NoColor)
+	}
+	if !args.EnablePrinter() {
+		printer.Disable()
+	}
+	return printer
 }
 
 func (p *Printer) Disable() {

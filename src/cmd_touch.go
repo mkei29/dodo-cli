@@ -24,6 +24,23 @@ type TouchArgs struct {
 	now      string
 }
 
+// Implement LoggingConfig and PrinterConfig interface for TouchArgs.
+func (opts *TouchArgs) DisableLogging() bool {
+	return false
+}
+
+func (opts *TouchArgs) EnableDebugMode() bool {
+	return opts.debug
+}
+
+func (opts *TouchArgs) EnableColor() bool {
+	return !opts.noColor
+}
+
+func (opts *TouchArgs) EnablePrinter() bool {
+	return true
+}
+
 func CreateTouchCmd() *cobra.Command {
 	opts := TouchArgs{}
 	touchCmd := &cobra.Command{
@@ -45,24 +62,29 @@ func CreateTouchCmd() *cobra.Command {
 	return touchCmd
 }
 
-func executeTouchWrapper(args TouchArgs) error {
-	// Initialize logger and other settings, then execute the main function.
-	if args.debug {
-		log.SetLevel(log.DebugLevel)
-		log.Debug("Running in debug mode")
-	}
-
-	printer := NewPrinter(ErrorLevel)
-	if args.noColor {
-		printer = NewPrinter(NoColor)
-	}
-
+func TouchArgsAndEnv(args *TouchArgs, _ EnvArgs) error {
+	// Check if the args.now is in the correct format.
 	if args.now != "" {
 		_, err := time.Parse(time.RFC3339, args.now)
 		if err != nil {
-			printer.printError(fmt.Errorf("invalid time format: %w", err))
 			return fmt.Errorf("invalid time format: %w", err)
 		}
+	}
+	return nil
+}
+
+func executeTouchWrapper(args TouchArgs) error {
+	// Initialize the logging configuration from the command line arguments.
+	printer := NewPrinter(ErrorLevel)
+	env := NewEnvArgs()
+	if err := TouchArgsAndEnv(&args, env); err != nil {
+		printer.PrintError(err)
+		return err
+	}
+	printer = NewPrinterFromArgs(&args)
+	if err := InitLogger(&args); err != nil {
+		printer.PrintError(err)
+		return err
 	}
 
 	if _, err := os.Stat(args.filepath); os.IsNotExist(err) {

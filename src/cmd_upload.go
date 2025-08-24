@@ -31,7 +31,7 @@ type UploadArgs struct {
 	noColor  bool   // disable color output
 }
 
-// Implement LoggingConfig interface for PreviewArgs.
+// Implement LoggingConfig and PrinterConfig interface for UploadArgs.
 func (opts *UploadArgs) DisableLogging() bool {
 	return opts.format == "json"
 }
@@ -42,6 +42,10 @@ func (opts *UploadArgs) EnableDebugMode() bool {
 
 func (opts *UploadArgs) EnableColor() bool {
 	return !opts.noColor
+}
+
+func (opts *UploadArgs) EnablePrinter() bool {
+	return opts.format == "text"
 }
 
 // createUploadCommand creates a cobra command with common flags for upload operations.
@@ -86,13 +90,14 @@ func executeUploadWrapper(args UploadArgs) error {
 		printer.PrintError(err)
 		return err
 	}
-	printer = NewPrinterFromArgs(args)
+	printer = NewPrinterFromArgs(&args)
 	jsonWriter := NewJSONWriterFromArgs(args)
 
 	// Initialize the logging configuration from the command line arguments.
 	if err := InitLogger(&args); err != nil {
 		printer.PrintError(err)
 		jsonWriter.ShowFailedJSONText(err)
+		return err
 	}
 
 	// Execute the upload operation.
@@ -209,17 +214,6 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 		return fmt.Errorf("invalid format. Supported formats: %v", AvailableFormats)
 	}
 	return nil
-}
-
-func NewPrinterFromArgs(args UploadArgs) *Printer {
-	printer := NewPrinter(ErrorLevel)
-	if args.noColor {
-		printer.SetStyle(NoColor)
-	}
-	if args.format == FormatJSON {
-		printer.Disable()
-	}
-	return printer
 }
 
 func NewJSONWriterFromArgs(args UploadArgs) *JSONWriter {

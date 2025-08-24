@@ -15,9 +15,9 @@ type PreviewArgs struct {
 	noColor  bool   // disable color output
 }
 
-// Implement LoggingConfig interface for PreviewArgs.
+// Implement LoggingConfig and PrinterConfig interface for PreviewArgs.
 func (opts *PreviewArgs) DisableLogging() bool {
-	return opts.format == "json"
+	return opts.format == FormatJSON
 }
 
 func (opts *PreviewArgs) EnableDebugMode() bool {
@@ -26,6 +26,10 @@ func (opts *PreviewArgs) EnableDebugMode() bool {
 
 func (opts *PreviewArgs) EnableColor() bool {
 	return !opts.noColor
+}
+
+func (opts *PreviewArgs) EnablePrinter() bool {
+	return opts.format == FormatText
 }
 
 func CreatePreviewCmd() *cobra.Command {
@@ -57,7 +61,7 @@ func executePreviewWrapper(args PreviewArgs) error {
 		printer.PrintError(err)
 		return err
 	}
-	printer = NewPrinterFromArgs(uploadArgs)
+	printer = NewPrinterFromArgs(&args)
 	jsonWriter := NewJSONWriterFromArgs(uploadArgs)
 
 	// Initialize the logging configuration from the command line arguments.

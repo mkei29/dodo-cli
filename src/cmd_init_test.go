@@ -13,7 +13,7 @@ func TestInitCommand(t *testing.T) {
 	dirPath, err := os.MkdirTemp("", "dodo_test_*")
 	require.NoError(t, err)
 
-	args := initArgs{}
+	args := InitArgs{}
 	args.configPath = ".dodo.yaml"
 	args.workingDir = dirPath
 	args.force = false
