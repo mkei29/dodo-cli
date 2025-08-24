@@ -44,6 +44,14 @@ func NewPrinter(styleIdx int) *Printer {
 	}
 }
 
+func (p *Printer) Disable() {
+	p.writer = io.Discard
+}
+
+func (p *Printer) SetStyle(styleIdx int) {
+	p.style = Styles[styleIdx]
+}
+
 // PrettyPrint prints the error in a human-readable format.
 func (p *Printer) PrintError(err error) {
 	// if the error is a MultiError, call PrettyPrint on each error.

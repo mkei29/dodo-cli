@@ -6,3 +6,4 @@ output.zip
 assets
 
 src/version.txt
+node_modules

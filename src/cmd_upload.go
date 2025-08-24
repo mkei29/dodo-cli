@@ -1,15 +1,11 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/caarlos0/log"
 	"github.com/spf13/cobra"
@@ -20,6 +16,11 @@ const (
 	FormatJSON = "json"
 )
 
+var AvailableFormats = []string{ //nolint: gochecknoglobals
+	FormatText,
+	FormatJSON,
+}
+
 type UploadArgs struct {
 	file     string // config file path
 	output   string // deprecated: the path to locate the archive file
@@ -28,6 +29,19 @@ type UploadArgs struct {
 	format   string // output style for the command
 	rootPath string // root path of the project
 	noColor  bool   // disable color output
+}
+
+// Implement LoggingConfig interface for PreviewArgs.
+func (opts *UploadArgs) DisableLogging() bool {
+	return opts.format == "json"
+}
+
+func (opts *UploadArgs) EnableDebugMode() bool {
+	return opts.debug
+}
+
+func (opts *UploadArgs) EnableColor() bool {
+	return !opts.noColor
 }
 
 // createUploadCommand creates a cobra command with common flags for upload operations.
@@ -64,38 +78,32 @@ func CreateUploadCmd() *cobra.Command {
 }
 
 func executeUploadWrapper(args UploadArgs) error {
-	// Initialize logger and so on, then execute the main function.
-	env := NewEnvArgs()
-	if args.debug {
-		log.SetLevel(log.DebugLevel)
-		log.Debug("running in debug mode")
-	}
-
+	// Parse the command line arguments and environment variables.
 	printer := NewPrinter(ErrorLevel)
-	if args.noColor {
-		printer = NewPrinter(NoColor)
-	}
-	if args.format == FormatJSON {
-		printer.writer = io.Discard
-	}
-
-	jsonWriter := NewJSONWriter(JSONLogLevelDisabled)
-	if args.format == FormatJSON {
-		jsonWriter = NewJSONWriter(JSONLogLevelEnabled)
-	}
-
+	env := NewEnvArgs()
 	err := CheckArgsAndEnv(args, env)
 	if err != nil {
 		printer.PrintError(err)
 		return err
 	}
+	printer = NewPrinterFromArgs(args)
+	jsonWriter := NewJSONWriterFromArgs(args)
 
+	// Initialize the logging configuration from the command line arguments.
+	if err := InitLogger(&args); err != nil {
+		printer.PrintError(err)
+		jsonWriter.ShowFailedJSONText(err)
+	}
+
+	// Execute the upload operation.
 	url, err := executeUpload(args, env)
 	if err != nil {
 		printer.PrintError(err)
 		jsonWriter.ShowFailedJSONText(err)
 		return err
 	}
+	log.Infof("successfully uploaded")
+	log.Infof("please open this link to view the document: %s", url)
 	jsonWriter.ShowSucceededJSONText(url)
 	return nil
 }
@@ -150,7 +158,7 @@ func executeUpload(args UploadArgs, env EnvArgs) (string, error) {
 	}
 
 	// Upload the archive file
-	resp, err := uploadFile(args.endpoint, metadata, archive.File, env.APIKey)
+	resp, err := archive.Upload(args.endpoint, env.APIKey)
 	if err != nil {
 		return "", err
 	}
@@ -195,7 +203,30 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 	if env.APIKey == "" {
 		return errors.New("the API key is empty. Please set the environment variable DODO_API_KEY")
 	}
+
+	// Check if the format is valid
+	if !slices.Contains(AvailableFormats, args.format) {
+		return fmt.Errorf("invalid format. Supported formats: %v", AvailableFormats)
+	}
 	return nil
+}
+
+func NewPrinterFromArgs(args UploadArgs) *Printer {
+	printer := NewPrinter(ErrorLevel)
+	if args.noColor {
+		printer.SetStyle(NoColor)
+	}
+	if args.format == FormatJSON {
+		printer.Disable()
+	}
+	return printer
+}
+
+func NewJSONWriterFromArgs(args UploadArgs) *JSONWriter {
+	if args.format == FormatJSON {
+		return NewJSONWriter(JSONLogLevelEnabled)
+	}
+	return NewJSONWriter(JSONLogLevelDisabled)
 }
 
 func convertConfigPageToMetadataPage(rootDir string, config *Config) (*Page, *MultiError) {
@@ -228,137 +259,4 @@ func convertConfigAssetToMetadataAsset(rootDir string, assets []ConfigAsset) ([]
 		return nil, &merr
 	}
 	return metadataAssets, nil
-}
-
-func uploadFile(uri string, metadata Metadata, zipFile *os.File, apiKey string) (*UploadResponse, error) {
-	req, err := newFileUploadRequest(uri, metadata, zipFile, apiKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create upload request: %w", err)
-	}
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error occurred during communication with the server: %w", err)
-	}
-	defer resp.Body.Close()
-
-	data, err := ParseUploadResponse(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse the response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to upload file: Status %d,  %s", resp.StatusCode, data.Message)
-	}
-	log.Infof("successfully uploaded")
-	log.Infof("please open this link to view the document: %s", data.DocumentURL)
-	return data, nil
-}
-
-func newFileUploadRequest(uri string, metadata Metadata, zipFile *os.File, apiKey string) (*http.Request, error) {
-	body := &bytes.Buffer{}
-	// Try to create a new multipart writer in a closure.
-	// This is to ensure that the multipart writer is closed properly.
-	// writer.Close() must be called before pass it to http.NewRequest.
-	// If we break this rule, the request will not be sent properly.
-	writer, err := func() (*multipart.Writer, error) {
-		writer := multipart.NewWriter(body)
-		defer writer.Close()
-
-		// Write metadata
-		serialized, err := metadata.Serialize()
-		if err != nil {
-			return nil, fmt.Errorf("failed to serialize metadata: %w", err)
-		}
-		metadataPart, err := writer.CreateFormField("metadata")
-		if err != nil {
-			return nil, fmt.Errorf("failed to create a multipart section: %w", err)
-		}
-		_, err = metadataPart.Write(serialized)
-		if err != nil {
-			return nil, fmt.Errorf("failed to write metadata to the multipart section: %w", err)
-		}
-
-		// Write archived documents
-		filePart, err := writer.CreateFormFile("archive", filepath.Base(zipFile.Name()))
-		if err != nil {
-			return nil, fmt.Errorf("failed to create FormFile: %w", err)
-		}
-
-		_, err = zipFile.Seek(0, 0)
-		if err != nil {
-			return nil, fmt.Errorf("failed to seek the archive file: %w", err)
-		}
-		_, err = io.Copy(filePart, zipFile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to copy archive file content to writer: %w", err)
-		}
-		return writer, nil
-	}()
-	if err != nil {
-		return nil, err
-	}
-
-	log.Debugf("contents size %d", body.Len())
-	req, err := http.NewRequest(http.MethodPost, uri, body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create a new upload request from body: %w", err)
-	}
-	bearer := "Bearer " + apiKey
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("Authorization", bearer)
-	return req, nil
-}
-
-// JSONFormat is a utility tool to manage the JSON output format for the upload command.
-
-const (
-	JSONLogLevelDisabled = 1
-	JSONLogLevelEnabled  = 2
-)
-
-type JSONFormat struct {
-	Status      string `json:"status"`
-	DocumentURL string `json:"document_url"`
-	Error       string `json:"error,omitempty"`
-}
-
-type JSONWriter struct {
-	level int
-}
-
-func NewJSONWriter(level int) *JSONWriter {
-	return &JSONWriter{level: level}
-}
-
-func (j *JSONWriter) Write(p string) {
-	if j.level == JSONLogLevelEnabled {
-		fmt.Println(p) //nolint: forbidigo
-	}
-}
-
-func (j *JSONWriter) ShowSucceededJSONText(documentURL string) {
-	data := JSONFormat{
-		Status:      "success",
-		DocumentURL: documentURL,
-	}
-	// Convert data to JSON format
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return
-	}
-	j.Write(string(jsonData))
-}
-
-func (j *JSONWriter) ShowFailedJSONText(err error) {
-	data := JSONFormat{
-		Status: "failed",
-		Error:  err.Error(),
-	}
-	// Convert data to JSON format
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return
-	}
-	j.Write(string(jsonData))
 }
