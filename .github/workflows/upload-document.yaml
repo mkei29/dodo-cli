@@ -1,5 +1,4 @@
- # This workflow combines release and publish-docs workflows
-name: release-and-publish
+name: upload-document
 on:
   push:
     branches:

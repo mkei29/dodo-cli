@@ -1,0 +1,32 @@
+name: preview-document
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: write
+jobs: 
+  publish-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install dodo CLI
+        run: |
+          curl -sL https://github.com/mkei29/dodo-cli/releases/download/0.0.13/dodo-cli_Linux_x86_64.tar.gz | tar xz
+          chmod +x dodo-cli
+      - name: Preview docs
+        id: preview
+        run: |
+          RESULT=`./dodo-cli preview --format json`
+          URL=$(echo $RESULT | jq -r .document_url)
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "Successfully generated preview URL: $URL"
+        env:
+          DODO_API_KEY: ${{ secrets.DODO_ACCESS_KEY }}
+      - name: Comment on PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            Document preview is available [here](${{ steps.preview.outputs.url }}).
