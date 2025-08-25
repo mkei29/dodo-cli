@@ -1,3 +1,8 @@
+# 2025/08/26
+* fix: Fixed the issue that the `preview` command work didn't work as expected.
+* feat: Introduce `--format` option for the `upload` and `preview` command.
+* feat: Prepare npm packages to make install easier.
+
 # 2025/06/07
 * feat: Added the `preview` command deploy the preview document.
 
