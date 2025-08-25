@@ -40,19 +40,42 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
-  publish-docs:
+  publish:
     needs: release
     if: ${{ always() && (needs.release.result == 'success' || needs.release.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install dodo CLI
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - name: Download binaries
         run: |
-          curl https://raw.githubusercontent.com/toritoritori29/dodo-cli/main/download.sh | sh -
-      - name: Publish docs
+          curl -sL https://github.com/mkei29/dodo-cli/releases/download/0.0.12/dodo-cli_Linux_x86_64.tar.gz | tar xz
+          chmod +x dodo-cli
+          mv dodo-cli packages/cli-linux-x86-64
+
+          curl -sL https://github.com/mkei29/dodo-cli/releases/download/0.0.12/dodo-cli_Linux_arm64.tar.gz | tar xz
+          chmod +x dodo-cli
+          mv dodo-cli packages/cli-linux-arm64
+
+          curl -sL https://github.com/mkei29/dodo-cli/releases/download/0.0.12/dodo-cli_Darwin_x86_64.tar.gz | tar xz
+          chmod +x dodo-cli
+          mv dodo-cli packages/cli-darwin-x86-64
+
+          curl -sL https://github.com/mkei29/dodo-cli/releases/download/0.0.12/dodo-cli_Darwin_arm64.tar.gz | tar xz
+          chmod +x dodo-cli
+          mv dodo-cli packages/cli-darwin-arm64
+      - name: Publish packages
         run: |
-          ./dodo-cli upload
+          for package in ./packages/*; do
+            echo "Publishing $package"
+            npm publish $package --tag=latest --access=public
+          done
         env:
-          DODO_API_KEY: ${{ secrets.DODO_ACCESS_KEY }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

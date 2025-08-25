@@ -1,0 +1,14 @@
+{
+  "name": "@dodo/cli-linux-x86-64",
+  "version": "0.0.1",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.21.3"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x86-64"
+  ]
+}
