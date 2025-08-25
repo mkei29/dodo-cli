@@ -9,8 +9,6 @@ permissions:
   contents: read
 jobs: 
   publish-docs:
-    needs: release
-    if: ${{ always() && (needs.release.result == 'success' || needs.release.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
