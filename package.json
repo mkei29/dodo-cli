@@ -1,5 +1,5 @@
 {
-  "name": "@dodo/dodo-cli",
+  "name": "@dodo-doc/cli",
   "version": "0.0.1",
   "description": "",
   "bin": "./javascript/index.js",
@@ -10,10 +10,10 @@
   "keywords": [],
   "author": "mkei29",
   "optionalDependencies": {
-    "@dodo/cli-darwin-x64": "latest",
-    "@dodo/cli-darwin-arm64": "latest",
-    "@dodo/cli-linux-x64": "latest",
-    "@dodo/cli-linux-arm64": "latest"
+    "@dodo-doc/cli-darwin-x64": "latest",
+    "@dodo-doc/cli-darwin-arm64": "latest",
+    "@dodo-doc/cli-linux-x64": "latest",
+    "@dodo-doc/cli-linux-arm64": "latest"
   },
   "license": "MIT"
 }
