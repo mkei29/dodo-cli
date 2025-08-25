@@ -19,8 +19,9 @@ jobs:
         id: preview
         run: |
           RESULT=`./dodo-cli preview --format json`
-          URL=$(echo $RESULT | jq -r .url)
+          URL=$(echo $RESULT | jq -r .document_url)
           echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "Successfully generated preview URL: $URL"
         env:
           DODO_API_KEY: ${{ secrets.DODO_ACCESS_KEY }}
       - name: Comment on PR
