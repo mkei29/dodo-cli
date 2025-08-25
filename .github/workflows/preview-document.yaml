@@ -4,6 +4,7 @@ on:
     types: [opened, synchronize, reopened]
 permissions:
   contents: read
+  pull-requests: write
 jobs: 
   publish-docs:
     runs-on: ubuntu-latest
