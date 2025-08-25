@@ -2,7 +2,9 @@
   "name": "@dodo-doc/cli",
   "version": "0.0.1",
   "description": "",
-  "bin": "./javascript/index.js",
+  "bin": {
+    "dodo": "./javascript/main.js"
+  },
   "files": [
     "javascript",
     "README.md"
