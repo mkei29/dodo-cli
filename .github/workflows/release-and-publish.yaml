@@ -76,10 +76,10 @@ jobs:
         run: |
           for package in ./packages/*; do
             echo "Publishing $package"
-            pnpm publish $package --tag=latest --access=public --no-git-checks
+            npm publish $package --tag=latest --access=public
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
       - name: Install dodo CLI
         run: |
-          pnpm publish @dodo-doc/cli --access=public --no-git-checks
+          npm publish @dodo-doc/cli --access=public
