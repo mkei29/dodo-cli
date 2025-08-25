@@ -78,7 +78,7 @@ jobs:
             pnpm publish $package --tag=latest --access=public
           done
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
       - name: Install dodo CLI
         run: |
           pnpm publish @dodo-doc/cli --access=public
