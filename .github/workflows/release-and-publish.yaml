@@ -48,14 +48,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org' # Important to publish packages. Refer https://github.com/actions/setup-node/
-          cache: 'pnpm'
       - name: Download binaries
         run: |
           curl -sL https://github.com/mkei29/dodo-cli/releases/download/0.0.12/dodo-cli_Linux_x86_64.tar.gz | tar xz
