@@ -1,6 +1,6 @@
 {
   "name": "@dodo-doc/cli-linux-arm64",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "license": "MIT",
   "engines": {
     "node": ">=14.21.3"
