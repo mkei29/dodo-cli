@@ -11,7 +11,7 @@ export function callCmd(args) {
         console.error("Unsupported platform or architecture");
         process.exit(1);
     }
-    const result = spawnSync(binaryPath, adjusted_args, {
+    const result = spawnSync(binaryPath, args, {
         shell: false,
         stdio: "inherit",
     });
