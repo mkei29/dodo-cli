@@ -1,9 +1,9 @@
 {
   "name": "@dodo-doc/cli",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "",
   "bin": {
-    "dodo": "./javascript/main.js"
+    "dodo": "./javascript/index.js"
   },
   "type": "module",
   "files": [
@@ -14,10 +14,10 @@
   "author": "mkei29",
   "packageManager": "pnpm@9.14.2+sha512.6e2baf77d06b9362294152c851c4f278ede37ab1eba3a55fda317a4a17b209f4dbb973fb250a77abc463a341fcb1f17f17cfa24091c4eb319cda0d9b84278387",
   "optionalDependencies": {
-    "@dodo-doc/cli-darwin-arm64": "0.0.21",
-    "@dodo-doc/cli-darwin-x86-64": "0.0.21",
-    "@dodo-doc/cli-linux-arm64": "0.0.21",
-    "@dodo-doc/cli-linux-x86-64": "0.0.21"
+    "@dodo-doc/cli-darwin-arm64": "0.0.22",
+    "@dodo-doc/cli-darwin-x86-64": "0.0.22",
+    "@dodo-doc/cli-linux-arm64": "0.0.22",
+    "@dodo-doc/cli-linux-x86-64": "0.0.22"
   },
   "license": "MIT"
 }
