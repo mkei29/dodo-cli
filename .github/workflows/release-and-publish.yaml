@@ -84,3 +84,5 @@ jobs:
       - name: Install dodo CLI
         run: |
           npm publish @dodo-doc/cli --access=public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
