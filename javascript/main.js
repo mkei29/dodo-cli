@@ -34,7 +34,7 @@ function getBinaryPath() {
     if (!availablePlatforms.includes(platform) || !availableArchs.includes(arch)) {
         return;
     }
-    const binaryName = `@dodo/cli-${platform}-${arch}/dodo-cli`;
+    const binaryName = `@dodo-doc/cli-${platform}-${arch}/dodo-cli`;
     const require = createRequire(import.meta.url);
     return require.resolve(binaryName);
 }
