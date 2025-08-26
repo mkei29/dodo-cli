@@ -1,6 +1,5 @@
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { ArgumentRewriter } from "./args.js";
 
 export function main() {
     callCmd(process.argv.slice(2));
@@ -12,8 +11,6 @@ export function callCmd(args) {
         console.error("Unsupported platform or architecture");
         process.exit(1);
     }
-    const rewriter = new ArgumentRewriter();
-    const adjusted_args = rewriter.rewrite(args);
     const result = spawnSync(binaryPath, adjusted_args, {
         shell: false,
         stdio: "inherit",
@@ -31,11 +28,20 @@ function getBinaryPath() {
     }
     const availablePlatforms = ["linux", "darwin"];
     const availableArchs = ["x86-64", "arm64"];
-    const { platform, arch } = process;
+    let { platform, arch } = process;
+    arch = rewriteArch(arch);
+
     if (!availablePlatforms.includes(platform) || !availableArchs.includes(arch)) {
         return;
     }
     const binaryName = `@dodo/cli-${platform}-${arch}/dodo-cli`;
     const require = createRequire(import.meta.url);
     return require.resolve(binaryName);
+}
+
+function rewriteArch(arch) {
+    if (arch === "x64") {
+        return "x86-64";
+    }
+    return arch;
 }

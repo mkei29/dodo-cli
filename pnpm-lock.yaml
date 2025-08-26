@@ -6,4 +6,57 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    optionalDependencies:
+      '@dodo-doc/cli-darwin-arm64':
+        specifier: 0.0.20
+        version: 0.0.20
+      '@dodo-doc/cli-darwin-x86-64':
+        specifier: 0.0.20
+        version: 0.0.20
+      '@dodo-doc/cli-linux-arm64':
+        specifier: 0.0.20
+        version: 0.0.20
+      '@dodo-doc/cli-linux-x86-64':
+        specifier: 0.0.20
+        version: 0.0.20
+
+packages:
+
+  '@dodo-doc/cli-darwin-arm64@0.0.20':
+    resolution: {integrity: sha512-/e6CYOvBNI6SJqc169qt9vVv09MY4tkf6/TjSyw3lXYD6YVnHle2JMTjX1SdgBbwSH4rVYA8tpnenqrWK3fLJQ==}
+    engines: {node: '>=14.21.3'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@dodo-doc/cli-darwin-x86-64@0.0.20':
+    resolution: {integrity: sha512-xmezTrpLwtQhcz2U6iyHL9vjfEezQnCKalKmRN1Mj0JPmZGwwfmUU2W7CCSqoU3H7VWUsBYQZidBDP0ZkIlV9A==}
+    engines: {node: '>=14.21.3'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@dodo-doc/cli-linux-arm64@0.0.20':
+    resolution: {integrity: sha512-ZaH4AJinmrfgGMRjxRz1bt4gjj9MkG3QXVqc718jGT3fk6cUVjSLc/E4AvNLa/1+s1LsWpDHh/6SyH8Pwdr18Q==}
+    engines: {node: '>=14.21.3'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@dodo-doc/cli-linux-x86-64@0.0.20':
+    resolution: {integrity: sha512-0OOdyRsikHt6D0K/zvsNA9cmRFeTyQ6oe5uE/xFason5Wjpr3PON0wT4VAgLlrbIRyztUdP+mb9322ER4S+bjA==}
+    engines: {node: '>=14.21.3'}
+    cpu: [x86-64]
+    os: [linux]
+
+snapshots:
+
+  '@dodo-doc/cli-darwin-arm64@0.0.20':
+    optional: true
+
+  '@dodo-doc/cli-darwin-x86-64@0.0.20':
+    optional: true
+
+  '@dodo-doc/cli-linux-arm64@0.0.20':
+    optional: true
+
+  '@dodo-doc/cli-linux-x86-64@0.0.20':
+    optional: true
