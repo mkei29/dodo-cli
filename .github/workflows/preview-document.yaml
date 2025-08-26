@@ -17,16 +17,45 @@ jobs:
           chmod +x dodo-cli
       - name: Preview docs
         id: preview
+        continue-on-error: true
         run: |
           RESULT=`./dodo-cli preview --format json`
+          echo "Raw result: $RESULT"
+          
+          # Check if the command succeeded by examining the status field
+          STATUS=$(echo $RESULT | jq -r .status 2>/dev/null || echo "null")
+          if [ "$STATUS" = "false" ] || [ "$STATUS" = "null" ]; then
+            echo "Error: dodo-cli preview failed"
+            ERROR_MSG=$(echo $RESULT | jq -r .error 2>/dev/null || echo "Unknown error occurred")
+            echo "error=$ERROR_MSG" >> $GITHUB_OUTPUT
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
           URL=$(echo $RESULT | jq -r .document_url)
+          if [ "$URL" = "null" ] || [ -z "$URL" ]; then
+            echo "Error: No document URL found in response"
+            echo "error=No document URL found in response" >> $GITHUB_OUTPUT
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
           echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "success=true" >> $GITHUB_OUTPUT
           echo "Successfully generated preview URL: $URL"
         env:
           DODO_API_KEY: ${{ secrets.DODO_ACCESS_KEY }}
-      - name: Comment on PR
+      - name: Comment on PR - Success
+        if: steps.preview.outputs.success == 'true'
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            Document preview is available [here](${{ steps.preview.outputs.url }}).
+            ✅ Document preview is available [here](${{ steps.preview.outputs.url }}).
+      - name: Comment on PR - Error
+        if: steps.preview.outputs.success == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ❌ Document preview failed: ${{ steps.preview.outputs.error }}
