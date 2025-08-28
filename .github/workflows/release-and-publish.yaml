@@ -53,8 +53,12 @@ jobs:
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org' # Important to publish packages. Refer https://github.com/actions/setup-node/
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
       - name: Download binaries
         run: |
+          VERSION=$(uv run ./scripts/current_version.py) 
+
           curl -sL https://github.com/mkei29/dodo-cli/releases/download/0.0.12/dodo-cli_Linux_x86_64.tar.gz | tar xz
           chmod +x dodo-cli
           mv dodo-cli packages/cli-linux-x86-64

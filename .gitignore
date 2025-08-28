@@ -7,3 +7,5 @@ assets
 
 src/version.txt
 node_modules
+
+__pycache__
