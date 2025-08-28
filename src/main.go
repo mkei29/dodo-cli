@@ -26,5 +26,6 @@ func main() {
 	rootCmd.AddCommand(CreateTouchCmd())
 	rootCmd.AddCommand(CreateCheckCmd())
 	rootCmd.AddCommand(CreateSearchCmd())
+	rootCmd.AddCommand(CreateDocsCmd())
 	cobra.CheckErr(rootCmd.Execute())
 }
