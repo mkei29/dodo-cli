@@ -23,10 +23,15 @@ jobs:
           git config --global user.email "toritorineko29@gmail.com"
       - name: Set up Go
         uses: actions/setup-go@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Install dependencies
+        run: |
+           uv install
       - name: Set tag
         id: tag
         run: |
-          VERSION=$(cat version.txt)
+          VERSION=$(uv run ./scripts/current_version.py) 
           git tag $VERSION
           git push origin $VERSION
         env:
@@ -53,21 +58,28 @@ jobs:
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org' # Important to publish packages. Refer https://github.com/actions/setup-node/
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Install dependencies
+        run: |
+           uv install
       - name: Download binaries
         run: |
-          curl -sL https://github.com/mkei29/dodo-cli/releases/download/0.0.12/dodo-cli_Linux_x86_64.tar.gz | tar xz
+          VERSION=$(uv run ./scripts/current_version.py) 
+
+          curl -sL https://github.com/mkei29/dodo-cli/releases/download/$VERSION/dodo-cli_Linux_x86_64.tar.gz | tar xz
           chmod +x dodo-cli
           mv dodo-cli packages/cli-linux-x86-64
 
-          curl -sL https://github.com/mkei29/dodo-cli/releases/download/0.0.12/dodo-cli_Linux_arm64.tar.gz | tar xz
+          curl -sL https://github.com/mkei29/dodo-cli/releases/download/$VERSION/dodo-cli_Linux_arm64.tar.gz | tar xz
           chmod +x dodo-cli
           mv dodo-cli packages/cli-linux-arm64
 
-          curl -sL https://github.com/mkei29/dodo-cli/releases/download/0.0.12/dodo-cli_Darwin_x86_64.tar.gz | tar xz
+          curl -sL https://github.com/mkei29/dodo-cli/releases/download/$VERSION/dodo-cli_Darwin_x86_64.tar.gz | tar xz
           chmod +x dodo-cli
           mv dodo-cli packages/cli-darwin-x86-64
 
-          curl -sL https://github.com/mkei29/dodo-cli/releases/download/0.0.12/dodo-cli_Darwin_arm64.tar.gz | tar xz
+          curl -sL https://github.com/mkei29/dodo-cli/releases/download/$VERSION/dodo-cli_Darwin_arm64.tar.gz | tar xz
           chmod +x dodo-cli
           mv dodo-cli packages/cli-darwin-arm64
       - name: Publish packages
