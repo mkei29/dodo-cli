@@ -24,7 +24,7 @@ type DocsArgs struct {
 
 // Implement LoggingConfig and PrinterConfig interface for DocsArgs.
 func (opts *DocsArgs) DisableLogging() bool {
-	return false
+	return opts.format == FormatJSON
 }
 
 func (opts *DocsArgs) EnableDebugMode() bool {
@@ -42,51 +42,78 @@ func (opts *DocsArgs) EnablePrinter() bool {
 func CreateDocsCmd() *cobra.Command {
 	opts := DocsArgs{}
 	docsCmd := &cobra.Command{
-		Use:           "docs",
-		Short:         "List the documentation in your organization",
-		SilenceErrors: true,
-		SilenceUsage:  true,
+		Use:          "docs",
+		Short:        "List the documentation in your organization",
+		SilenceUsage: true,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return docsCmdEntrypoint(&opts)
+			printer := NewPrinter(ErrorLevel)
+			env := NewEnvArgs()
+			err := CheckArgsAndEnvForDocs(&opts, &env)
+			if err != nil {
+				printer.PrintError(err)
+				return err
+			}
+
+			if err := docsCmdEntrypoint(&opts, &env); err != nil {
+				printer.PrintError(err)
+				return err
+			}
+			return nil
 		},
 	}
 	docsCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
 	docsCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
 	docsCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com/projects/v1", "The endpoint of the dodo API server")
-	docsCmd.Flags().StringVar(&opts.format, "format", "tui", "Output format for the command. Supported formats: {tui, json}")
+	docsCmd.Flags().StringVar(&opts.format, "format", FormatTUI, "Output format for the command. Supported formats: {tui, json}")
+
 	return docsCmd
 }
 
-func docsCmdEntrypoint(args *DocsArgs) error {
-	env := NewEnvArgs()
-	printer := NewPrinterFromArgs(args)
+func docsCmdEntrypoint(args *DocsArgs, env *EnvArgs) error {
 	if err := InitLogger(args); err != nil {
-		printer.PrintError(err)
 		return err
 	}
 
 	log.Debugf("Sending request to the %s", args.endpoint)
 	orgs, err := NewProjectFromAPI(env, args.endpoint)
 	if err != nil {
-		printer.PrintError(err)
 		return err
 	}
 	log.Debugf("Received %d projects from the server", len(orgs))
 
 	if len(orgs) == 0 {
-		err := errors.New("no projects found in your organization")
-		printer.PrintError(err)
-		return err
+		return errors.New("no projects found in your organization. Please create a project first: https://www.dodo-doc.com/")
 	}
 
 	switch args.format {
-	case "tui":
+	case FormatTUI:
 		return renderProjectsWithTUI(orgs)
-	case "json":
+	case FormatJSON:
 		return renderProjectsWithJSON(orgs)
 	default:
 		return fmt.Errorf("unknown format: %s", args.format)
 	}
+}
+
+func CheckArgsAndEnvForDocs(args *DocsArgs, env *EnvArgs) error {
+	if env.APIKey == "" {
+		return errors.New("DODO_API_KEY environment variable is not set")
+	}
+	if args.endpoint == "" {
+		return errors.New("endpoint is not set")
+	}
+	if args.format != FormatTUI && args.format != FormatJSON {
+		return fmt.Errorf("unknown format: %s", args.format)
+	}
+
+	if args.format == "json" && args.debug {
+		return errors.New("debug mode is not supported in json format")
+	}
+
+	if args.format == "tui" && args.noColor {
+		return errors.New("no-color options is not supported in tui format")
+	}
+	return nil
 }
 
 // TUI implementation.

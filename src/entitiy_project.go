@@ -18,7 +18,7 @@ type Project struct {
 	Slug           string
 }
 
-func NewProjectFromAPI(env EnvArgs, uri string) ([]Project, error) {
+func NewProjectFromAPI(env *EnvArgs, uri string) ([]Project, error) {
 	req, err := http.NewRequest(http.MethodGet, uri, strings.NewReader(""))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a new request from the body: %w", err)

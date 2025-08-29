@@ -11,11 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	FormatText = "text"
-	FormatJSON = "json"
-)
-
 var AvailableFormats = []string{ //nolint: gochecknoglobals
 	FormatText,
 	FormatJSON,
@@ -45,7 +40,7 @@ func (opts *UploadArgs) EnableColor() bool {
 }
 
 func (opts *UploadArgs) EnablePrinter() bool {
-	return opts.format == FormatText
+	return true
 }
 
 // createUploadCommand creates a cobra command with common flags for upload operations.

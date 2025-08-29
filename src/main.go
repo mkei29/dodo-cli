@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 )
 
@@ -15,9 +17,10 @@ Find more information at: https://www.dodo-doc.com/
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "dodo",
-		Short: "The CLI tool for dodo to manage your dodo project",
-		Long:  longDescRoot,
+		Use:           "dodo",
+		Short:         "The CLI tool for dodo to manage your dodo project",
+		Long:          longDescRoot,
+		SilenceErrors: true,
 	}
 	rootCmd.AddCommand(CreateInitCmd())
 	rootCmd.AddCommand(CreateUploadCmd())
@@ -27,5 +30,8 @@ func main() {
 	rootCmd.AddCommand(CreateCheckCmd())
 	rootCmd.AddCommand(CreateSearchCmd())
 	rootCmd.AddCommand(CreateDocsCmd())
-	cobra.CheckErr(rootCmd.Execute())
+
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }
