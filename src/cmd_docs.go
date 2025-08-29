@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/caarlos0/log"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 )
@@ -19,7 +22,7 @@ type DocsArgs struct {
 	format   string
 }
 
-// Implement LoggingConfig and PrinterConfig interface for TouchArgs.
+// Implement LoggingConfig and PrinterConfig interface for DocsArgs.
 func (opts *DocsArgs) DisableLogging() bool {
 	return false
 }
@@ -54,24 +57,35 @@ func CreateDocsCmd() *cobra.Command {
 	return docsCmd
 }
 
-func docsCmdEntrypoint(opts *DocsArgs) error {
+func docsCmdEntrypoint(args *DocsArgs) error {
 	env := NewEnvArgs()
-	orgs, err := NewProjectFromAPI(env, opts.endpoint)
-	if err != nil {
+	printer := NewPrinterFromArgs(args)
+	if err := InitLogger(args); err != nil {
+		printer.PrintError(err)
 		return err
 	}
 
+	log.Debugf("Sending request to the %s", args.endpoint)
+	orgs, err := NewProjectFromAPI(env, args.endpoint)
+	if err != nil {
+		printer.PrintError(err)
+		return err
+	}
+	log.Debugf("Received %d projects from the server", len(orgs))
+
 	if len(orgs) == 0 {
-		return errors.New("no projects found in your organization")
+		err := errors.New("no projects found in your organization")
+		printer.PrintError(err)
+		return err
 	}
 
-	switch opts.format {
+	switch args.format {
 	case "tui":
 		return renderProjectsWithTUI(orgs)
 	case "json":
 		return renderProjectsWithJSON(orgs)
 	default:
-		return fmt.Errorf("unknown format: %s", opts.format)
+		return fmt.Errorf("unknown format: %s", args.format)
 	}
 }
 
@@ -114,7 +128,7 @@ func (m DocsTUIModel) View() string {
 	return m.list.View()
 }
 
-func NewDocsTUIModel(orgs []Project) DocsTUIModel {
+func NewDocsTUIModel(orgs []Project) DocsTUIModel { //nolint:funlen
 	items := make([]list.Item, 0, len(orgs))
 
 	for _, org := range orgs {
@@ -128,10 +142,57 @@ func NewDocsTUIModel(orgs []Project) DocsTUIModel {
 	}
 
 	w, h, _ := term.GetSize(os.Stdout.Fd())
-	l := list.New(items, list.NewDefaultDelegate(), w-1, h-1)
+	delegate := list.NewDefaultDelegate()
+
+	// Unselected Styles
+	delegate.Styles.NormalTitle = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: TextColorLight0, Dark: TextColorDark0}).
+		Padding(0, 0, 0, 2)
+	delegate.Styles.NormalDesc = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: TextColorLightDim, Dark: TextColorDarkDim}).Padding(0, 0, 0, 2)
+
+	// Selected Styles
+	delegate.Styles.SelectedTitle = lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder(), false, false, false, true).
+		BorderForeground(lipgloss.AdaptiveColor{
+			Light: PrimaryColorLight, Dark: PrimaryColorDark,
+		}).
+		Foreground(lipgloss.AdaptiveColor{
+			Light: PrimaryColorLight,
+			Dark:  PrimaryColorDark,
+		}).
+		Bold(true).Padding(0, 0, 0, 1)
+	delegate.Styles.SelectedDesc = lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder(), false, false, false, true).
+		BorderForeground(lipgloss.AdaptiveColor{
+			Light: PrimaryColorLight, Dark: PrimaryColorDark,
+		}).
+		Foreground(lipgloss.AdaptiveColor{
+			Light: TextColorLight0,
+			Dark:  TextColorDark0,
+		}).Padding(0, 0, 0, 1)
+
+	// Other Styles
+	delegate.Styles.DimmedTitle = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: TextColorLight1, Dark: TextColorDark1}).
+		Padding(0, 0, 0, 2)
+
+	delegate.Styles.DimmedDesc = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: TextColorLightDim, Dark: TextColorDarkDim}).Padding(0, 0, 0, 2)
+
+	l := list.New(items, delegate, w-1, h-1)
 	l.Title = ""
 
-	// l.Styles = listStyles
+	// Overwrite the filter input styles.
+	filterInput := textinput.New()
+	filterInput.Prompt = "Filter: "
+	filterInput.PromptStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: PrimaryColorLight, Dark: PrimaryColorDark}).Bold(true)
+	filterInput.Cursor.Style = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: TextColorLight0, Dark: TextColorDark0})
+	filterInput.CharLimit = 64
+	l.FilterInput = filterInput
+
 	l.SetShowTitle(false)
 	l.SetFilteringEnabled(true)
 	l.SetShowStatusBar(false)
