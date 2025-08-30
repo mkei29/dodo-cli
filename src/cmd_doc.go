@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type DocsArgs struct {
+type DocArgs struct {
 	debug    bool
 	noColor  bool
 	endpoint string
@@ -23,26 +23,26 @@ type DocsArgs struct {
 }
 
 // Implement LoggingConfig and PrinterConfig interface for DocsArgs.
-func (opts *DocsArgs) DisableLogging() bool {
+func (opts *DocArgs) DisableLogging() bool {
 	return opts.format == FormatJSON
 }
 
-func (opts *DocsArgs) EnableDebugMode() bool {
+func (opts *DocArgs) EnableDebugMode() bool {
 	return opts.debug
 }
 
-func (opts *DocsArgs) EnableColor() bool {
+func (opts *DocArgs) EnableColor() bool {
 	return !opts.noColor
 }
 
-func (opts *DocsArgs) EnablePrinter() bool {
+func (opts *DocArgs) EnablePrinter() bool {
 	return true
 }
 
-func CreateDocsCmd() *cobra.Command {
-	opts := DocsArgs{}
+func CreateDocCmd() *cobra.Command {
+	opts := DocArgs{}
 	docsCmd := &cobra.Command{
-		Use:          "docs",
+		Use:          "doc",
 		Short:        "List the documentation in your organization",
 		SilenceUsage: true,
 		RunE: func(_ *cobra.Command, _ []string) error {
@@ -54,7 +54,7 @@ func CreateDocsCmd() *cobra.Command {
 				return err
 			}
 
-			if err := docsCmdEntrypoint(&opts, &env); err != nil {
+			if err := docCmdEntrypoint(&opts, &env); err != nil {
 				printer.PrintError(err)
 				return err
 			}
@@ -69,7 +69,7 @@ func CreateDocsCmd() *cobra.Command {
 	return docsCmd
 }
 
-func docsCmdEntrypoint(args *DocsArgs, env *EnvArgs) error {
+func docCmdEntrypoint(args *DocArgs, env *EnvArgs) error {
 	if err := InitLogger(args); err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func docsCmdEntrypoint(args *DocsArgs, env *EnvArgs) error {
 	}
 }
 
-func CheckArgsAndEnvForDocs(args *DocsArgs, env *EnvArgs) error {
+func CheckArgsAndEnvForDocs(args *DocArgs, env *EnvArgs) error {
 	if env.APIKey == "" {
 		return errors.New("DODO_API_KEY environment variable is not set")
 	}
@@ -117,15 +117,15 @@ func CheckArgsAndEnvForDocs(args *DocsArgs, env *EnvArgs) error {
 }
 
 // TUI implementation.
-type DocsTUIModel struct {
+type DocTUIModel struct {
 	list list.Model
 }
 
-func (m DocsTUIModel) Init() tea.Cmd {
+func (m DocTUIModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m DocsTUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:ireturn
+func (m DocTUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:ireturn
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		if msg.Type == tea.KeyCtrlC {
 			return m, tea.Quit
@@ -140,8 +140,8 @@ func (m DocsTUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:iretur
 	return m, listCmd
 }
 
-func (m DocsTUIModel) updateEnter() (tea.Model, tea.Cmd) { //nolint:ireturn
-	selectedItem, ok := m.list.SelectedItem().(DocsOutput)
+func (m DocTUIModel) updateEnter() (tea.Model, tea.Cmd) { //nolint:ireturn
+	selectedItem, ok := m.list.SelectedItem().(DocOutput)
 	if !ok {
 		return m, tea.Quit
 	}
@@ -151,15 +151,15 @@ func (m DocsTUIModel) updateEnter() (tea.Model, tea.Cmd) { //nolint:ireturn
 	return m, tea.Quit
 }
 
-func (m DocsTUIModel) View() string {
+func (m DocTUIModel) View() string {
 	return m.list.View()
 }
 
-func NewDocsTUIModel(orgs []Project) DocsTUIModel { //nolint:funlen
+func NewDocTUIModel(orgs []Project) DocTUIModel { //nolint:funlen
 	items := make([]list.Item, 0, len(orgs))
 
 	for _, org := range orgs {
-		items = append(items, DocsOutput{
+		items = append(items, DocOutput{
 			Slug:        org.Slug,
 			ProjectName: org.ProjectName,
 			IsPublic:    org.IsPublic,
@@ -226,13 +226,13 @@ func NewDocsTUIModel(orgs []Project) DocsTUIModel { //nolint:funlen
 	l.SetShowHelp(true)
 	l.DisableQuitKeybindings()
 
-	return DocsTUIModel{
+	return DocTUIModel{
 		list: l,
 	}
 }
 
 func renderProjectsWithTUI(orgs []Project) error {
-	p := tea.NewProgram(NewDocsTUIModel(orgs))
+	p := tea.NewProgram(NewDocTUIModel(orgs))
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("failed to run the program: %w", err)
 	}
@@ -241,9 +241,9 @@ func renderProjectsWithTUI(orgs []Project) error {
 
 // JSON implementation.
 func renderProjectsWithJSON(orgs []Project) error {
-	outputs := make([]DocsOutput, 0, len(orgs))
+	outputs := make([]DocOutput, 0, len(orgs))
 	for _, org := range orgs {
-		outputs = append(outputs, DocsOutput{
+		outputs = append(outputs, DocOutput{
 			Slug:        org.Slug,
 			ProjectName: org.ProjectName,
 			IsPublic:    org.IsPublic,
@@ -260,7 +260,7 @@ func renderProjectsWithJSON(orgs []Project) error {
 }
 
 // Utility that describes the list item for TUI and JSON output.
-type DocsOutput struct {
+type DocOutput struct {
 	Slug        string `json:"slug,omitempty"`
 	ProjectName string `json:"project_name,omitempty"`
 	ProjectID   string `json:"project_id"`
@@ -268,14 +268,14 @@ type DocsOutput struct {
 	URL         string `json:"url,omitempty"`
 }
 
-func (d DocsOutput) Title() string {
+func (d DocOutput) Title() string {
 	return d.ProjectName
 }
 
-func (d DocsOutput) Description() string {
+func (d DocOutput) Description() string {
 	return d.URL
 }
 
-func (d DocsOutput) FilterValue() string {
+func (d DocOutput) FilterValue() string {
 	return d.ProjectName
 }

@@ -29,7 +29,7 @@ func main() {
 	rootCmd.AddCommand(CreateTouchCmd())
 	rootCmd.AddCommand(CreateCheckCmd())
 	rootCmd.AddCommand(CreateSearchCmd())
-	rootCmd.AddCommand(CreateDocsCmd())
+	rootCmd.AddCommand(CreateDocCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
