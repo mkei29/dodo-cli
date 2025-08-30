@@ -20,6 +20,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
+	"github.com/toritoritori29/dodo-cli/src/openapi"
 )
 
 const (
@@ -398,8 +399,8 @@ func executeSearch(_ *cobra.Command, args SearchArgs) error {
 	return nil
 }
 
-func sendSearchRequest(env *EnvArgs, uri, query string) ([]SearchRecord, error) {
-	body := SearchPostRequest{
+func sendSearchRequest(env *EnvArgs, uri, query string) ([]openapi.SearchRecord, error) {
+	body := openapi.SearchPostRequest{
 		Query: query,
 	}
 	bodyBytes, err := json.Marshal(body)
@@ -422,7 +423,7 @@ func sendSearchRequest(env *EnvArgs, uri, query string) ([]SearchRecord, error) 
 	}
 	defer resp.Body.Close()
 
-	data := SearchPostResponse{}
+	data := openapi.SearchPostResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return nil, fmt.Errorf("failed to parse the response: %w", err)
 	}
