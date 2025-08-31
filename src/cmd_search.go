@@ -1,11 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
@@ -20,7 +18,6 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
-	"github.com/toritoritori29/dodo-cli/src/openapi"
 )
 
 const (
@@ -397,37 +394,6 @@ func executeSearch(_ *cobra.Command, args SearchArgs) error {
 		return fmt.Errorf("failed to run the program: %w", err)
 	}
 	return nil
-}
-
-func sendSearchRequest(env *EnvArgs, uri, query string) ([]openapi.SearchRecord, error) {
-	body := openapi.SearchPostRequest{
-		Query: query,
-	}
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal the search request body: %w", err)
-	}
-
-	req, err := http.NewRequest(http.MethodPost, uri, strings.NewReader(string(bodyBytes)))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create a new request from the body: %w", err)
-	}
-	bearer := "Bearer " + env.APIKey
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", bearer)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send a request to the server: %w", err)
-	}
-	defer resp.Body.Close()
-
-	data := openapi.SearchPostResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, fmt.Errorf("failed to parse the response: %w", err)
-	}
-	return data.Records, nil
 }
 
 func openBrowser(url string) error {
