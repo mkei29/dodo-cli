@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,7 +11,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/caarlos0/log"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -18,6 +18,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
+	"github.com/toritoritori29/dodo-cli/src/openapi"
 )
 
 const (
@@ -36,6 +37,24 @@ type SearchArgs struct {
 	query    []string // search query
 	endpoint string   // server endpoint to search
 	debug    bool     // enable debug mode
+	format   string   // output format (tui, json)
+}
+
+// Implement LoggingConfig and PrinterConfig interface for UploadArgs.
+func (opts *SearchArgs) DisableLogging() bool {
+	return opts.format == FormatJSON
+}
+
+func (opts *SearchArgs) EnableDebugMode() bool {
+	return opts.debug
+}
+
+func (opts *SearchArgs) EnableColor() bool {
+	return true
+}
+
+func (opts *SearchArgs) EnablePrinter() bool {
+	return true
 }
 
 func CreateSearchCmd() *cobra.Command {
@@ -43,14 +62,89 @@ func CreateSearchCmd() *cobra.Command {
 	searchCmd := &cobra.Command{
 		Use:   "search",
 		Short: "Search for a string in the project files.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			opts.query = args
-			return executeSearch(cmd, opts)
+		RunE: func(_ *cobra.Command, _ []string) error {
+			printer := NewPrinter(ErrorLevel)
+			env := NewEnvArgs()
+			err := CheckArgsAndEnvForSearch(opts, env)
+			if err != nil {
+				printer.PrintError(err)
+				return err
+			}
+			printer = NewPrinterFromArgs(&opts)
+			if err := executeSearch(opts, env); err != nil {
+				printer.PrintError(err)
+				return err
+			}
+			return nil
 		},
 	}
+	searchCmd.Flags().StringArrayVarP(&opts.query, "query", "q", nil, "Search query (for json output only)")
 	searchCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode")
 	searchCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com/search/v1", "Server endpoint for search")
+	searchCmd.Flags().StringVar(&opts.format, "format", FormatTUI, "Output format (tui, json)")
 	return searchCmd
+}
+
+func CheckArgsAndEnvForSearch(args SearchArgs, env EnvArgs) error {
+	if env.APIKey == "" {
+		return errors.New("DODO_API_KEY is not set")
+	}
+	if args.endpoint == "" {
+		return errors.New("no endpoint provided")
+	}
+	if args.format != FormatTUI && args.format != FormatJSON {
+		return fmt.Errorf("unknown format: %s", args.format)
+	}
+
+	// TUI
+	if args.format == FormatTUI && args.query != nil {
+		return errors.New("you cannot provide query arguments in TUI mode")
+	}
+
+	// JSON
+	if args.format == FormatJSON && args.debug {
+		return errors.New("debug mode is not supported in json format")
+	}
+	return nil
+}
+
+func executeSearch(args SearchArgs, env EnvArgs) error {
+	switch args.format {
+	case FormatTUI:
+		return executeSearchTUI(args, env)
+	case FormatJSON:
+		return executeSearchJSON(args, env)
+	default:
+		return fmt.Errorf("unknown format: %s", args.format)
+	}
+}
+
+// JSON implementation.
+func executeSearchJSON(args SearchArgs, env EnvArgs) error {
+	query := strings.Join(args.query, " ")
+	records, err := sendSearchRequest(&env, args.endpoint, query)
+	if err != nil {
+		return fmt.Errorf("failed to execute the search: %w", err)
+	}
+
+	output := openapi.SearchPostResponse{
+		Records: records,
+	}
+	outputBytes, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal the search response: %w", err)
+	}
+	fmt.Fprintf(os.Stdout, "%s\n", string(outputBytes))
+	return nil
+}
+
+// TUI implementation.
+func executeSearchTUI(args SearchArgs, env EnvArgs) error {
+	p := tea.NewProgram(initialModel(args, env))
+	if _, err := p.Run(); err != nil {
+		return fmt.Errorf("failed to run the program: %w", err)
+	}
+	return nil
 }
 
 type searchItem struct {
@@ -375,25 +469,6 @@ func newSearchItemStyles() searchItemDelegateStyles {
 			}).
 			Padding(0, 0, 0, 1),
 	}
-}
-
-func executeSearch(_ *cobra.Command, args SearchArgs) error {
-	if args.debug {
-		log.SetLevel(log.DebugLevel)
-		log.Debug("running in debug mode")
-	}
-
-	env := NewEnvArgs()
-	if args.debug {
-		log.SetLevel(log.DebugLevel)
-		log.Debug("running in debug mode")
-	}
-
-	p := tea.NewProgram(initialModel(args, env))
-	if _, err := p.Run(); err != nil {
-		return fmt.Errorf("failed to run the program: %w", err)
-	}
-	return nil
 }
 
 func openBrowser(url string) error {
