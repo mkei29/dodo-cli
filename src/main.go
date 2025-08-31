@@ -30,6 +30,7 @@ func main() {
 	rootCmd.AddCommand(CreateCheckCmd())
 	rootCmd.AddCommand(CreateSearchCmd())
 	rootCmd.AddCommand(CreateDocCmd())
+	rootCmd.AddCommand(CreateMCPCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
