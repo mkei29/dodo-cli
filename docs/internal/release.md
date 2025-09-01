@@ -9,7 +9,7 @@ To create a new PR including following changes, please run the following command
 After this PR merged, CI will automatically build a new version and publish it to GitHub.
 
 ```bash
-uv run scripts/bump.py
+uv run -m scripts.bump
 ```
 
 

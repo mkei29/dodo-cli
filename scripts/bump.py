@@ -5,7 +5,7 @@ from contextlib import chdir
 import json
 import re
 
-from scripts.lib.version import Version, write_version, read_current_version
+from .lib.version import Version, write_version, read_current_version
 
 VERSION_FILE = "version.txt"
 
