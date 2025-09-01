@@ -1,3 +1,8 @@
+# 2025/09/01 - version 0.0.25
+* feat(experimental): add `mcp` subcommand.
+* feat: add `--format` option for the `search` subcommand.
+* fix: minor bugs.
+
 # 2025/08/26
 * fix: Fixed the issue that the `preview` command work didn't work as expected.
 * feat: Introduce `--format` option for the `upload` and `preview` command.
