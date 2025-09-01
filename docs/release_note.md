@@ -1,4 +1,4 @@
-# 2025/09/01 - version 0.0.25
+# 2025/09/01 - version 0.0.26
 * feat(experimental): add `mcp` subcommand.
 * feat: add `--format` option for the `search` subcommand.
 * fix: minor bugs.

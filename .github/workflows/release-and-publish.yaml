@@ -62,7 +62,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
       - name: Install dependencies
         run: |
-           uv install
+           uv sync
       - name: Download binaries
         run: |
           VERSION=$(uv run ./scripts/current_version.py) 
