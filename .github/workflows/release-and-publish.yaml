@@ -27,7 +27,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
       - name: Install dependencies
         run: |
-           uv install
+           uv sync
       - name: Set tag
         id: tag
         run: |
