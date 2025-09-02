@@ -24,7 +24,7 @@ func TestExecuteTouchNew(t *testing.T) {
 		now:      "2025-01-01T00:00:00+09:00",
 	}
 
-	err = executeTouchWrapper(args)
+	err = touchCmdEntrypoint(args)
 	require.NoError(t, err)
 
 	// Verify file exists
@@ -54,7 +54,7 @@ updated_at: "2025-01-01T00:00:00+09:00"
 		noColor:  true,
 		now:      "2025-01-02T00:00:00+09:00",
 	}
-	err = executeTouchWrapper(updateArgs)
+	err = touchCmdEntrypoint(updateArgs)
 	require.NoError(t, err)
 
 	// Verify content

@@ -51,7 +51,16 @@ func CreateTouchCmd() *cobra.Command {
 		Args:          cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			opts.filepath = args[0]
-			return executeTouchWrapper(opts)
+			printer := NewPrinter(ErrorLevel)
+			env := NewEnvArgs()
+			if err := TouchArgsAndEnv(&opts, env); err != nil {
+				return printer.HandleError(err)
+			}
+			printer = NewPrinterFromArgs(&opts)
+			if err := touchCmdEntrypoint(opts); err != nil {
+				return printer.HandleError(err)
+			}
+			return nil
 		},
 	}
 	touchCmd.Flags().StringVarP(&opts.title, "title", "t", "", "the title of newly created file")
@@ -73,29 +82,22 @@ func TouchArgsAndEnv(args *TouchArgs, _ EnvArgs) error {
 	return nil
 }
 
-func executeTouchWrapper(args TouchArgs) error {
+func touchCmdEntrypoint(args TouchArgs) error {
 	// Initialize the logging configuration from the command line arguments.
-	printer := NewPrinter(ErrorLevel)
-	env := NewEnvArgs()
-	if err := TouchArgsAndEnv(&args, env); err != nil {
-		printer.PrintError(err)
-		return err
-	}
-	printer = NewPrinterFromArgs(&args)
 	if err := InitLogger(&args); err != nil {
-		printer.PrintError(err)
 		return err
 	}
 
+	// New file
 	if _, err := os.Stat(args.filepath); os.IsNotExist(err) {
 		if err := executeTouchNew(args); err != nil {
-			printer.printError(err)
 			return err
 		}
 		return nil
 	}
+
+	// Update existing file
 	if err := executeTouchUpdate(args); err != nil {
-		printer.printError(err)
 		return err
 	}
 	return nil

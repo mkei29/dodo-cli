@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/caarlos0/log"
 	"github.com/goccy/go-yaml/ast"
 )
+
+var ErrAlreadyHandled = errors.New("already handled error")
 
 type AppError struct {
 	message string

@@ -40,7 +40,21 @@ func CreateCheckCmd() *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return executeCheckWrapper(opts)
+			env := NewEnvArgs()
+			printer := NewPrinter(ErrorLevel)
+			err := CheckArgsAndEnvForCheck(opts, env)
+			if err != nil {
+				return printer.HandleError(err)
+			}
+			printer = NewPrinterFromArgs(&opts)
+			if err := InitLogger(&opts); err != nil {
+				return printer.HandleError(err)
+			}
+
+			if err := checkCmdEntrypoint(opts); err != nil {
+				return printer.HandleError(err)
+			}
+			return nil
 		},
 	}
 	checkCmd.Flags().StringVarP(&opts.configPath, "config", "c", ".dodo.yaml", "Path to the configuration file")
@@ -49,29 +63,7 @@ func CreateCheckCmd() *cobra.Command {
 	return checkCmd
 }
 
-func executeCheckWrapper(args CheckArgs) error {
-	// Validate arguments and init the logger.
-	env := NewEnvArgs()
-	printer := NewPrinter(ErrorLevel)
-	err := CheckArgsAndEnvForCheck(args, env)
-	if err != nil {
-		printer.PrintError(err)
-		return err
-	}
-	printer = NewPrinterFromArgs(&args)
-	if err := InitLogger(&args); err != nil {
-		printer.PrintError(err)
-		return err
-	}
-
-	if err := executeCheck(args); err != nil {
-		printer.PrintError(err)
-		return err
-	}
-	return nil
-}
-
-func executeCheck(args CheckArgs) error {
+func checkCmdEntrypoint(args CheckArgs) error {
 	// Read config file
 	log.Debugf("config file: %s", args.configPath)
 	configFile, err := os.Open(args.configPath)
