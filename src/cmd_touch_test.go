@@ -78,6 +78,7 @@ func TestSanitizePath(t *testing.T) {
 		expected string
 	}{
 		{"", ""},
+		{"./path/to/file.md", "path_to_file"},
 		{"/path/to/file.md", "path_to_file"},
 		{"path/to/file.md", "path_to_file"},
 		{"/path/to/file", "path_to_file"},
@@ -86,6 +87,7 @@ func TestSanitizePath(t *testing.T) {
 		{"file.md", "file"},
 		{"/file", "file"},
 		{"file", "file"},
+		{"(file)", "file"},
 	}
 
 	for _, test := range tests {
