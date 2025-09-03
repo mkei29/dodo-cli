@@ -50,13 +50,11 @@ func CreateDocCmd() *cobra.Command {
 			env := NewEnvArgs()
 			err := CheckArgsAndEnvForDocs(&opts, &env)
 			if err != nil {
-				printer.PrintError(err)
-				return err
+				return printer.HandleError(err)
 			}
 
 			if err := docCmdEntrypoint(&opts, &env); err != nil {
-				printer.PrintError(err)
-				return err
+				return printer.HandleError(err)
 			}
 			return nil
 		},

@@ -69,24 +69,29 @@ func (p *Printer) SetStyle(styleIdx int) {
 }
 
 // PrettyPrint prints the error in a human-readable format.
-func (p *Printer) PrintError(err error) {
+func (p *Printer) HandleError(err error) error {
 	// if the error is a MultiError, call PrettyPrint on each error.
 	// MultiError doesn't implement Unwrap, so we can't use errors.Is.
+
+	if errors.Is(err, ErrAlreadyHandled) {
+		return err
+	}
 
 	var merr *MultiError
 	if errors.As(err, &merr) {
 		for _, e := range merr.Errors() {
-			p.PrintError(e)
+			p.HandleError(e) //nolint: errcheck
 		}
-		return
+		return ErrAlreadyHandled
 	}
 
 	var perr *ParseError
 	if errors.As(err, &perr) {
 		p.printParseError(perr)
-		return
+		return ErrAlreadyHandled
 	}
 	p.printError(err)
+	return ErrAlreadyHandled
 }
 
 func (p *Printer) printParseError(err *ParseError) {

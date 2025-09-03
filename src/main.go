@@ -32,7 +32,9 @@ func main() {
 	rootCmd.AddCommand(CreateDocCmd())
 	rootCmd.AddCommand(CreateMCPCmd())
 
+	defaultPrinter := NewPrinter(ErrorLevel)
 	if err := rootCmd.Execute(); err != nil {
+		defaultPrinter.HandleError(err) //nolint:errcheck
 		os.Exit(1)
 	}
 }

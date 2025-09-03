@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -51,7 +52,16 @@ func CreateTouchCmd() *cobra.Command {
 		Args:          cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			opts.filepath = args[0]
-			return executeTouchWrapper(opts)
+			printer := NewPrinter(ErrorLevel)
+			env := NewEnvArgs()
+			if err := TouchArgsAndEnv(&opts, env); err != nil {
+				return printer.HandleError(err)
+			}
+			printer = NewPrinterFromArgs(&opts)
+			if err := touchCmdEntrypoint(opts); err != nil {
+				return printer.HandleError(err)
+			}
+			return nil
 		},
 	}
 	touchCmd.Flags().StringVarP(&opts.title, "title", "t", "", "the title of newly created file")
@@ -73,29 +83,22 @@ func TouchArgsAndEnv(args *TouchArgs, _ EnvArgs) error {
 	return nil
 }
 
-func executeTouchWrapper(args TouchArgs) error {
+func touchCmdEntrypoint(args TouchArgs) error {
 	// Initialize the logging configuration from the command line arguments.
-	printer := NewPrinter(ErrorLevel)
-	env := NewEnvArgs()
-	if err := TouchArgsAndEnv(&args, env); err != nil {
-		printer.PrintError(err)
-		return err
-	}
-	printer = NewPrinterFromArgs(&args)
 	if err := InitLogger(&args); err != nil {
-		printer.PrintError(err)
 		return err
 	}
 
+	// New file
 	if _, err := os.Stat(args.filepath); os.IsNotExist(err) {
 		if err := executeTouchNew(args); err != nil {
-			printer.printError(err)
 			return err
 		}
 		return nil
 	}
+
+	// Update existing file
 	if err := executeTouchUpdate(args); err != nil {
-		printer.printError(err)
 		return err
 	}
 	return nil
@@ -125,6 +128,7 @@ func executeTouchNew(args TouchArgs) error {
 	if _, err := file.WriteString(matter.String()); err != nil {
 		return fmt.Errorf("failed to write front matter: %w", err)
 	}
+	log.Infof("Successfully created a new markdown file: %s", args.filepath)
 	return nil
 }
 
@@ -152,7 +156,11 @@ func executeTouchUpdate(args TouchArgs) error {
 	matter.UpdatedAt = NewSerializableTimeFromTime(now)
 
 	// Rewrite a markdown
-	return matter.UpdateMarkdown(args.filepath)
+	if err := matter.UpdateMarkdown(args.filepath); err != nil {
+		return err
+	}
+	log.Infof("Successfully updated the markdown file: %s", args.filepath)
+	return nil
 }
 
 func parseTime(timeStr string) (time.Time, error) {
@@ -168,17 +176,25 @@ func parseTime(timeStr string) (time.Time, error) {
 
 // remove the extension and replace / with _.
 func sanitizePath(path string) string {
+	// NOTE: We can use a-to-z, A-to-Z, 0-to-9, _ and - in the path.
 	if path == "" {
 		return path
 	}
+	p := filepath.Clean(path)
+
 	// Remove the extension
-	ext := filepath.Ext(path)
-	path = strings.TrimSuffix(path, ext)
+	ext := filepath.Ext(p)
+	p = strings.TrimSuffix(p, ext)
 
-	// Replace '/' with '_'
-	path = strings.ReplaceAll(path, "/", "_")
+	// Join path with underscore
+	parts := strings.Split(p, string(os.PathSeparator))
+	p = strings.Join(parts, "_")
 
-	// Remove leading '_'
-	path = strings.TrimPrefix(path, "_")
-	return path
+	// Remove leading _
+	p = strings.TrimPrefix(p, "_")
+
+	// Remove disallowed characters
+	re := regexp.MustCompile(`[^a-zA-Z-_]+`)
+	p = re.ReplaceAllString(p, "")
+	return p
 }
