@@ -12,7 +12,7 @@ import (
 )
 
 const SearchDescription = `
-Search documents from the dodo.
+Search documents from the dodo-doc.
 ---
 dodo is a service that hosts users' documents.
 This tool searches for documents across the entire dodo platform based on a given query.
@@ -32,6 +32,20 @@ Search results are returned in json format with the following structure:
 }
 ]
 }
+`
+
+const DocumentDescription = `
+Read the content of a document from dodo-doc.
+---
+dodo is a service that hosts users' documents.
+This tool retrieves the content of a specific document identified by its project slug and path.
+You can get the native markdown content of the document.
+
+The slug and path can be found in the document URL.
+For example, if the document URL is https://docs.do.dodo-doc.com/hello_world/getting_started,
+the slug is "docs" and the path is "hello_world/getting_started".
+
+To find the document URL, you can use the "search" tool to search for documents and obtain their URLs.
 `
 
 type MCPArgs struct {
@@ -65,10 +79,12 @@ func mcpCmdEntrypoint(_ *MCPArgs) error {
 		server.WithToolCapabilities(false),
 	)
 	h := &Handler{
-		Env:       NewEnvArgs(),
-		SearchURI: "https://contents.dodo-doc.com/search/v1",
+		Env:         NewEnvArgs(),
+		SearchURI:   "http://contents.test-doc.com/search/v1",
+		DocumentURI: "http://contents.test-doc.com/document/v1",
 	}
 	s.AddTool(addSearchTool(), h.addSearchHandler)
+	s.AddTool(addReadDocumentTool(), h.addReadDocumentHandler)
 
 	log.Infof("Starting MCP server...")
 	if err := server.ServeStdio(s); err != nil {
@@ -81,9 +97,20 @@ func addSearchTool() mcp.Tool {
 	return mcp.NewTool("search", mcp.WithDescription(SearchDescription), mcp.WithString("query", mcp.Required(), mcp.Description("The search query")))
 }
 
+func addReadDocumentTool() mcp.Tool {
+	tool := mcp.NewTool(
+		"read_document",
+		mcp.WithDescription("Read the content of a document from dodo-doc"),
+		mcp.WithString("slug", mcp.Required(), mcp.Description("The project slug where the document belongs")),
+		mcp.WithString("path", mcp.Required(), mcp.Description("The path of the document to read")),
+	)
+	return tool
+}
+
 type Handler struct {
-	Env       EnvArgs
-	SearchURI string
+	Env         EnvArgs
+	SearchURI   string
+	DocumentURI string
 }
 
 type addSearchHandlerResult struct {
@@ -101,4 +128,14 @@ func (h *Handler) addSearchHandler(_ context.Context, request mcp.CallToolReques
 		Items: items,
 	}
 	return mcp.NewToolResultStructured(result, ""), nil
+}
+
+func (h *Handler) addReadDocumentHandler(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	slug := request.GetString("slug", "")
+	path := request.GetString("path", "")
+	content, err := sendReadDocumentRequest(&h.Env, h.DocumentURI, slug, path)
+	if err != nil {
+		return nil, err
+	}
+	return mcp.NewToolResultText(content), nil
 }

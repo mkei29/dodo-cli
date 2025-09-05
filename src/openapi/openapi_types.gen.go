@@ -23,6 +23,7 @@ type AssetGetResponseError struct {
 type DocumentGetResponse struct {
 	AllowedOrgs []string               `json:"allowed_orgs"`
 	IsPublic    bool                   `json:"is_public"`
+	Markdown    *string                `json:"markdown,omitempty"`
 	Message     string                 `json:"message"`
 	Page        map[string]interface{} `json:"page"`
 	Status      StatusOk               `json:"status"`
@@ -128,6 +129,9 @@ type AssetGetParams struct {
 // DocumentGetParams defines parameters for DocumentGet.
 type DocumentGetParams struct {
 	Demo *string `form:"demo,omitempty" json:"demo,omitempty"`
+
+	// Format Response format, either 'json' or 'html'. Default is 'json'.
+	Format *string `form:"format,omitempty" json:"format,omitempty"`
 }
 
 // LayoutGetParams defines parameters for LayoutGet.
