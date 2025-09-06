@@ -9,7 +9,7 @@ import (
 	"github.com/toritoritori29/dodo-cli/src/openapi"
 )
 
-func sendSearchRequest(env *EnvArgs, uri, query string) ([]openapi.SearchRecord, error) {
+func sendSearchRequest(env *EnvArgs, endpoint Endpoint, query string) ([]openapi.SearchRecord, error) {
 	body := openapi.SearchPostRequest{
 		Query: query,
 	}
@@ -18,7 +18,7 @@ func sendSearchRequest(env *EnvArgs, uri, query string) ([]openapi.SearchRecord,
 		return nil, fmt.Errorf("failed to marshal the search request body: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, uri, strings.NewReader(string(bodyBytes)))
+	req, err := http.NewRequest(http.MethodPost, endpoint.SearchURL(), strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a new request from the body: %w", err)
 	}

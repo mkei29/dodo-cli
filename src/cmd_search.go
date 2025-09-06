@@ -119,8 +119,12 @@ func searchCmdEntrypoint(args SearchArgs, env EnvArgs) error {
 
 // JSON implementation.
 func executeSearchJSON(args SearchArgs, env EnvArgs) error {
+	endpoint, err := NewEndpoint(args.endpoint)
+	if err != nil {
+		return fmt.Errorf("invalid endpoint: %w", err)
+	}
 	query := strings.Join(args.query, " ")
-	records, err := sendSearchRequest(&env, args.endpoint, query)
+	records, err := sendSearchRequest(&env, endpoint, query)
 	if err != nil {
 		return fmt.Errorf("failed to execute the search: %w", err)
 	}
@@ -138,7 +142,11 @@ func executeSearchJSON(args SearchArgs, env EnvArgs) error {
 
 // TUI implementation.
 func executeSearchTUI(args SearchArgs, env EnvArgs) error {
-	p := tea.NewProgram(initialModel(args, env))
+	model, err := initialModel(args, env)
+	if err != nil {
+		return fmt.Errorf("failed to initialize the model: %w", err)
+	}
+	p := tea.NewProgram(model)
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("failed to run the program: %w", err)
 	}
@@ -167,12 +175,17 @@ type model struct {
 	errorMessage    string
 
 	// configurations
+	endpoint   Endpoint
 	args       *SearchArgs
 	envArgs    *EnvArgs
 	listStyles list.Styles
 }
 
-func initialModel(args SearchArgs, env EnvArgs) model {
+func initialModel(args SearchArgs, env EnvArgs) (model, error) {
+	endpoint, err := NewEndpoint(args.endpoint)
+	if err != nil {
+		return model{}, fmt.Errorf("invalid endpoint: %w", err)
+	}
 	listStyles := initListStyles()
 
 	w, h, _ := term.GetSize(os.Stdout.Fd())
@@ -202,10 +215,11 @@ func initialModel(args SearchArgs, env EnvArgs) model {
 		choices:         items,
 		selected:        make(map[int]struct{}),
 		errorMessage:    "",
+		endpoint:        endpoint,
 		envArgs:         &env,
 		args:            &args,
 		listStyles:      listStyles,
-	}
+	}, nil
 }
 
 func (m model) Init() tea.Cmd {
@@ -286,7 +300,7 @@ func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
 	m.textInput.Blur()
 	query := m.textInput.Value()
 
-	records, err := sendSearchRequest(m.envArgs, m.args.endpoint, query)
+	records, err := sendSearchRequest(m.envArgs, m.endpoint, query)
 	if err != nil {
 		m.errorMessage = fmt.Sprintf("Failed to execute the search: %s", err)
 	}

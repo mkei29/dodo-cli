@@ -31,6 +31,7 @@ func main() {
 	rootCmd.AddCommand(CreateSearchCmd())
 	rootCmd.AddCommand(CreateDocCmd())
 	rootCmd.AddCommand(CreateMCPCmd())
+	rootCmd.AddCommand(CreateReadCmd())
 
 	defaultPrinter := NewPrinter(ErrorLevel)
 	if err := rootCmd.Execute(); err != nil {
