@@ -1,15 +1,22 @@
 version: 1
 project:
-  project_id: {{ .ProjectID }}
-  name: {{ .ProjectName }}
-  version: {{ .Version }}
-  description: {{ .Description }}
+  project_id: {{ .ProjectID }} # !Important: This value must match the project_id that you create in dodo-doc.
+  name: {{ .ProjectName }} # your project name
+  version: "{{ .Version }}" # your project version
+  description: {{ .Description }} # your project description
 pages:
+  ## You can add pages in two patterns.
+  ## Pattern1: Specify the specific file path and title
   - markdown: README.md
-    path: "README"
-    title: "README"
-  ## Create the directory and place all markdown files in the docs
-  #- directory: "Directory"
+    path: "README" # The URL path to access the page. e.g. https://your-domain/README
+    title: "README" # The title that will be shown in the sidebar and the page header.
+  ## Pattern2: Using the glob pattern to match multiple files.
+  #- match: "docs/*.md"
+
+  ## You can create a directory with `directory` parameter.
+  #- directory: "Directory Name"
   #  children:
-  #    - match: "docs/*.md"
+  #    - markdown: docs/child1.md
+  #      title: "Child 1"
+  #      path: "child1"
  
