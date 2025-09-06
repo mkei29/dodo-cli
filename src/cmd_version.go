@@ -3,13 +3,14 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
 
 //go:generate cp ../version.txt version.txt
 //go:embed version.txt
-var version string
+var Version string
 
 func CreateVersionCmd() *cobra.Command {
 	uploadCmd := &cobra.Command{
@@ -23,6 +24,6 @@ func CreateVersionCmd() *cobra.Command {
 }
 
 func executeVersion() error {
-	fmt.Printf("%s\n", version) //nolint:forbidigo
+	fmt.Fprintf(os.Stdout, "%s\n", Version)
 	return nil
 }

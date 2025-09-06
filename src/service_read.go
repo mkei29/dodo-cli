@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,10 +10,8 @@ import (
 	"github.com/toritoritori29/dodo-cli/src/openapi"
 )
 
-func sendReadDocumentRequest(env *EnvArgs, endpoint, slug, path string) (string, error) {
-	uri := buildReadDocumentURI(endpoint, slug, path)
-
-	req, err := http.NewRequest(http.MethodGet, uri, strings.NewReader(""))
+func sendReadDocumentRequest(env *EnvArgs, endpoint Endpoint, slug, path string) (string, error) {
+	req, err := http.NewRequest(http.MethodGet, endpoint.DocumentURL(slug, path), strings.NewReader(""))
 	if err != nil {
 		return "", fmt.Errorf("failed to create a new request from the body: %w", err)
 	}
@@ -36,14 +35,7 @@ func sendReadDocumentRequest(env *EnvArgs, endpoint, slug, path string) (string,
 		return "", fmt.Errorf("failed to parse the response: %w", err)
 	}
 	if data.Markdown == nil {
-		return "# hello", nil
-		// return "", errors.New("the response does not contain markdown data")
+		return "", errors.New("the response does not contain markdown data")
 	}
 	return *data.Markdown, nil
-}
-
-func buildReadDocumentURI(endpoint, slug, path string) string {
-	slug = strings.Trim(slug, "/")
-	path = strings.Trim(path, "/")
-	return fmt.Sprintf("%s/%s/%s?format=markdown", endpoint, slug, path)
 }

@@ -3,9 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/caarlos0/log"
-
 	"github.com/spf13/cobra"
 )
 
@@ -59,7 +59,7 @@ func CreateReadCmd() *cobra.Command {
 	readCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
 	readCmd.Flags().StringVarP(&opts.projectID, "project-id", "s", "", "The project ID (slug) to read the document from")
 	readCmd.Flags().StringVarP(&opts.path, "path", "p", "", "The path of the document to read")
-	readCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com/document/v1", "Server endpoint for search")
+	readCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com/", "Server endpoint for search")
 	return readCmd
 }
 
@@ -82,11 +82,15 @@ func readCmdEntrypoint(args *ReadArgs, env *EnvArgs) error {
 	}
 
 	log.Debugf("Reading document from project %s, path %s", args.projectID, args.path)
-
-	content, err := sendReadDocumentRequest(env, args.endpoint, args.projectID, args.path)
+	endpoint, err := NewEndpoint(args.endpoint)
 	if err != nil {
 		return err
 	}
-	fmt.Println(content)
+
+	content, err := sendReadDocumentRequest(env, endpoint, args.projectID, args.path)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(os.Stdout, "%s\n", content)
 	return nil
 }
