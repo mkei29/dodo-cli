@@ -1,3 +1,10 @@
+# 2025/09/06 - version 0.0.27
+* Add `read` command.
+* Add `read_document` tool for the `mcp` command.
+* Refine the template that used in `init` command.
+* Improve the error handling.
+
+
 # 2025/09/01 - version 0.0.26
 * feat(experimental): add `mcp` subcommand.
 * feat: add `--format` option for the `search` subcommand.
