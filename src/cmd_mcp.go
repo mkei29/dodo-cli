@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/caarlos0/log"
@@ -36,17 +37,12 @@ Search results are returned in json format with the following structure:
 `
 
 const DocumentDescription = `
-Read the content of a document from dodo-doc.
+Read the content of a document from dodo-doc
 ---
-dodo is a service that hosts users' documents.
-This tool retrieves the content of a specific document identified by its project slug and path.
-You can get the native markdown content of the document.
-
-The slug and path can be found in the document URL.
-For example, if the document URL is https://docs.do.dodo-doc.com/hello_world/getting_started,
-the slug is "docs" and the path is "hello_world/getting_started".
-
-To find the document URL, you can use the "search" tool to search for documents and obtain their URLs.
+This tool allows you to retrieve the full content of a document hosted on dodo, a document hosting service.
+You can fetch the document’s native Markdown content.
+The document URL can be obtained from the results of the search tool.
+Use this tool when you need to read or process the raw content of a document directly.
 `
 
 type MCPArgs struct {
@@ -103,8 +99,7 @@ func addReadDocumentTool() mcp.Tool {
 	tool := mcp.NewTool(
 		"read_document",
 		mcp.WithDescription("Read the content of a document from dodo-doc"),
-		mcp.WithString("slug", mcp.Required(), mcp.Description("The project slug where the document belongs")),
-		mcp.WithString("path", mcp.Required(), mcp.Description("The path of the document to read")),
+		mcp.WithString("url", mcp.Required(), mcp.Description("The document URL")),
 	)
 	return tool
 }
@@ -143,8 +138,14 @@ func (h *Handler) addSearchHandler(_ context.Context, request mcp.CallToolReques
 }
 
 func (h *Handler) addReadDocumentHandler(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	slug := request.GetString("slug", "")
-	path := request.GetString("path", "")
+	u := request.GetString("url", "")
+	if u == "" {
+		return nil, errors.New("url is required")
+	}
+	slug, path, err := parseURL(u)
+	if err != nil {
+		return nil, err
+	}
 	content, err := sendReadDocumentRequest(&h.Env, h.Endpoint, slug, path)
 	if err != nil {
 		return nil, err

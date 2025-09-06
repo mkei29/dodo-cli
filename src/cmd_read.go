@@ -15,6 +15,7 @@ type ReadArgs struct {
 	debug     bool
 	noColor   bool
 	endpoint  string
+	url       string
 }
 
 // Implement LoggingConfig and PrinterConfig interface for PreviewArgs.
@@ -57,19 +58,14 @@ func CreateReadCmd() *cobra.Command {
 	}
 	readCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode")
 	readCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
+	readCmd.Flags().StringVarP(&opts.url, "url", "u", "", "The full URL of the document to read (overrides project-id and path if set)")
 	readCmd.Flags().StringVarP(&opts.projectID, "project-id", "s", "", "The project ID (slug) to read the document from")
 	readCmd.Flags().StringVarP(&opts.path, "path", "p", "", "The path of the document to read")
 	readCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com/", "Server endpoint for search")
 	return readCmd
 }
 
-func CheckArgsAndEnvForRead(opts ReadArgs, env *EnvArgs) error {
-	if opts.projectID == "" {
-		return errors.New("project ID is required")
-	}
-	if opts.path == "" {
-		return errors.New("path is required")
-	}
+func CheckArgsAndEnvForRead(_ ReadArgs, env *EnvArgs) error {
 	if env.APIKey == "" {
 		return errors.New("DODO_API_KEY is not set")
 	}
@@ -81,13 +77,28 @@ func readCmdEntrypoint(args *ReadArgs, env *EnvArgs) error {
 		return err
 	}
 
-	log.Debugf("Reading document from project %s, path %s", args.projectID, args.path)
 	endpoint, err := NewEndpoint(args.endpoint)
 	if err != nil {
 		return err
 	}
 
-	content, err := sendReadDocumentRequest(env, endpoint, args.projectID, args.path)
+	projectID := args.projectID
+	path := args.path
+	if args.url != "" {
+		projectID, path, err = parseURL(args.url)
+		if err != nil {
+			return err
+		}
+	}
+	if projectID == "" {
+		return errors.New("project ID is required")
+	}
+	if path == "" {
+		return errors.New("path is required")
+	}
+	log.Debugf("Reading document from project %s, path %s", projectID, path)
+
+	content, err := sendReadDocumentRequest(env, endpoint, projectID, path)
 	if err != nil {
 		return err
 	}

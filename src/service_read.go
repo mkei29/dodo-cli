@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/toritoritori29/dodo-cli/src/openapi"
@@ -38,4 +39,19 @@ func sendReadDocumentRequest(env *EnvArgs, endpoint Endpoint, slug, path string)
 		return "", errors.New("the response does not contain markdown data")
 	}
 	return *data.Markdown, nil
+}
+
+func parseURL(documentURL string) (string, string, error) {
+	u, err := url.Parse(documentURL)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse the document URL: %w", err)
+	}
+	hostname := u.Hostname()
+	domains := strings.Split(hostname, ".")
+	if len(domains) != 4 {
+		return "", "", errors.New("invalid document URL format")
+	}
+	slug := domains[0]
+	p := u.Path
+	return slug, p, nil
 }
