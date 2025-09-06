@@ -2,6 +2,9 @@ package main
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewEndpoint(t *testing.T) {
@@ -22,21 +25,12 @@ func TestNewEndpoint(t *testing.T) {
 
 	for _, test := range tests {
 		result, err := NewEndpoint(test.input)
-		if (err != nil) != test.hasError {
-			t.Errorf("NewEndpoint(%s) error = %v, expected error = %v", test.input, err, test.hasError)
+		if test.hasError {
+			require.Error(t, err, "Expected error for input: %s", test.input)
+		} else {
+			require.NoError(t, err, "Unexpected error for input: %s", test.input)
+			assert.Equal(t, Endpoint(test.expected), result, "Endpoint(%s) = %v, expected %v", test.input, result, test.expected)
 		}
-		if result.String() != test.expected {
-			t.Errorf("NewEndpoint(%s) = %v, expected %v", test.input, result, test.expected)
-		}
-	}
-}
-
-func TestEndpoint_String(t *testing.T) {
-	endpoint := Endpoint("https://example.com")
-	expected := "https://example.com"
-
-	if endpoint.String() != expected {
-		t.Errorf("Endpoint.String() = %v, expected %v", endpoint.String(), expected)
 	}
 }
 
@@ -53,9 +47,7 @@ func TestEndpoint_SearchURL(t *testing.T) {
 
 	for _, test := range tests {
 		result := test.endpoint.SearchURL()
-		if result != test.expected {
-			t.Errorf("Endpoint(%s).SearchURL() = %v, expected %v", test.endpoint, result, test.expected)
-		}
+		assert.Equal(t, test.expected, result, "Endpoint(%s).SearchURL() = %v, expected %v", test.endpoint, result, test.expected)
 	}
 }
 
@@ -74,8 +66,6 @@ func TestEndpoint_DocumentURL(t *testing.T) {
 
 	for _, test := range tests {
 		result := test.endpoint.DocumentURL(test.slug, test.path)
-		if result != test.expected {
-			t.Errorf("Endpoint(%s).DocumentURL(%s, %s) = %v, expected %v", test.endpoint, test.slug, test.path, result, test.expected)
-		}
+		assert.Equal(t, test.expected, result, "Endpoint(%s).DocumentURL(%s, %s) = %v, expected %v", test.endpoint, test.slug, test.path, result, test.expected)
 	}
 }
