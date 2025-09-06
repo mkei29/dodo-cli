@@ -45,13 +45,11 @@ func CreateReadCmd() *cobra.Command {
 			env := NewEnvArgs()
 			err := CheckArgsAndEnvForRead(opts, &env)
 			if err != nil {
-				printer.PrintError(err)
-				return err
+				return printer.HandleError(err)
 			}
 			printer = NewPrinterFromArgs(&opts)
 			if err := readCmdEntrypoint(&opts, &env); err != nil {
-				printer.PrintError(err)
-				return err
+				return printer.HandleError(err)
 			}
 			return nil
 		},
