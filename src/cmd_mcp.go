@@ -59,8 +59,7 @@ func CreateMCPCmd() *cobra.Command {
 		RunE: func(_ *cobra.Command, _ []string) error {
 			printer := NewPrinter(ErrorLevel)
 			if err := mcpCmdEntrypoint(&opts); err != nil {
-				printer.PrintError(err)
-				return err
+				return printer.HandleError(err)
 			}
 			return nil
 		},

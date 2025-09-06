@@ -67,13 +67,11 @@ func CreateSearchCmd() *cobra.Command {
 			env := NewEnvArgs()
 			err := CheckArgsAndEnvForSearch(opts, env)
 			if err != nil {
-				printer.PrintError(err)
-				return err
+				return printer.HandleError(err)
 			}
 			printer = NewPrinterFromArgs(&opts)
-			if err := executeSearch(opts, env); err != nil {
-				printer.PrintError(err)
-				return err
+			if err := searchCmdEntrypoint(opts, env); err != nil {
+				return printer.HandleError(err)
 			}
 			return nil
 		},
@@ -108,7 +106,7 @@ func CheckArgsAndEnvForSearch(args SearchArgs, env EnvArgs) error {
 	return nil
 }
 
-func executeSearch(args SearchArgs, env EnvArgs) error {
+func searchCmdEntrypoint(args SearchArgs, env EnvArgs) error {
 	switch args.format {
 	case FormatTUI:
 		return executeSearchTUI(args, env)

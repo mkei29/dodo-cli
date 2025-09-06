@@ -97,9 +97,9 @@ func (c *ConfigPage) isValidPath() error {
 	if c.Path == "" {
 		return errors.New("the `path` field is required")
 	}
-	matched, err := regexp.MatchString("^[a-zA-Z-0-9._-]*$", c.Path)
+	matched, err := regexp.MatchString("^[a-zA-Z-0-9_-]*$", c.Path)
 	if err != nil || !matched {
-		return fmt.Errorf("the path `%s` contains invalid characters. Paths can only contain alphanumeric characters, periods (.), underscores (_), and hyphens (-)", c.Path)
+		return fmt.Errorf("the path `%s` contains invalid characters. Paths can only contain alphanumeric characters, underscores (_), and hyphens (-)", c.Path)
 	}
 	return nil
 }

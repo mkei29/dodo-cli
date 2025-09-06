@@ -71,35 +71,34 @@ func CreateUploadCmd() *cobra.Command {
 		"https://api.dodo-doc.com/project/upload",
 		&opts,
 		func(_ *cobra.Command, _ []string) error {
-			return executeUploadWrapper(opts)
+			printer := NewPrinter(ErrorLevel)
+			env := NewEnvArgs()
+			err := CheckArgsAndEnv(opts, env)
+			if err != nil {
+				return printer.HandleError(err)
+			}
+
+			printer = NewPrinterFromArgs(&opts)
+			jsonWriter := NewJSONWriterFromArgs(opts)
+			if err := uploadCmdEntrypoint(opts, env, jsonWriter); err != nil {
+				jsonWriter.ShowFailedJSONText(err)
+				return printer.HandleError(err)
+			}
+			return nil
 		},
 	)
 }
 
-func executeUploadWrapper(args UploadArgs) error {
+func uploadCmdEntrypoint(args UploadArgs, env EnvArgs, jsonWriter *JSONWriter) error {
 	// Parse the command line arguments and environment variables.
-	printer := NewPrinter(ErrorLevel)
-	env := NewEnvArgs()
-	err := CheckArgsAndEnv(args, env)
-	if err != nil {
-		printer.PrintError(err)
-		return err
-	}
-	printer = NewPrinterFromArgs(&args)
-	jsonWriter := NewJSONWriterFromArgs(args)
-
 	// Initialize the logging configuration from the command line arguments.
 	if err := InitLogger(&args); err != nil {
-		printer.PrintError(err)
-		jsonWriter.ShowFailedJSONText(err)
 		return err
 	}
 
 	// Execute the upload operation.
 	url, err := executeUpload(args, env)
 	if err != nil {
-		printer.PrintError(err)
-		jsonWriter.ShowFailedJSONText(err)
 		return err
 	}
 	log.Infof("successfully uploaded")

@@ -41,40 +41,36 @@ func CreatePreviewCmd() *cobra.Command {
 		"https://api.dodo-doc.com/project/upload/demo",
 		&uploadOpts,
 		func(_ *cobra.Command, _ []string) error {
-			// Convert back to PreviewArgs
-			opts = PreviewArgs(uploadOpts)
-			return executePreviewWrapper(opts)
+			env := NewEnvArgs()
+			uploadArgs := UploadArgs(opts)
+
+			printer := NewPrinter(ErrorLevel)
+			err := CheckArgsAndEnv(uploadArgs, env)
+			if err != nil {
+				return printer.HandleError(err)
+			}
+
+			printer = NewPrinterFromArgs(&uploadArgs)
+			jsonWriter := NewJSONWriterFromArgs(uploadArgs)
+			if err := previewCmdEntrypoint(uploadArgs, env, jsonWriter); err != nil {
+				jsonWriter.ShowFailedJSONText(err)
+				return printer.HandleError(err)
+			}
+			return nil
 		},
 	)
 	return cmd
 }
 
-func executePreviewWrapper(args PreviewArgs) error {
-	// Initialize logger and so on, then execute the main function.
-	env := NewEnvArgs()
-	uploadArgs := UploadArgs(args)
-
-	// Parse the command line arguments and environment variables.
-	printer := NewPrinter(ErrorLevel)
-	err := CheckArgsAndEnv(uploadArgs, env)
-	if err != nil {
-		printer.PrintError(err)
-		return err
-	}
-	printer = NewPrinterFromArgs(&args)
-	jsonWriter := NewJSONWriterFromArgs(uploadArgs)
-
+func previewCmdEntrypoint(args UploadArgs, env EnvArgs, jsonWriter *JSONWriter) error {
 	// Initialize the logging configuration from the command line arguments.
 	if err := InitLogger(&args); err != nil {
-		printer.PrintError(err)
-		jsonWriter.ShowFailedJSONText(err)
+		return err
 	}
 
 	// Execute the upload operation.
-	url, err := executeUpload(uploadArgs, env)
+	url, err := executeUpload(args, env)
 	if err != nil {
-		printer.PrintError(err)
-		jsonWriter.ShowFailedJSONText(err)
 		return err
 	}
 	log.Infof("successfully uploaded")
