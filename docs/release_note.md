@@ -1,3 +1,6 @@
+# 2025/09/07 - version 0.0.28
+* Hotfix `preview` command.
+
 # 2025/09/06 - version 0.0.27
 * Add `read` command.
 * Add `read_document` tool for the `mcp` command.

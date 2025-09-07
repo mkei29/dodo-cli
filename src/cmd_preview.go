@@ -5,54 +5,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type PreviewArgs struct {
-	file     string // config file path
-	output   string // deprecated: the path to locate the archive file
-	endpoint string // server endpoint to upload
-	debug    bool   // server endpoint to upload
-	format   string // output style for the command
-	rootPath string // root path of the project
-	noColor  bool   // disable color output
-}
-
-// Implement LoggingConfig and PrinterConfig interface for PreviewArgs.
-func (opts *PreviewArgs) DisableLogging() bool {
-	return opts.format == FormatJSON
-}
-
-func (opts *PreviewArgs) EnableDebugMode() bool {
-	return opts.debug
-}
-
-func (opts *PreviewArgs) EnableColor() bool {
-	return !opts.noColor
-}
-
-func (opts *PreviewArgs) EnablePrinter() bool {
-	return opts.format == FormatText
-}
-
 func CreatePreviewCmd() *cobra.Command {
-	opts := PreviewArgs{}
-	uploadOpts := UploadArgs(opts)
+	opts := UploadArgs{}
 	cmd := createUploadCommand(
 		"preview",
 		"upload the project to dodo-doc preview environment",
 		"https://api.dodo-doc.com/project/upload/demo",
-		&uploadOpts,
+		&opts,
 		func(_ *cobra.Command, _ []string) error {
 			env := NewEnvArgs()
-			uploadArgs := UploadArgs(opts)
 
 			printer := NewPrinter(ErrorLevel)
-			err := CheckArgsAndEnv(uploadArgs, env)
+			err := CheckArgsAndEnv(opts, env)
 			if err != nil {
 				return printer.HandleError(err)
 			}
 
-			printer = NewPrinterFromArgs(&uploadArgs)
-			jsonWriter := NewJSONWriterFromArgs(uploadArgs)
-			if err := previewCmdEntrypoint(uploadArgs, env, jsonWriter); err != nil {
+			printer = NewPrinterFromArgs(&opts)
+			jsonWriter := NewJSONWriterFromArgs(opts)
+			if err := previewCmdEntrypoint(opts, env, jsonWriter); err != nil {
 				jsonWriter.ShowFailedJSONText(err)
 				return printer.HandleError(err)
 			}
