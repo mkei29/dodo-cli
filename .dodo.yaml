@@ -6,14 +6,8 @@ project:
   version: 0.0.28
 pages:
   - markdown: docs/index.md
-    path: "what_is_dodo"
-    title: "What is dodo?"
   - markdown: docs/install.md
-    path: "install"
-    title: "Install"
   - markdown: docs/quick_start.md
-    path: "quick_start"
-    title: "Quick Start"
   - markdown: docs/yaml_spec.md
     path: "yaml_specification"
     title: "Yaml Spec"

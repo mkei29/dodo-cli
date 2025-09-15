@@ -1,56 +1,86 @@
-This chapter explains the complete process of uploading a document.
-You need to have completed signup and project creation beforehand.
-If you haven't completed these steps yet, please follow the document below to first complete signup and project creation.
-
-https://document.do.dodo-doc.com/install
-
+---
+title: "Quick Start"
+path: "quick_start"
+description: ""
+created_at: "2025-09-15T23:48:10+09:00"
+updated_at: "2025-09-15T23:48:10+09:00"
+---
 ## Steps to Upload a Document
-The general process for uploading a document is as follows:
 
-* Generate a new API Key from the project screen and set it as an environment variable
-* Use the `dodo-cli init` command to generate a configuration file
-* Use the `dodo-cli upload` command to upload the document
+Here’s the usual flow for publishing a document:
 
-Now, let's delve into the specific steps in more detail.
+1. Sign up for dodo-doc and create a project.
+2. Generate an API key on the project page and export it as an environment variable.
+3. Run `dodo init` to create a configuration file.
+4. Run `dodo upload` to publish your documents.
 
-## Creating an API Key
-An API Key is necessary to verify that the user running dodo-cli has the appropriate permissions.
-First, let's log into Dodo in your browser and generate a new API Key.
+## Sign Up and Create a Project
 
-You can generate API Keys from each project's screen.
-From the dashboard, click on the project you want to upload to in order to open the project screen.
+You’ll need an account and a project before uploading. If you haven’t done this yet, visit the sign-up page and complete the steps:
 
-https://www.dodo-doc.com/dashboard
+https://www.dodo-doc.com/signup
 
-Clicking the `New API Key` button in the upper right corner of the project screen will generate a new API Key.
-The newly issued API Key will be displayed at the top of the screen. Please copy and store it securely.
+From the dashboard, click **New Project** (top right) and fill in the dialog:
+
+* **Visibility**: Who can view the document.
+  * `public`: visible to anyone
+  * `private`: visible only to members of your organization
+* **Project ID**: A unique identifier for the project. You’ll use this in later steps.
+* **Project Name**: A human-friendly name for the project.
+
+## Issue a New API Key
+
+The API key proves that the user running the CLI has permission to access the project.
+Open the **API Key** page and click **New API Key**. By default, the key includes both **Read** and **Upload** permissions.
+
+* **Read**: Required for `docs` and `search`.
+* **Upload**: Required for `upload` and `preview`.
 
 :::message warning
-The API Key is only displayed once and cannot be viewed again after you close the screen.
+Your API key is shown only once. You won’t be able to view it again after closing the screen.
 :::
 
 :::message alert
-Do not share your API Key on the internet or in any public space.
-If your API Key is leaked, there is a risk that the content of your documents could be tampered with.
+Never share your API key publicly. If it is leaked, your documents could be tampered with.
 :::
 
-## Creating a Configuration File
-Next, we'll create a configuration file for dodo.
-You can easily create a template for the configuration file using the `dodo-cli init` command.
+Then, export the key as an environment variable:
 
-First, navigate to the root of your git repository and run the dodo-cli command.
-You'll be asked a few questions in an interactive format. Please answer them.
-Once you've finished answering the questions, a new configuration file named `.dodo.yaml` will be generated.
+```bash
+export DODO_API_KEY="<YOUR_API_KEY>"
+```
+
+:::message info
+If you upload frequently from a local environment, tools like [direnv](https://direnv.net/) can help manage environment variables.
+:::
+
+## Create a Configuration File
+
+dodo-doc uses a `.dodo.yaml` file for configuration.
+Run the interactive helper to generate it:
+
+```bash
+dodo init
+```
+
+You’ll be prompted for:
+
+* **Project ID**: The ID you set when creating the project.
+* **Project Name**: The name shown on the document page.
+* **Description** (optional): A short description shown in the document sidebar.
+
+After running `dodo init`, confirm that `.dodo.yaml` was created:
 
 ```yaml
 version: 1
 project:
-  name: testdoc
+  project_id: <Your Project ID>
+  name: <Your Project Name>
   version: 1
-  description: test description
+  description: <Your project description>
 pages:
   - markdown: README.md
-    path: "/README"
+    path: "README"
     title: "README"
   ## Create the directory and place all markdown files in the docs
   #- directory: "Directory"
@@ -58,39 +88,26 @@ pages:
   #    - match: "docs/*.md"
 ```
 
-By default, README.md is set as the top page.
-If needed, refer to the [configuration file specification](/yaml_specification) to modify the pages field.
-Once your configuration file is ready, let's proceed to the final step of uploading.
+By default, `README.md` is the top page.
+If needed, see the [configuration spec](/yaml_specification) to adjust the `pages` section. When your config looks good, move on to uploading.
 
-## Uploading Documents
+## Upload Documents
 
-To upload documents, you need to set the API Key you obtained earlier as an environment variable named `DODO_API_KEY`.
-Run the following command to set the API Key as an environment variable:
+You’re ready to publish. Run:
 
 ```bash
-export DODO_API_KEY="<Your initially obtained API Key>"
-```
-:::message info
-If you're uploading continuously from a local environment, using tools like [direnv](https://direnv.net/) can be convenient.
-:::
-
-Now you're all set for uploading.
-Let's run the following command to actually upload the documents:
-
-```bash
-dodo-cli upload
+dodo upload
 ```
 
-If successful, you'll see a log message saying `successfully uploaded`.
-A URL for the document will also be displayed. Open this URL in your browser to check the result.
+On success, you’ll see `successfully uploaded` and a URL to the document.
+Open the link in your browser to check the result.
 
-If you want to upload again, simply run `dodo-cli upload` once more.
-Easy, isn't it?
+To upload again, simply run `dodo upload` once more.
 
 ## Next Steps
-This concludes the basics of uploading.
-If you want to learn more detailed usage, please refer to the links below.
+
+That’s the basics of uploading. For more advanced usage, see:
 
 https://document.do.dodo-doc.com/yaml_specification
 
-https://document.do.dodo-doc.com/ci
+https://document.do.dodo-doc.com/cicd_github

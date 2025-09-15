@@ -1,7 +1,7 @@
 ---
 title: "What's dodo-doc"
-path: "quick_start"
-description: ""
+path: "what_is_dodo_doc"
+description: "Docs in sync with your code"
 created_at: "2025-09-15T19:49:41+09:00"
 updated_at: "2025-09-15T19:49:41+09:00"
 ---
@@ -16,6 +16,12 @@ Browse live examples—including this page—to see what’s possible.
 Ready to try it? Follow the link below to install and get started:
 
 https://document.do.dodo-doc.com/install
+
+:::message info
+dodo-doc is currently in beta and offers only a Free plan.
+A paid Team Plan for teams is planned for a future release.
+:::
+
 
 ## Main Features of dodo-doc
 
