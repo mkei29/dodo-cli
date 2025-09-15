@@ -6,10 +6,11 @@ created_at: "2025-09-15T19:49:41+09:00"
 updated_at: "2025-09-15T19:49:41+09:00"
 ---
 
-Keeping documentation accurate is hard—teams move fast, pages go stale, and readers tune out.
-dodo-doc fixes that by keeping docs in step with your code and easy to read.
-It’s a lightweight, powerful hosting service built for software teams.
-Create an account, install a single CLI, and publish Markdown in minutes.
+Keeping documentation accurate is hard — teams move fast, pages go stale, and readers tune out. 
+dodo-doc fixes that by keeping docs in step with your code and easy to read. 
+
+It’s a lightweight, powerful hosting service built for software teams. 
+Create an account, install a single CLI, and publish Markdown in minutes. 
 
 Browse live examples—including this page—to see what’s possible.
 Ready to try it? Follow the link below to install and get started:
