@@ -3,7 +3,7 @@ project:
   project_id: "document"
   name: dodo
   description: The dodo documentation
-  version: 0.0.1
+  version: 0.0.28
 pages:
   - markdown: docs/index.md
     path: "what_is_dodo"
@@ -25,13 +25,6 @@ pages:
       - markdown: docs/cicd_github.md
         path: "cicd_github"
         title: "GitHub Actions"
-  - markdown: docs/roadmap.md
-    path: "roadmap"
-    title: "Roadmap"
-  - markdown: docs/release_note.md
-    path: "release_note"
-    title: "Release Note"
-
   - directory: "CLI Commands"
     children:
       - markdown: docs/command_init.md
@@ -41,9 +34,15 @@ pages:
       - markdown: docs/command_touch.md
       - markdown: docs/command_read.md
       - markdown: docs/command_mcp.md
+  - markdown: docs/release_note.md
+    path: "release_note"
+    title: "Release Note"
+  - markdown: docs/roadmap.md
+    path: "roadmap"
+    title: "Roadmap"
   - directory: "For Developers"
     children:
-      - markdown: docs/internal/release.md
-        path: "release_flow"
-        title: "Release Flow"
+      - markdown: docs/for_contributors/getting_started.md
+      - markdown: docs/for_contributors/guidelines.md
+      - markdown: docs/for_contributors/release.md
  

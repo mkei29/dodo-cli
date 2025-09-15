@@ -13,6 +13,11 @@ fmt:
 	uv run ruff format
 	uv run ruff check --fix
 
+.PHONY: lint
+lint:
+	golangci-lint run src
+	uv run ruff check
+
 .PHONY: clean
 clean:
 	rm -rf dist
