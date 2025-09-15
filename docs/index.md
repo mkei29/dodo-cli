@@ -1,27 +1,52 @@
-dodo is a powerful platform designed to host and manage your Markdown documents effortlessly. With dodo, you can streamline your documentation process by deploying Markdown files with just a single command, thanks to its intuitive configuration setup.
+---
+title: "What's dodo-doc"
+path: "quick_start"
+description: ""
+created_at: "2025-09-15T19:49:41+09:00"
+updated_at: "2025-09-15T19:49:41+09:00"
+---
 
-Explore the possibilities with dodo by viewing examples of hosted documents, including this very document. If you're inspired to try it out, follow the link below to get started with the installation process.
+Keeping documentation accurate is hard—teams move fast, pages go stale, and readers tune out.
+dodo-doc fixes that by keeping docs in step with your code and easy to read.
+It’s a lightweight, powerful hosting service built for software teams.
+Create an account, install a single CLI, and publish Markdown in minutes.
+
+Browse live examples—including this page—to see what’s possible.
+Ready to try it? Follow the link below to install and get started:
 
 https://document.do.dodo-doc.com/install
 
-# Main Features of dodo
-Here are some of the standout features of dodo:
+## Main Features of dodo-doc
 
-* **Developer-friendly**: Seamlessly integrate dodo into your existing development workflows by simply uploading Markdown files. This ease of use makes it a perfect fit for developers looking to enhance their documentation processes.
-* **Easy setup**: Generate a configuration file template effortlessly using the `init` command of the dodo-cli, simplifying the initial setup.
-* **CI/CD Integration**: Simplify your CI/CD pipeline with dodo's single binary upload feature, allowing for automated and efficient document deployment.
-* **Privacy Control**: Keep your documents private with dodo's privacy settings, making it ideal for personal projects or sensitive information like diaries.
+* **Developer-friendly**: Drop Markdown files into your workflow and upload—no special formats required.
+* **Easy setup**: Run dodo init to scaffold a .dodo.yaml config in seconds.
+* **CI/CD integration**: Ship docs from your pipeline with a single-binary CLI for automated, reliable deployments.
+* **Privacy controls**: Keep docs private with flexible visibility settings—great for personal notes or sensitive content.
 
-We are actively working on exciting new features to enhance your experience with dodo. For more details, visit our [roadmap page](/roadmap).
+dodo-doc is built for people who live in editors and terminals. Here are a few CLI commands you’ll use often:
 
-* Cross-document search
-* Multi-language support
-* Image upload capability
-* Expansion of supported Markdown syntax
-* Other user experience improvements
+```bash
+# Initialize config: interactively create .dodo.yaml
+dodo init
 
-# Next Steps
-Ready to dive in? Start by creating a dodo account and hosting your first document. Follow the comprehensive guides below to set up the client and begin your journey with dodo.
+# Upload documents defined in .dodo.yaml
+dodo upload
+
+# Publish a time-limited preview for quick reviews
+dodo preview
+
+# List your documents and open one in the browser
+dodo docs
+
+# Search your documents and open a result
+dodo search
+```
+
+We’re actively shipping new features to make dodo-doc even better. Check the [roadmap](/roadmap) for what’s coming.
+
+## Next Steps
+Ready to dive in? Create your dodo-doc account and host your first document.
+Use the guides below to set up the client and get started:
 
 - [Installation Guide](https://document.do.dodo-doc.com/install)
 - [Quick Start Guide](https://document.do.dodo-doc.com/quick_start)
