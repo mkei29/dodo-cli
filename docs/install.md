@@ -1,38 +1,43 @@
-To use dodo, you need to complete two initial setup steps:
+---
+title: "Install"
+path: "install"
+description: "Setup the CLI tool"
+created_at: "2025-09-15T22:01:55+09:00"
+updated_at: "2025-09-15T22:01:55+09:00"
+---
 
-* Create a new project
-* Install the dodo-cli
+## Installing the dodo CLI
 
-Let's look at each of these in detail.
+To use **dodo-doc**, first install the dodo CLI. You can set it up in two ways: via npm or by downloading a prebuilt binary.
 
-## Creating a New Project
-To host documents, you first need to create a project.
-Let's start by creating a Dodo account and setting up a project.
-Please sign up for Dodo using the link below:
+:::message warning
+Windows is not currently supported.
+:::
 
-https://www.dodo-doc.com/signup
+### Install via npm
 
-After completing the signup process, you will automatically be redirected to the dashboard.
-Click the `Create a new project` button and open the dialog.
-Fill out the form in the dialog and click the `Create` button.
-With this, your project setup is complete.
-
-## Installing dodo-cli
-Next, let's install the dodo-cli.
-The installation method varies depending on your operating system.
-
-### Linux or Mac OS
-If you're using Linux or Mac OS, you can download and install dodo-cli with the following command. This command fetches the installation script and executes it, downloading the dodo-cli to your current directory:
-The dodo-cli will be downloaded to your current directory. If needed, copy it to a directory in your execution path.
+Run the following command in your terminal:
 
 ```bash
-$ curl https://raw.githubusercontent.com/toritoritori29/dodo-cli/main/download.sh | sh -
+npm install -g @dodo-doc/cli
 ```
 
-### Windows
-For Windows users, please download the binary that corresponds to your architecture from the [GitHub release page](https://github.com/toritoritori29/dodo-cli/releases). Once downloaded, follow the instructions on the page to install it.
+### Download a binary
 
-## Next Step
-This completes the setup. In the next chapter, you will learn how to upload a document to dodo. Follow the instructions in the [Quick Start](https://document.do.dodo-doc.com/quick_start) to get started with uploading your first document.
+Alternatively, download a prebuilt binary from the releases page and place it somewhere on your `PATH` (e.g., `/usr/local/bin`):
+
+https://github.com/mkei29/dodo-cli/releases
+
+### Check it works
+Run dodo version to confirm the installation was successful.
+Other commands require an API key — see the Quick Start for details.
+
+```bash
+dodo version
+```
+
+## Next Steps
+
+That’s it for installation. Next, upload your first document with dodo-doc. Follow the [Quick Start](https://document.do.dodo-doc.com/quick_start) to get started.
 
 https://document.do.dodo-doc.com/quick_start
