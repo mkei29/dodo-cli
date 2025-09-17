@@ -57,7 +57,7 @@ func CreateMCPCmd() *cobra.Command {
 		Use:   "mcp",
 		Short: "Start a MCP server",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			printer := NewPrinter(ErrorLevel)
+			printer := NewErrorPrinter(ErrorLevel)
 			if err := mcpCmdEntrypoint(&opts); err != nil {
 				return printer.HandleError(err)
 			}

@@ -35,22 +35,22 @@ type StyleFormat struct {
 	Secondary lipgloss.Style
 }
 
-type Printer struct {
-	writer  io.Writer
+type ErrorPrinter struct {
+	stderr  io.Writer
 	padding int
 	style   StyleFormat
 }
 
-func NewPrinter(styleIdx int) *Printer {
-	return &Printer{
-		writer:  os.Stdout,
+func NewErrorPrinter(styleIdx int) *ErrorPrinter {
+	return &ErrorPrinter{
+		stderr:  os.Stderr,
 		padding: 3,
 		style:   Styles[styleIdx],
 	}
 }
 
-func NewPrinterFromArgs(args PrinterConfig) *Printer {
-	printer := NewPrinter(ErrorLevel)
+func NewPrinterFromArgs(args PrinterConfig) *ErrorPrinter {
+	printer := NewErrorPrinter(ErrorLevel)
 	if !args.EnableColor() {
 		printer.SetStyle(NoColor)
 	}
@@ -60,16 +60,16 @@ func NewPrinterFromArgs(args PrinterConfig) *Printer {
 	return printer
 }
 
-func (p *Printer) Disable() {
-	p.writer = io.Discard
+func (p *ErrorPrinter) Disable() {
+	p.stderr = io.Discard
 }
 
-func (p *Printer) SetStyle(styleIdx int) {
+func (p *ErrorPrinter) SetStyle(styleIdx int) {
 	p.style = Styles[styleIdx]
 }
 
 // PrettyPrint prints the error in a human-readable format.
-func (p *Printer) HandleError(err error) error {
+func (p *ErrorPrinter) HandleError(err error) error {
 	// if the error is a MultiError, call PrettyPrint on each error.
 	// MultiError doesn't implement Unwrap, so we can't use errors.Is.
 
@@ -94,7 +94,7 @@ func (p *Printer) HandleError(err error) error {
 	return ErrAlreadyHandled
 }
 
-func (p *Printer) printParseError(err *ParseError) {
+func (p *ErrorPrinter) printParseError(err *ParseError) {
 	// Print a parse error in a human-readable format.
 	// This function respects the golangci-lint style error format.
 	//
@@ -106,16 +106,16 @@ func (p *Printer) printParseError(err *ParseError) {
 	line := err.node.GetToken().Position.Line
 	pos := err.node.GetToken().Position.Column
 	message := p.style.Primary.Render(err.message)
-	fmt.Fprintf(p.writer, "%s %s:%d:%d %s\n", listIcon, err.filepath, line, pos, message)
+	fmt.Fprintf(p.stderr, "%s %s:%d:%d %s\n", listIcon, err.filepath, line, pos, message)
 
 	arrow := p.style.Secondary.Render(fmt.Sprintf("%*s", p.padding+2, ">"))
-	fmt.Fprintf(p.writer, "%s %s\n", arrow, err.line)
+	fmt.Fprintf(p.stderr, "%s %s\n", arrow, err.line)
 }
 
-func (p *Printer) printError(err error) {
+func (p *ErrorPrinter) printError(err error) {
 	// Print a general error in a human-readable format.
 	// This function respects the golangci-lint style error format.
 	listIcon := p.style.Primary.Render(fmt.Sprintf("%*s", p.padding, "⨯"))
 	message := p.style.Primary.Render(err.Error())
-	fmt.Fprintf(p.writer, "%s %s\n", listIcon, message)
+	fmt.Fprintf(p.stderr, "%s %s\n", listIcon, message)
 }

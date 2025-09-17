@@ -33,7 +33,7 @@ func main() {
 	rootCmd.AddCommand(CreateMCPCmd())
 	rootCmd.AddCommand(CreateReadCmd())
 
-	defaultPrinter := NewPrinter(ErrorLevel)
+	defaultPrinter := NewErrorPrinter(ErrorLevel)
 	if err := rootCmd.Execute(); err != nil {
 		defaultPrinter.HandleError(err) //nolint:errcheck
 		os.Exit(1)

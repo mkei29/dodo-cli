@@ -46,7 +46,7 @@ func CreateDocCmd() *cobra.Command {
 		Short:        "List the documentation in your organization",
 		SilenceUsage: true,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			printer := NewPrinter(ErrorLevel)
+			printer := NewErrorPrinter(ErrorLevel)
 			env := NewEnvArgs()
 			err := CheckArgsAndEnvForDocs(&opts, &env)
 			if err != nil {

@@ -63,7 +63,7 @@ func CreateSearchCmd() *cobra.Command {
 		Use:   "search",
 		Short: "Search for a string in the project files.",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			printer := NewPrinter(ErrorLevel)
+			printer := NewErrorPrinter(ErrorLevel)
 			env := NewEnvArgs()
 			err := CheckArgsAndEnvForSearch(opts, env)
 			if err != nil {
