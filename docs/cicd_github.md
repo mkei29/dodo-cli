@@ -33,10 +33,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
       - name: Install dodo CLI
         run: |
-          npm install -g @dodo-cli/cli
+          npm install -g @dodo-doc/cli
       - name: Publish docs
         run: |
           dodo upload
@@ -94,7 +94,7 @@ jobs:
             echo "✅ Document preview is available [here]($URL)" >> body.txt
           fi
         env:
-          DODO_API_KEY: ${{ secrets.DODO_ACCESS_KEY }}
+          DODO_API_KEY: ${{ secrets.DODO_API_KEY }}
       - name: Comment on PR
         uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043  # v4.0.0
         with:
