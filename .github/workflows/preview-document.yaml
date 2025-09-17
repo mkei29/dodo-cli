@@ -13,25 +13,35 @@ jobs:
         uses: actions/checkout@v4
       - name: Install dodo CLI
         run: |
-          npm install -g @dodo-cli/cli
+          npm install -g @dodo-doc/cli
       - name: Preview docs
         id: preview
         continue-on-error: true
         run: |
           dodo preview --format json 1> stdout.txt 2> stderr.txt
-          STATUS=$(jq -r .status stdout.txt 2>/dev/null || echo "false")
-          URL=$(jq -r .document_url stdout.txt 2>/dev/null)
+      - name: Prepare comment body
+        id: prepare-comment
+        run: |
+          STATUS=$(jq -r '.status' stdout.txt 2>/dev/null || echo "false")
+          URL=$(jq -r '.document_url' stdout.txt 2>/dev/null || echo "")
       
           if [ "$STATUS" = "false" ] || [ -z "$URL" ]; then
-            echo "❌ Document preview failed" >> "body.txt"
-            echo "<details><summary>Error Message</summary>" >> "body.txt"
-            cat stderr.txt >> "body.txt"
-            echo "</details>" >> "body.txt"
+            echo "failed"
+            echo "status=failed" >> $GITHUB_OUTPUT
 
-            echo "status="failed >> $GITHUB_OUTPUT"
-            exit 1
+            # Build comment body
+            echo "❌ Document preview failed" >> body.txt
+            echo "<details><summary>Error Message</summary>" >> body.txt
+            cat stderr.txt >> body.txt
+            echo "</details>" >> body.txt
+
+          else
+            echo "success"
+            echo "status=success" >> $GITHUB_OUTPUT
+
+            # Build comment body
+            echo "✅ Document preview is available [here]($URL)" >> body.txt
           fi
-          echo "✅ Document preview is available [here]($URL)" >> "body.txt"
         env:
           DODO_API_KEY: ${{ secrets.DODO_ACCESS_KEY }}
       - name: Comment on PR
@@ -40,5 +50,5 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: body.txt
       - name: Fail if preview failed
-        if: steps.preview.outputs.status == 'failed'
+        if: steps.prepare-comment.outputs.status == 'failed'
         run: exit 1
