@@ -15,7 +15,7 @@ func CreatePreviewCmd() *cobra.Command {
 		func(_ *cobra.Command, _ []string) error {
 			env := NewEnvArgs()
 
-			printer := NewPrinter(ErrorLevel)
+			printer := NewErrorPrinter(ErrorLevel)
 			err := CheckArgsAndEnv(opts, env)
 			if err != nil {
 				return printer.HandleError(err)

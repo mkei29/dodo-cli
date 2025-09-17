@@ -71,7 +71,7 @@ func CreateUploadCmd() *cobra.Command {
 		"https://api.dodo-doc.com/project/upload",
 		&opts,
 		func(_ *cobra.Command, _ []string) error {
-			printer := NewPrinter(ErrorLevel)
+			printer := NewErrorPrinter(ErrorLevel)
 			env := NewEnvArgs()
 			err := CheckArgsAndEnv(opts, env)
 			if err != nil {

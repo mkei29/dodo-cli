@@ -52,7 +52,7 @@ func CreateTouchCmd() *cobra.Command {
 		Args:          cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			opts.filepath = args[0]
-			printer := NewPrinter(ErrorLevel)
+			printer := NewErrorPrinter(ErrorLevel)
 			env := NewEnvArgs()
 			if err := TouchArgsAndEnv(&opts, env); err != nil {
 				return printer.HandleError(err)

@@ -41,7 +41,7 @@ func CreateCheckCmd() *cobra.Command {
 		SilenceUsage:  true,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			env := NewEnvArgs()
-			printer := NewPrinter(ErrorLevel)
+			printer := NewErrorPrinter(ErrorLevel)
 			err := CheckArgsAndEnvForCheck(opts, env)
 			if err != nil {
 				return printer.HandleError(err)
