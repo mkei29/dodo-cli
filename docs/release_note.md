@@ -1,3 +1,7 @@
+# 2025/09/07 - version 0.0.29
+* Update documents.
+* Fix the issue that error message will be written into STDOUT.
+
 # 2025/09/07 - version 0.0.28
 * Hotfix `preview` command.
 
