@@ -1,38 +1,48 @@
+---
+title: "CI/CD"
+path: ""
+description: ""
+created_at: ""
+updated_at: "2025-09-16T00:51:21+09:00"
+---
 
-On this page, we’ll show you how to automate uploading your documentation using GitHub Actions.
+このページにはGithub Actionで使えるWorkflowファイルのテンプレートを紹介しています。
+必要に応じて.github/workflowsなどにコピーして利用してください。
 
-# Step1. Prepare the workflow file
-Start by creating a YAML file for your CI process under `.github/workflows`.
-In the following example, we'll use `.github/workflows/publish-docs.yaml`.
+## Prerequisite
 
-To automatically upload your documentation, include the YAML content shown below.
-In this example, the documentation will be uploaded automatically whenever a commit is pushed to the main branch.
+## Upload New Document
+This workflow
 
 ```yaml
-name: publish-docs
+name: upload-document
 on:
   push:
     branches:
       - main
-jobs:
-  publish-relesae-notes:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs: 
+  publish-docs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Install dodo CLI
         run: |
-          curl https://raw.githubusercontent.com/toritoritori29/dodo-cli/main/download.sh | sh -
+          npm install -g @dodo-cli/cli
       - name: Publish docs
         run: |
-          ./dodo-cli upload
+          dodo upload
         env:
           DODO_API_KEY: ${{ secrets.DODO_API_KEY }}
 ```
 
-# Step2. Publish API Key and register to github
+## Preview Document on PR 
 
-Follow the documentation to issue an API key, which will start with the prefix `ds-`.
+## Check .dodo.yaml Syntax
 
-Once issued, register the API key as a GitHub Actions secret so that it can be accessed by the workflow.
-Following the instructions in the documentation, set the name of the secret to `DODO_API_KEY`.
+```
+```
+

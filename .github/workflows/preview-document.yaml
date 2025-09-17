@@ -3,7 +3,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 jobs: 
   publish-docs:
@@ -13,49 +13,32 @@ jobs:
         uses: actions/checkout@v4
       - name: Install dodo CLI
         run: |
-          curl -sL https://github.com/mkei29/dodo-cli/releases/download/0.0.13/dodo-cli_Linux_x86_64.tar.gz | tar xz
-          chmod +x dodo-cli
+          npm install -g @dodo-cli/cli
       - name: Preview docs
         id: preview
         continue-on-error: true
         run: |
-          RESULT=`./dodo-cli preview --format json`
-          echo "Raw result: $RESULT"
-          
-          # Check if the command succeeded by examining the status field
-          STATUS=$(echo $RESULT | jq -r .status 2>/dev/null || echo "null")
-          if [ "$STATUS" = "false" ] || [ "$STATUS" = "null" ]; then
-            echo "Error: dodo-cli preview failed"
-            ERROR_MSG=$(echo $RESULT | jq -r .error 2>/dev/null || echo "Unknown error occurred")
-            echo "error=$ERROR_MSG" >> $GITHUB_OUTPUT
-            echo "success=false" >> $GITHUB_OUTPUT
+          dodo preview --format json 1> stdout.txt 2> stderr.txt
+          STATUS=$(jq -r .status stdout.txt 2>/dev/null || echo "false")
+          URL=$(jq -r .document_url stdout.txt 2>/dev/null)
+      
+          if [ "$STATUS" = "false" ] || [ -z "$URL" ]; then
+            echo "❌ Document preview failed" >> "body.txt"
+            echo "<details><summary>Error Message</summary>" >> "body.txt"
+            cat stderr.txt >> "body.txt"
+            echo "</details>" >> "body.txt"
+
+            echo "status="failed >> $GITHUB_OUTPUT"
             exit 1
           fi
-          
-          URL=$(echo $RESULT | jq -r .document_url)
-          if [ "$URL" = "null" ] || [ -z "$URL" ]; then
-            echo "Error: No document URL found in response"
-            echo "error=No document URL found in response" >> $GITHUB_OUTPUT
-            echo "success=false" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-          
-          echo "url=$URL" >> $GITHUB_OUTPUT
-          echo "success=true" >> $GITHUB_OUTPUT
-          echo "Successfully generated preview URL: $URL"
+          echo "✅ Document preview is available [here]($URL)" >> "body.txt"
         env:
           DODO_API_KEY: ${{ secrets.DODO_ACCESS_KEY }}
-      - name: Comment on PR - Success
-        if: steps.preview.outputs.success == 'true'
+      - name: Comment on PR
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ✅ Document preview is available [here](${{ steps.preview.outputs.url }}).
-      - name: Comment on PR - Error
-        if: steps.preview.outputs.success == 'false'
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ❌ Document preview failed: ${{ steps.preview.outputs.error }}
+          body-path: body.txt
+      - name: Fail if preview failed
+        if: steps.preview.outputs.status == 'failed'
+        run: exit 1

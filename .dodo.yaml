@@ -8,17 +8,13 @@ pages:
   - markdown: docs/index.md
   - markdown: docs/install.md
   - markdown: docs/quick_start.md
+  - markdown: docs/cicd_github.md
   - markdown: docs/yaml_spec.md
     path: "yaml_specification"
     title: "Yaml Spec"
   - markdown: docs/markdown_syntax.md
     path: "markdown"
     title: "Markdown Syntax"
-  - directory: "Work with CI/CD"
-    children:
-      - markdown: docs/cicd_github.md
-        path: "cicd_github"
-        title: "GitHub Actions"
   - directory: "CLI Commands"
     children:
       - markdown: docs/command_init.md
