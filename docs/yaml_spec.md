@@ -12,12 +12,12 @@ This document describes the specification for the `.dodo.yaml` configuration fil
 ```yaml
 version: 1
 project:
-  name: dodo
-  description: The dodo documentation
+  name: dodo-doc
+  description: The dodo-doc documentation
 pages:
   - markdown: docs/index.md
-    path: "what_is_dodo"
-    title: "What is dodo?"
+    path: "what_is_dodo_doc"
+    title: "What is dodo-doc?"
   - markdown: docs/markdown_syntax.md
     path: "markdown"
     title: "Markdown Syntax"
@@ -46,11 +46,11 @@ Use the `project` section to set the name and description shown at the top‑lef
 
 ```yaml
 project:
-  name: dodo
-  description: The dodo documentation
+  name: dodo-doc
+  description: The dodo-doc documentation
 ```
 
-* **`name`** *(string, required)*: The document’s name. If omitted, the name set in the dodo dashboard is used.
+* **`name`** *(string, required)*: The document’s name. If omitted, the name set in the dodo-doc dashboard is used.
 * **`description`** *(string, required)*: The document’s description. If omitted, an empty string is used.
 
 ## Pages
@@ -80,20 +80,20 @@ Nodes with a `markdown` field are **markdown nodes**. Each represents a single d
 
 ```yaml
 - markdown: docs/index.md
-  title: "What is dodo?"
-  path: "what_is_dodo"
+  title: "What is dodo doc?"
+  path: "what_is_dodo_doc"
 ```
 
-* **`markdown`** *(string, required)*: File path to the Markdown content.
-* **`title`** *(string, optional)*: Document title. If omitted here, dodo uses the value from the document’s front matter.
-* **`path`** *(string, optional)*: URL path for the document. Only alphanumeric characters are allowed. If omitted, dodo uses the value from front matter.
-* **`description`** *(string, optional)*: Document description. If omitted, dodo uses the value from front matter. (Does not affect its appearance in the management view.)
-* **`updated_at`** *(string, optional)*: Document update date. If omitted, dodo uses the value from front matter. (Does not affect its appearance in the management view.)
+* **`markdown`** *(string, required)* : File path to the Markdown content.
+* **`title`** *(string, optional)* : Document title. If omitted here, dodo-doc uses the value from the document’s front matter.
+* **`path`** *(string, optional)* : URL path for the document. Only alphanumeric characters are allowed. If omitted, dodo-doc uses the value from front matter.
+* **`description`** *(string, optional)* : Document description. If omitted, dodo-doc uses the value from front matter. (Does not affect its appearance in the management view.)
+* **`updated_at`** *(string, optional)* : Document update date. If omitted, dodo-doc uses the value from front matter. (Does not affect its appearance in the management view.)
 
 :::message info
 ### How fallback works
 Values provided in .dodo.yaml take precedence.
-If a field is not specified in .dodo.yaml, dodo reads it from the Markdown file’s front matter.
+If a field is not specified in .dodo.yaml, dodo-doc reads it from the Markdown file’s front matter.
 At minimum, title and path must be resolvable from either .dodo.yaml or front matter; otherwise the upload fails.
 :::
 

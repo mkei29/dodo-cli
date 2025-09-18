@@ -14,6 +14,12 @@ The server runs over stdio and exposes two tools for searching and reading docum
 * **search**: Search documents across the entire dodo platform based on a query. Returns structured results with document titles, contents, IDs, project information, and URLs.
 * **read_document**: Read the full markdown content of a specific document using its URL.
 
+## Usage
+
+```bash
+dodo mcp
+```
+
 ## Flags
 * `--endpoint string`  
   Server endpoint for document operations (default: "https://contents.dodo-doc.com/")
@@ -23,9 +29,6 @@ The server runs over stdio and exposes two tools for searching and reading docum
 ```bash
 # Start the MCP server with default settings
 $ dodo mcp
-
-# Start with custom endpoint
-$ dodo mcp --endpoint https://custom.dodo-doc.com/
 ```
 
 ## Integration with Claude Code

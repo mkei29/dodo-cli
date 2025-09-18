@@ -10,6 +10,12 @@ updated_at: 2025-02-26T00:44:06+09:00
 
 The `check` command is used to validate the configuration file for dodo-doc. It ensures that all required fields are present and correctly formatted, helping to prevent errors during document processing.
 
+## Usage
+
+```bash
+dodo check [flags]
+```
+
 ## Flags
 * `-c, --config string`  
   Path to the configuration file (default is ".dodo.yaml"). Use this flag to specify a different configuration file if needed.

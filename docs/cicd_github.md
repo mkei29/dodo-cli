@@ -7,7 +7,7 @@ updated_at: "2025-09-16T00:51:21+09:00"
 ---
 
 This page introduces GitHub Action workflow file templates that are ready to use.
-Copy them to .github/workflows as needed.
+Copy them to `.github/workflows` as needed.
 
 ## Prerequisite
 You need to register the API Key as a GitHub Actions Secret in advance.

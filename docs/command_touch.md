@@ -10,6 +10,12 @@ updated_at: 2025-02-27T20:53:00+09:00
 
 The `touch` command helps manage markdown files. It creates a new markdown file with the given title if it does not exist, or updates the frontmatter fields if the file already exists. This command is useful for maintaining consistent metadata across your documentation.
 
+## Usage
+
+```bash
+dodo touch [flags]
+```
+
 ## Flags
 * `-t, --title string`  
   The title of the newly created file. This is used to set the `title` field in the frontmatter.

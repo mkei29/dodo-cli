@@ -3,7 +3,7 @@ project:
   project_id: "document"
   name: dodo
   description: The dodo documentation
-  version: 0.0.28
+  version: 0.0.29
 pages:
   - markdown: docs/index.md
   - markdown: docs/install.md
@@ -21,11 +21,7 @@ pages:
       - markdown: docs/command_read.md
       - markdown: docs/command_mcp.md
   - markdown: docs/release_note.md
-    path: "release_note"
-    title: "Release Note"
   - markdown: docs/roadmap.md
-    path: "roadmap"
-    title: "Roadmap"
   - directory: "For Developers"
     children:
       - markdown: docs/for_contributors/getting_started.md
