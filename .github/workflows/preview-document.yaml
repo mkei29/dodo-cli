@@ -19,6 +19,8 @@ jobs:
         continue-on-error: true
         run: |
           dodo preview --format json 1> stdout.txt 2> stderr.txt
+        env:
+          DODO_API_KEY: ${{ secrets.DODO_ACCESS_KEY }}
       - name: Prepare comment body
         id: prepare-comment
         run: |
