@@ -3,7 +3,6 @@ dist/
 output.zip
 .envrc
 .vscode
-assets
 
 src/version.txt
 node_modules

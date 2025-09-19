@@ -11,6 +11,7 @@ pages:
   - markdown: docs/cicd_github.md
   - markdown: docs/yaml_spec.md
   - markdown: docs/markdown_syntax.md
+  - markdown: docs/upload_image.md
   - directory: "CLI Commands"
     children:
       - markdown: docs/command_init.md
@@ -27,4 +28,6 @@ pages:
       - markdown: docs/for_contributors/getting_started.md
       - markdown: docs/for_contributors/guidelines.md
       - markdown: docs/for_contributors/release.md
+assets:
+  - "assets/**"
  
