@@ -52,6 +52,14 @@ This is **bold** text.
 
 `Inline code` example
 
+## Inline image
+
+```markdown
+![preview](assets/preview.png)
+```
+
+![preview](assets/preview.png)
+
 ## Fenced code blocks
 
 Use triple backticks (\`\`\`) and an optional language hint.
