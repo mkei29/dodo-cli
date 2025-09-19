@@ -37,13 +37,15 @@ The following file formats are currently supported by dodo-doc:
 
 ## Write the Markdown
 
-Once uploaded, your image files can be referenced directly from Markdown.
-Use the same paths you specified under `assets`. In the example below, we display `assets/preview.png`:
+Once uploaded, your images can be referenced directly from Markdown.
+Use the same paths you specified under `assets`.
+When entering paths, always prefix them with / and use an absolute path.
+In the example below, we display `/assets/preview.png`.
 
 ```markdown
-![preview](assets/preview.png)
+![preview](/assets/preview.png)
 ```
 
 After uploading, the image will render like this:
 
-![preview](assets/preview.png)
+![preview](/assets/preview.png)
