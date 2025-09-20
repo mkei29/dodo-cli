@@ -34,6 +34,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
+        with:
+          lfs: true
+          fetch-depth : 0
       - name: Install dodo CLI
         run: |
           npm install -g @dodo-doc/cli
@@ -62,6 +65,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth : 0
       - name: Install dodo CLI
         run: |
           npm install -g @dodo-doc/cli
