@@ -35,7 +35,7 @@ func NewMetadataFromConfig(config *Config) (*Metadata, error) {
 	// Validate Page structs from config.
 	page, merr := CreatePageTree(config, ".")
 	if merr != nil {
-		return nil, fmt.Errorf("page validation failed: %w", merr)
+		return nil, merr
 	}
 	if merr = page.IsValid(); merr != nil {
 		return nil, merr
@@ -45,7 +45,7 @@ func NewMetadataFromConfig(config *Config) (*Metadata, error) {
 	// Validate Assets struct from config.
 	assets, merr := NewMetadataAssetFromConfig(config, ".")
 	if merr != nil {
-		return nil, fmt.Errorf("asset validation failed: %w", merr)
+		return nil, merr
 	}
 	log.Debugf("successfully created assets from the config. found %d assets", len(assets))
 
