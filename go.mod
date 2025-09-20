@@ -14,6 +14,7 @@ require (
 	github.com/charmbracelet/x/term v0.2.1
 	github.com/goccy/go-yaml v1.15.23
 	github.com/manifoldco/promptui v0.9.0
+	github.com/mark3labs/mcp-go v0.38.0
 	github.com/mattn/go-zglob v0.0.4
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
@@ -35,7 +36,6 @@ require (
 	github.com/invopop/jsonschema v0.13.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mark3labs/mcp-go v0.38.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect

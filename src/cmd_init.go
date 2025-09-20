@@ -62,7 +62,7 @@ func CreateInitCmd() *cobra.Command {
 	initCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode")
 	initCmd.Flags().StringVar(&opts.projectID, "project-id", "", "Project ID")
 	initCmd.Flags().StringVar(&opts.projectName, "project-name", "", "Project Name")
-	initCmd.Flags().StringVar(&opts.description, "description", "", "Project Name")
+	initCmd.Flags().StringVar(&opts.description, "description", "", "Description of the project")
 	initCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
 	return initCmd
 }
@@ -103,7 +103,6 @@ func executeInit(args InitArgs) error {
 func receiveUserInput(projectIDArgs, projectNameArgs, descriptionArgs string) (*initParameter, error) {
 	projectID := projectIDArgs
 	projectName := projectNameArgs
-	description := descriptionArgs
 
 	var err error
 	if projectID == "" {
@@ -128,22 +127,11 @@ func receiveUserInput(projectIDArgs, projectNameArgs, descriptionArgs string) (*
 		}
 	}
 
-	if description == "" {
-		descriptionPrompt := promptui.Prompt{
-			Label:   "Description",
-			Default: "",
-		}
-		description, err = descriptionPrompt.Run()
-		if err != nil {
-			return nil, fmt.Errorf("prompt failed: %w", err)
-		}
-	}
-
 	params := initParameter{
 		ProjectID:   projectID,
 		ProjectName: projectName,
-		Version:     "1",
-		Description: description,
+		Version:     "0.0.1",
+		Description: descriptionArgs,
 	}
 	return &params, nil
 }
