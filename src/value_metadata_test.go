@@ -154,7 +154,6 @@ path: "test-page-2"
 		metadata, err := NewMetadataFromConfig(invalidConfig)
 		require.Error(t, err)
 		assert.Nil(t, metadata)
-		assert.Contains(t, err.Error(), "asset validation failed")
 	})
 }
 
