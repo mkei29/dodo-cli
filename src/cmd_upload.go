@@ -122,28 +122,10 @@ func executeUpload(args UploadArgs, env EnvArgs) (string, error) {
 		return "", err
 	}
 
-	// Create Project struct from config.
-	project := NewMetadataProjectFromConfig(config)
-
-	// Create Page structs from config.
-	page, merr := convertConfigPageToMetadataPage(args.rootPath, config)
-	if merr != nil {
-		return "", merr
-	}
-	log.Debugf("successfully convert config to page. found %d pages", page.Count())
-
-	// Create Assets struct from config.
-	asset, merr := convertConfigAssetToMetadataAsset(args.rootPath, config.Assets)
-	if merr != nil {
-		return "", merr
-	}
-	log.Debugf("successfully convert assets to metadata. found %d assets", len(asset))
-
-	metadata := Metadata{
-		Version: "1",
-		Project: project,
-		Page:    *page,
-		Asset:   asset,
+	// Transform config to metadata
+	metadata, err := NewMetadataFromConfig(config)
+	if err != nil {
+		return "", err
 	}
 
 	// Prepare archive file
@@ -152,7 +134,7 @@ func executeUpload(args UploadArgs, env EnvArgs) (string, error) {
 		return "", err
 	}
 	defer archive.Close()
-	if merr := archive.Archive(&metadata); merr != nil {
+	if merr := archive.Archive(metadata); merr != nil {
 		return "", merr
 	}
 
@@ -215,36 +197,4 @@ func NewJSONWriterFromArgs(args UploadArgs) *JSONWriter {
 		return NewJSONWriter(JSONLogLevelEnabled)
 	}
 	return NewJSONWriter(JSONLogLevelDisabled)
-}
-
-func convertConfigPageToMetadataPage(rootDir string, config *Config) (*Page, *MultiError) {
-	page, merr := CreatePageTree(config, rootDir)
-	if merr != nil {
-		return nil, merr
-	}
-	if merr = page.IsValid(); merr != nil {
-		return nil, merr
-	}
-
-	return page, nil
-}
-
-func convertConfigAssetToMetadataAsset(rootDir string, assets []ConfigAsset) ([]MetadataAsset, *MultiError) {
-	// Create Assets struct from config.
-	merr := NewMultiError()
-	metadataAssets := make([]MetadataAsset, 0, len(assets)*5)
-	for _, a := range assets {
-		files, err := a.List(rootDir)
-		if err != nil {
-			merr.Add(err)
-		}
-		// FIXME: This code could be cause too many allocations.
-		for _, f := range files {
-			metadataAssets = append(metadataAssets, NewMetadataAsset(f))
-		}
-	}
-	if merr.HasError() {
-		return nil, &merr
-	}
-	return metadataAssets, nil
 }

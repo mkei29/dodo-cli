@@ -69,17 +69,8 @@ func (a *Archive) Archive(metadata *Metadata) *MultiError {
 	zipWriter := zip.NewWriter(a.File)
 	defer zipWriter.Close()
 
-	// FIEME: Old logics. to be removed.
-	merr := NewMultiError()
-	pathList := collectFiles(&metadata.Page)
-	for _, from := range pathList {
-		to := filepath.Join(DocsDir, from)
-		if err := addFile(from, to, zipWriter); err != nil {
-			merr.Add(err)
-		}
-	}
-
 	// New docs logics
+	merr := NewMultiError()
 	for _, page := range metadata.Page.ListPageHeader() {
 		if page.Type != PageTypeLeafNode {
 			continue
@@ -137,19 +128,6 @@ func (a *Archive) Upload(url string, apiKey string) (*UploadResponse, error) {
 		return nil, fmt.Errorf("failed to upload file: Status %d,  %s", resp.StatusCode, data.Message)
 	}
 	return data, nil
-}
-
-// List all files to be archived.
-func collectFiles(p *Page) []string {
-	log.Debug("enter collectFiles")
-	pages := p.ListPageHeader()
-	fileList := make([]string, 0, len(pages))
-	for _, page := range pages {
-		if page.Type == PageTypeLeafNode {
-			fileList = append(fileList, page.Filepath)
-		}
-	}
-	return fileList
 }
 
 func addFile(from, to string, writer *zip.Writer) error {
