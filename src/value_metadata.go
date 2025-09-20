@@ -5,13 +5,57 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"mime"
+	"path/filepath"
+	"slices"
+	"strings"
+
+	"github.com/caarlos0/log"
 )
+
+var AvailableMimeTypes = []string{ //nolint: gochecknoglobals
+	"image/jpeg",
+	"image/png",
+	"image/gif",
+	"image/webp",
+	"image/bmp",
+}
 
 type Metadata struct {
 	Version string          `json:"version"`
 	Project MetadataProject `json:"project"`
 	Page    Page            `json:"page"`
 	Asset   []MetadataAsset `json:"asset"`
+}
+
+func NewMetadataFromConfig(config *Config) (*Metadata, error) {
+	project := NewMetadataProjectFromConfig(config)
+	log.Debugf("successfully created a project from the config. project ID: %s", project.ProjectID)
+
+	// Validate Page structs from config.
+	page, merr := CreatePageTree(config, ".")
+	if merr != nil {
+		return nil, fmt.Errorf("page validation failed: %w", merr)
+	}
+	if merr = page.IsValid(); merr != nil {
+		return nil, merr
+	}
+	log.Debugf("successfully created pages from the config. found %d pages", page.Count())
+
+	// Validate Assets struct from config.
+	assets, merr := NewMetadataAssetFromConfig(config, ".")
+	if merr != nil {
+		return nil, fmt.Errorf("asset validation failed: %w", merr)
+	}
+	log.Debugf("successfully created assets from the config. found %d assets", len(assets))
+
+	metadata := Metadata{
+		Version: "1",
+		Project: project,
+		Page:    *page,
+		Asset:   assets,
+	}
+	return &metadata, nil
 }
 
 func (m *Metadata) Serialize() ([]byte, error) {
@@ -52,4 +96,41 @@ func NewMetadataAsset(path string) MetadataAsset {
 		path,
 		hash,
 	}
+}
+
+func NewMetadataAssetFromConfig(c *Config, rootDir string) ([]MetadataAsset, *MultiError) {
+	// Create Assets struct from config.
+	merr := NewMultiError()
+	metadataAssets := make([]MetadataAsset, 0, len(c.Assets)*10)
+	for _, a := range c.Assets {
+		files, err := a.List(rootDir)
+		if err != nil {
+			merr.Add(err)
+		}
+
+		for _, f := range files {
+			ma := NewMetadataAsset(f)
+			if err = ma.IsValidDataType(); err != nil {
+				merr.Add(fmt.Errorf("asset file is invalid: %s: %w", f, err))
+				continue
+			}
+			metadataAssets = append(metadataAssets, ma)
+		}
+	}
+	if merr.HasError() {
+		return nil, &merr
+	}
+	return metadataAssets, nil
+}
+
+func (a *MetadataAsset) IsValidDataType() error {
+	if !slices.Contains(AvailableMimeTypes, a.EstimateMimeType()) {
+		return fmt.Errorf("the file `%s` has invalid mime type: %s", a.Path, a.EstimateMimeType())
+	}
+	return nil
+}
+
+func (a *MetadataAsset) EstimateMimeType() string {
+	ext := strings.ToLower(filepath.Ext(a.Path))
+	return mime.TypeByExtension(ext)
 }

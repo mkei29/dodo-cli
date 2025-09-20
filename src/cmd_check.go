@@ -78,22 +78,10 @@ func checkCmdEntrypoint(args CheckArgs) error {
 		return err
 	}
 
-	// Validate Page structs from config.
-	page, merr := convertConfigPageToMetadataPage(".", config)
-	if merr != nil {
-		return fmt.Errorf("page validation failed: %w", merr)
+	_, err = NewMetadataFromConfig(config)
+	if err != nil {
+		return fmt.Errorf("failed to convert config to metadata: %w", err)
 	}
-	log.Debugf("successfully validated config to page. found %d pages", page.Count())
-
-	// Validate Assets struct from config.
-	asset, merr := convertConfigAssetToMetadataAsset(".", config.Assets)
-	if merr != nil {
-		return fmt.Errorf("asset validation failed: %w", merr)
-	}
-	log.Debugf("successfully validated assets to metadata. found %d assets", len(asset))
-	log.Debugf("project_name: %s", config.Project.Name)
-
-	log.Infof("configuration file is valid")
 	return nil
 }
 
