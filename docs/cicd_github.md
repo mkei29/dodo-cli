@@ -7,7 +7,7 @@ updated_at: "2025-09-16T00:51:21+09:00"
 ---
 
 This page introduces GitHub Action workflow file templates that are ready to use.
-Copy them to .github/workflows as needed.
+Copy them to `.github/workflows` as needed.
 
 ## Prerequisite
 You need to register the API Key as a GitHub Actions Secret in advance.
@@ -34,6 +34,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
+        with:
+          lfs: true
+          fetch-depth : 0
       - name: Install dodo CLI
         run: |
           npm install -g @dodo-doc/cli
@@ -62,6 +65,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth : 0
       - name: Install dodo CLI
         run: |
           npm install -g @dodo-doc/cli
@@ -70,6 +76,8 @@ jobs:
         continue-on-error: true
         run: |
           dodo preview --format json 1> stdout.txt 2> stderr.txt
+        env:
+          DODO_API_KEY: ${{ secrets.DODO_API_KEY }}
       - name: Prepare comment body
         id: prepare-comment
         run: |
@@ -83,7 +91,9 @@ jobs:
             # Build comment body
             echo "❌ Document preview failed" >> body.txt
             echo "<details><summary>Error Message</summary>" >> body.txt
+            echo "<pre><code>" >> body.txt
             cat stderr.txt >> body.txt
+            echo "</code></pre>" >> body.txt
             echo "</details>" >> body.txt
 
           else
@@ -93,10 +103,8 @@ jobs:
             # Build comment body
             echo "✅ Document preview is available [here]($URL)" >> body.txt
           fi
-        env:
-          DODO_API_KEY: ${{ secrets.DODO_API_KEY }}
       - name: Comment on PR
-        uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043  # v4.0.0
+        uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043 # v4.0.0
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: body.txt

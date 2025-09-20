@@ -1,3 +1,11 @@
+---
+title: "Release Note"
+path: "release_note"
+description: ""
+created_at: "2025-09-19T00:36:29+09:00"
+updated_at: "2025-09-19T00:36:29+09:00"
+---
+
 # 2025/09/07 - version 0.0.29
 * Update documents.
 * Fix the issue that error message will be written into STDOUT.

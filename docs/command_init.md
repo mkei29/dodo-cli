@@ -8,7 +8,14 @@ updated_at: "2025-02-27T21:09:00+09:00"
 
 # `init` Command
 
-The `init` command creates a new configuration file for the project. It can prompt for project details if not provided, making it easy to set up a new project with the necessary configuration.
+The `init` command creates a new configuration file for your project.
+If key details aren’t provided via flags, it will prompt you interactively, making it easy to bootstrap a project with the required settings.
+
+## Usage
+
+```bash
+dodo init [flags]
+```
 
 ## Flags
 * `-c, --config string`  

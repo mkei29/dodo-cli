@@ -8,14 +8,25 @@ updated_at: 2025-02-27T20:51:20+09:00
 
 # `upload` Command
 
-The `upload` command is used to upload the project to dodo-doc. It facilitates the transfer of your project's documentation to the dodo-doc platform, ensuring that your documents are accessible and up-to-date.
+The `upload` command publishes your project to dodo-doc.
+It reads your `.dodo.yaml`, bundles the referenced Markdown files, and sends them to the dodo-doc service so your documentation stays accessible and up to date.
+
+## Upload
+
+```bash
+dodo-cli upload [flags]
+```
 
 ## Flags
+
 * `-c, --config string`  
   Path to the configuration file (default is ".dodo.yaml"). Use this flag to specify a different configuration file if needed.
 
 * `-w, --workingDir string`  
   Defines the root path of the project for the command's execution context (default is "."). This is useful for uploading projects located in different directories.
+
+* `-f, --format string`
+  Output format. Accepts either "text" or "json".
 
 * `--debug`  
   Enable debug mode. Provides additional output for troubleshooting.
@@ -28,6 +39,7 @@ The `upload` command is used to upload the project to dodo-doc. It facilitates t
 
 * `--no-color`  
   Disable color output. Useful for environments that do not support colored text.
+
 
 ## Examples
 
