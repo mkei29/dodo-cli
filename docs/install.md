@@ -29,7 +29,7 @@ Alternatively, download a prebuilt binary from the releases page and place it so
 https://github.com/mkei29/dodo-cli/releases
 
 ### Check it works
-Run dodo version to confirm the installation was successful.
+Run `dodo version` to confirm the installation was successful.
 Other commands require an API key — see the Quick Start for details.
 
 ```bash

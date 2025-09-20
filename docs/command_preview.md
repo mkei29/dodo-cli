@@ -10,12 +10,21 @@ updated_at: 2025-05-25T16:35:00+09:00
 
 The `preview` command is used to upload the project to dodo-doc's preview environment. It is an alias of the `upload` command with a different default endpoint. This command facilitates the transfer of your project's documentation to the dodo-doc preview platform for testing purposes before deploying to production.
 
+## Usage
+
+```bash
+dodo preview [flags]
+```
+
 ## Flags
 * `-c, --config string`  
   Path to the configuration file (default is ".dodo.yaml"). Use this flag to specify a different configuration file if needed.
 
 * `-w, --workingDir string`  
   Defines the root path of the project for the command's execution context (default is "."). This is useful for uploading projects located in different directories.
+
+* `-f, --format string`
+  Output format. Accepts either "text" or "json".
 
 * `--debug`  
   Enable debug mode. Provides additional output for troubleshooting.

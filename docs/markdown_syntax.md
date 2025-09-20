@@ -1,96 +1,117 @@
-This page introduces the Markdown syntax that can be used in dodo
+---
+title: "Markdown Syntax"
+path: "markdown_syntax"
+description: ""
+created_at: "2025-09-18T23:25:21+09:00"
+updated_at: "2025-09-18T23:25:21+09:00"
+---
 
-# Headings
+This page introduces the Markdown syntax you can use in dodo-doc.
+dodo-doc supports most of the syntax defined by [CommonMark](https://commonmark.org/).
 
-```markdown
-# Heading1
-## Heading2
-### Heading3
-#### Heading4
-##### Heading5
-##### Heading6
-```
-
-# Italic
+## Headings
 
 ```markdown
-This is *Italic* text1.
-
-This is _Italic_ text2.
+# Heading 1
+## Heading 2
+### Heading 3
+#### Heading 4
+##### Heading 5
+###### Heading 6
 ```
 
-This is *Italic* text1.
-
-This is _Italic_ text2.
-
-# Bold
+## Italic
 
 ```markdown
-This is **Bold** text1.
+This is *italic* text.
 
-This is __Bold__ text2.
+This is _italic_ text.
 ```
 
-This is **Bold** text1.
+This is *italic* text.
 
-This is __Bold__ text2.
+This is *italic* text.
 
-# Inline Code
+## Bold
 
 ```markdown
-`Inline Code` Example
+This is **bold** text.
+
+This is __bold__ text.
 ```
 
-`Inline Code` Example
+This is **bold** text.
 
-# Fenced Code Block
+This is **bold** text.
 
+## Inline code
+
+```markdown
+`Inline code` example
 ```
-\`\`\`bash
-`Inline Code` Example
-\`\`\`
+
+`Inline code` example
+
+## Inline image
+
+```markdown
+![preview](assets/preview.png)
 ```
+
+![preview](assets/preview.png)
+
+## Fenced code blocks
+
+Use triple backticks (\`\`\`) and an optional language hint.
+
+````markdown
 ```bash
-`Inline Code` Example
+echo "Hello from bash"
+```
+````
+
+```bash
+echo "Hello from bash"
 ```
 
-# Blockquote
+## Blockquotes
 
 ```markdown
-> Blockquote Text
+> Blockquote text
 ```
 
-> Blockquote Text
+> Blockquote text
 
-# Ordered List
+## Ordered lists
 
 ```markdown
-1. Item1
-2. Item2
-3. Item3
-4. Item4
+1. Item 1
+2. Item 2
+3. Item 3
+4. Item 4
 ```
 
-1. Item1
-2. Item2
-3. Item3
-4. Item4
+1. Item 1
+2. Item 2
+3. Item 3
+4. Item 4
 
-# Unordered List
+## Unordered lists
 
 ```markdown
-* Item1
-* Item2
-- Item3
-- Item4
+* Item 1
+* Item 2
+- Item 3
+- Item 4
 ```
 
-* Item1
-* Item2
-- Item3
-- Item4
+* Item 1
+* Item 2
 
-# Link
+- Item 3
+- Item 4
+
+## Links
 
 ```markdown
 [dodo top](https://www.dodo-doc.com)
@@ -98,9 +119,23 @@ This is __Bold__ text2.
 
 [dodo top](https://www.dodo-doc.com)
 
-# Link Card
+## Thematic breaks (horizontal rules)
 
-If you surround a URL with blank lines, it will be displayed as a LinkCard.
+```markdown
+---
+***
+___
+```
+
+---
+
+# dodo-doc–specific syntax
+
+The following features are dodo-doc extensions to standard Markdown.
+
+## Link cards
+
+If a URL appears on its own line, separated by blank lines, dodo-doc renders it as a link card.
 
 ```markdown
 
@@ -108,21 +143,22 @@ https://www.dodo-doc.com
 
 ```
 
-https://www.dodo-doc.com
+[https://www.dodo-doc.com](https://www.dodo-doc.com)
 
+## Messages
 
-# Message (original syntax)
+Use message blocks to call attention to information. Supported types are `info`, `warning`, and `alert`.
 
 ```markdown
 :::message info
-Info Message
+Info message
 :::
 
 :::message warning
-Warning Message
+Warning message
 :::
 
 :::message alert
-Alert Message
+Alert message
 :::
 ```

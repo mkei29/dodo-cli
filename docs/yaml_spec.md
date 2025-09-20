@@ -1,15 +1,23 @@
+---
+title: "Yaml Spec"
+path: "yaml_spec"
+description: ""
+created\_at: "2025-09-18T23:26:46+09:00"
+updated\_at: "2025-09-18T23:26:46+09:00"
+---
+
 # Overview
-This document outlines the specifications of the `.dodo.yaml` configuration file used in dodo. Below is a sample `.dodo.yaml` file that will be referenced throughout this guide.
+This document describes the specification for the `.dodo.yaml` configuration file used by dodo. The sample below will be referenced throughout.
 
 ```yaml
 version: 1
 project:
-  name: dodo
-  description: The dodo documentation
+  name: dodo-doc
+  description: The dodo-doc documentation
 pages:
   - markdown: docs/index.md
-    path: "what_is_dodo"
-    title: "What is dodo?"
+    path: "what_is_dodo_doc"
+    title: "What is dodo-doc?"
   - markdown: docs/markdown_syntax.md
     path: "markdown"
     title: "Markdown Syntax"
@@ -20,77 +28,84 @@ pages:
         title: "GitHub Actions"
 ```
 
-The YAML file is divided into three main sections:
+The YAML file has three top‑level sections:
 
-* **`version`**: Specifies the version of the `.dodo.yaml` specification.
-* **`project`**: Configures project-specific settings.
-* **`pages`**: Defines the structure and content of the documentation.
+* **`version`** – specifies the version of the `.dodo.yaml` spec.
+* **`project`** – configures project‑level settings.
+* **`pages`** – defines the structure and content of the documentation.
 
-Let's explore each section in detail.
+Let’s look at each in detail.
 
 ## Version
-The `version` field indicates the version of the `.dodo.yaml` specification. Currently, only `1` is supported.
 
-> **Note**: While dodo aims to maintain backward compatibility, future updates may introduce new specifications. You can specify the desired version in this field when multiple versions are available.
+The `version` field indicates the `.dodo.yaml` spec version. Currently, only `1` is supported.
 
 ## Project
-The `project` section allows you to set the name and description displayed at the top left of the document.
+
+Use the `project` section to set the name and description shown at the top‑left of the document.
 
 ```yaml
 project:
-  name: dodo
-  description: The dodo documentation
+  name: dodo-doc
+  description: The dodo-doc documentation
 ```
 
-* **`name`** (string, Required): The document's name. If not specified, the name set on the dodo dashboard will be used.
-* **`description`** (string, Required): The document's description. If not specified, an empty string will be used.
+* **`name`** *(string, required)*: The document’s name. If omitted, the name set in the dodo-doc dashboard is used.
+* **`description`** *(string, required)*: The document’s description. If omitted, an empty string is used.
 
 ## Pages
-The `pages` section configures the content and layout of the document. You can specify nodes in the format of `markdown`, `match`, or `directory` within an array.
+
+The `pages` section configures the content and layout of your document. Provide an array of nodes. Each node is one of: `markdown`, `match`, or `directory`.
 
 ::: message info
-> The `pages` section must contain at least one element. When users access the root of the document, they are redirected to the first node specified in `pages`.
+The `pages` array must contain at least one element. When users visit the document root, they are redirected to the first node in `pages`.
 :::
 
-With this YAML configuration, the hosted document will have the following layout:
+With the sample YAML, the hosted document will appear as:
 
 ```
-|- "What is dodo?" /what_is_dodo
-|- "Markdown Syntax" /markdown
+|- "What is dodo?"       /what_is_dodo
+|- "Markdown Syntax"     /markdown
 |- "Work with CI/CD"
-|  |- "GitHub Actions" "/cicd_github"
+|  |- "GitHub Actions"   /cicd_github
 ```
 
 ::: message info
-
-Document paths do not form a hierarchical structure; they are placed directly under the root. If documents share the same `path`, an error will occur during upload.
+Document paths are **not** hierarchical; every path is placed directly under the root. If two documents share the same `path`, the upload will fail with an error.
 :::
 
-### Markdown Node
-Nodes containing `markdown` entries are considered as `markdown` nodes.
-A `markdown` node represents a single document.
+### Markdown node
+
+Nodes with a `markdown` field are **markdown nodes**. Each represents a single document.
 
 ```yaml
 - markdown: docs/index.md
-  title: "What is dodo?"
-  path: "what_is_dodo"
+  title: "What is dodo doc?"
+  path: "what_is_dodo_doc"
 ```
 
-* **`markdown`** (string, Required): File path to the Markdown content.
-* **`title`** (string, Required): Document title.
-* **`path`** (string, Required): URL path for the document. Only alphanumeric characters are allowed.
-* **`description`** (string, Optional): Document description. Does not affect appearance in the management entry.
-* **`updated_at`** (string, Optional): Document update date. Does not affect appearance in the management entry.
+* **`markdown`** *(string, required)* : File path to the Markdown content.
+* **`title`** *(string, optional)* : Document title. If omitted here, dodo-doc uses the value from the document’s front matter.
+* **`path`** *(string, optional)* : URL path for the document. Only alphanumeric characters are allowed. If omitted, dodo-doc uses the value from front matter.
+* **`description`** *(string, optional)* : Document description. If omitted, dodo-doc uses the value from front matter. (Does not affect its appearance in the management view.)
+* **`updated_at`** *(string, optional)* : Document update date. If omitted, dodo-doc uses the value from front matter. (Does not affect its appearance in the management view.)
 
-### Match Node
-Nodes containing a `match` entry are considered as `match` nodes.
-By using a `match` node, you can add markdown that matches a pattern to the layout.
+:::message info
+### How fallback works
+Values provided in .dodo.yaml take precedence.
+If a field is not specified in .dodo.yaml, dodo-doc reads it from the Markdown file’s front matter.
+At minimum, title and path must be resolvable from either .dodo.yaml or front matter; otherwise the upload fails.
+:::
 
-* `match` (string, Required): Pattern of the markdown to be added. The pattern specification is based on this [library](https://pkg.go.dev/v.io/v23/glob) in Go.
-* `sort_key` ("title", Optional): You can specify how to sort the documents. Currently, only "title" for sorting by title is available.
-* `sort_order` ("asc" | "desc", Optional): You can specify whether to sort in descending "desc" or ascending "asc" order.
+### Match node
 
-When using this node, it is necessary to explicitly include the title and path information at the beginning of the document.
+Nodes with a `match` field are **match nodes**. Use a match node to include all Markdown files that match a pattern.
+
+* **`match`** *(string, required)*: Glob pattern for Markdown files to include. Pattern syntax follows this [Go library](https://pkg.go.dev/v.io/v23/glob).
+* **`sort_key`** *("title", optional)*: How to sort the matched documents. Currently, only `"title"` is supported.
+* **`sort_order`** *("asc" | "desc", optional)*: Sort order: ascending `"asc"` or descending `"desc"`.
+
+When using match nodes, each matched document must declare its own title and path in front matter:
 
 ```yaml
 ---
@@ -99,12 +114,12 @@ path: "what_is_dodo"
 ---
 ```
 
-* `title` (string, Required): Title of the document.
-* `path` (string, Required): Path of the uploaded document's URL. Only alphanumeric characters can be specified.
+* **`title`** *(string, required)*: The document title.
+* **`path`** *(string, required)*: The URL path for the uploaded document. Only alphanumeric characters are allowed.
 
-### Directory Node
-Nodes containing a `directory` entry are considered as `directory` nodes.
-By setting a `directory` node, you can represent the structural layout of the document.
+### Directory node
+
+Nodes with a `directory` field are **directory nodes**. Use a directory node to group related documents in the sidebar hierarchy.
 
 ```yaml
 - directory: "Work with CI/CD"
@@ -114,5 +129,5 @@ By setting a `directory` node, you can represent the structural layout of the do
       title: "GitHub Actions"
 ```
 
-* `directory` (string, Required): Name of the directory.
-* `children` (Node[], Required): Children nodes of the directory.
+* **`directory`** *(string, required)*: The directory label.
+* **`children`** *(Node\[], required)*: Child nodes contained in the directory.

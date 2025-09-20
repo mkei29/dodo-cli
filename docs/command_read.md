@@ -9,6 +9,12 @@ updated_at: "2025-09-06T17:04:46+09:00"
 # `read` Command
 This command reads and displays the markdown content of a document from dodo-doc. It fetches the document content from the server and outputs it to stdout.
 
+## Usage
+
+```bash
+dodo read [flags]
+```
+
 ## Flags
 * `-u, --url string`  
   The full URL of the document to read (overrides project-id and path if set)
