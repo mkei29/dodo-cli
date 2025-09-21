@@ -1,9 +1,10 @@
 version: 1
 project:
   project_id: "document"
-  name: dodo
-  description: The dodo documentation
+  name: dodo-doc
+  description: The dodo-doc documentation
   version: 0.0.29
+  logo: "assets/logo.png"
 pages:
   - markdown: docs/index.md
   - markdown: docs/install.md
