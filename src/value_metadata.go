@@ -30,23 +30,28 @@ type Metadata struct {
 
 func NewMetadataFromConfig(config *Config) (*Metadata, error) {
 	project := NewMetadataProjectFromConfig(config)
-	log.Debugf("successfully created a project from the config. project ID: %s", project.ProjectID)
+	merr := NewMultiError()
 
 	// Validate Page structs from config.
-	page, merr := CreatePageTree(config, ".")
-	if merr != nil {
-		return nil, merr
+	page, err := CreatePageTree(config, ".")
+	if err != nil {
+		merr.Merge(*err)
 	}
-	if merr = page.IsValid(); merr != nil {
-		return nil, merr
+	if err = page.IsValid(); err != nil {
+		merr.Merge(*err)
 	}
-	log.Debugf("successfully created pages from the config. found %d pages", page.Count())
 
 	// Validate Assets struct from config.
-	assets, merr := NewMetadataAssetFromConfig(config, ".")
-	if merr != nil {
-		return nil, merr
+	assets, err := NewMetadataAssetFromConfig(config, ".")
+	if err != nil {
+		merr.Merge(*err)
 	}
+
+	if merr.HasError() {
+		return nil, &merr
+	}
+	log.Debugf("successfully created a project from the config. project ID: %s", project.ProjectID)
+	log.Debugf("successfully created pages from the config. found %d pages", page.Count())
 	log.Debugf("successfully created assets from the config. found %d assets", len(assets))
 
 	metadata := Metadata{
@@ -71,6 +76,7 @@ type MetadataProject struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Version     string `json:"version"`
+	Logo        string `json:"logo"`
 	Repository  string `json:"repository"`
 }
 
@@ -80,6 +86,7 @@ func NewMetadataProjectFromConfig(c *Config) MetadataProject {
 		Name:        c.Project.Name,
 		Description: c.Project.Description,
 		Version:     c.Project.Version,
+		Logo:        c.Project.Logo,
 		Repository:  c.Project.Repository,
 	}
 }
@@ -115,6 +122,16 @@ func NewMetadataAssetFromConfig(c *Config, rootDir string) ([]MetadataAsset, *Mu
 				continue
 			}
 			metadataAssets = append(metadataAssets, ma)
+		}
+	}
+
+	// Add logo as an asset if exists.
+	if c.Project.Logo != "" {
+		logoAsset := NewMetadataAsset(c.Project.Logo)
+		if err := logoAsset.IsValidDataType(); err != nil {
+			merr.Add(err)
+		} else {
+			metadataAssets = append(metadataAssets, logoAsset)
 		}
 	}
 	if merr.HasError() {

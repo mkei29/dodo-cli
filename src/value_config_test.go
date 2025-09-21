@@ -30,6 +30,7 @@ version: 1
 project:
   project_id: "project_id"
   name: "Test Project"
+  logo: "logo.png"
   repository: "https://github.com/mkei29/dodo-cli"
 pages:
   - markdown: "README1.md"
@@ -60,6 +61,7 @@ func TestParseConfigDetailsMarkdown(t *testing.T) {
 	// Check metadata
 	assert.Equal(t, "1", conf.Version)
 	assert.Equal(t, "Test Project", conf.Project.Name)
+	assert.Equal(t, "logo.png", conf.Project.Logo)
 	assert.Equal(t, "https://github.com/mkei29/dodo-cli", conf.Project.Repository)
 
 	// Check README1

@@ -57,6 +57,7 @@ path: "test-page-2"
 				Name:        "Test Project",
 				Description: "Test project description",
 				Version:     "1.0.0",
+				Logo:        "assets/test.png",
 				Repository:  "https://github.com/test/repo",
 			},
 			Pages: []ConfigPage{
@@ -94,14 +95,15 @@ path: "test-page-2"
 		assert.Equal(t, "Test Project", metadata.Project.Name)
 		assert.Equal(t, "Test project description", metadata.Project.Description)
 		assert.Equal(t, "1.0.0", metadata.Project.Version)
+		assert.Equal(t, "assets/test.png", metadata.Project.Logo)
 		assert.Equal(t, "https://github.com/test/repo", metadata.Project.Repository)
 
 		// Verify page structure exists (detailed validation would require understanding Page struct)
 		assert.NotNil(t, metadata.Page)
 		assert.Len(t, metadata.Page.Children, 2)
 
-		// Verify assets (empty due to EstimateMimeType bug)
-		assert.Len(t, metadata.Asset, 1)
+		// Verify assets (number of assets + logo)
+		assert.Len(t, metadata.Asset, 2)
 	})
 
 	// Test with empty config
@@ -144,6 +146,30 @@ path: "test-page-2"
 			Assets: []ConfigAsset{
 				"*.txt", // This will match invalid.txt which has unsupported MIME type
 			},
+		}
+
+		oldWd, err := os.Getwd()
+		require.NoError(t, err)
+		require.NoError(t, os.Chdir(dir))
+		defer os.Chdir(oldWd)
+
+		metadata, err := NewMetadataFromConfig(invalidConfig)
+		require.Error(t, err)
+		assert.Nil(t, metadata)
+	})
+
+	// Test with invalid asset MIME type
+	t.Run("invalid logo MIME type", func(t *testing.T) {
+		t.Parallel()
+		invalidConfig := &Config{
+			Version: "1",
+			Project: ConfigProject{
+				ProjectID: "test-project-id",
+				Name:      "Test Project",
+				Logo:      "invalid.txt", // invalid.txt has unsupported MIME type
+			},
+			Pages:  []ConfigPage{},
+			Assets: []ConfigAsset{},
 		}
 
 		oldWd, err := os.Getwd()

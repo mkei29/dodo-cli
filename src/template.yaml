@@ -4,6 +4,7 @@ project:
   name: {{ .ProjectName }} # your project name
   version: "{{ .Version }}" # your project version
   description: {{ .Description }} # your project description
+  logo: "" # (optional) your project logo path. e.g. "assets/logo.png"
 pages:
   ## You can add pages in two patterns.
   ## Pattern1: Specify the specific file path and title

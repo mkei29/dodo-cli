@@ -46,12 +46,19 @@ Use the `project` section to set the name and description shown at the top‑lef
 
 ```yaml
 project:
+  project_id: dododoc
   name: dodo-doc
   description: The dodo-doc documentation
+  version: "v128"
+  logo: "" # (optional) your project logo path. e.g. "assets/logo.png"
 ```
 
-* **`name`** *(string, required)*: The document’s name. If omitted, the name set in the dodo-doc dashboard is used.
-* **`description`** *(string, required)*: The document’s description. If omitted, an empty string is used.
+* **`project_id`** *(string, required)*: The project ID that is associated with this document. The document will be uploaded to the project defined here.
+* **`name`** *(string, required)*: The document's name. This value will be shown in your document sidebar.
+* **`description`** *(string, optional)*: The document's description. This value will be shown in your document sidebar.
+* **`version`** *(string, optional)*: The string that describes the document version. This value will be shown in your document sidebar. If omitted, an internal sequential number will be used.
+* **`logo`** *(string, optional)*: The path to the document logo. This value will be used as your document logo. We expect this image to be 28 x 28 px.
+
 
 ## Pages
 
