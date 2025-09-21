@@ -57,6 +57,7 @@ type ConfigProject struct {
 	Name        string
 	Description string
 	Version     string
+	Logo        string
 	Repository  string
 }
 
@@ -356,6 +357,13 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 				continue
 			}
 			state.config.Project.Version = v.Value
+		case "logo":
+			v, ok := item.Value.(*ast.StringNode)
+			if !ok {
+				state.errorSet.Add(state.buildParseError("`logo` field must be a string", item.Value))
+				continue
+			}
+			state.config.Project.Logo = v.Value
 		case "repository":
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
