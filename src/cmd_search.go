@@ -304,7 +304,6 @@ func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
 	if err != nil {
 		m.errorMessage = fmt.Sprintf("Failed to execute the search: %s", err)
 	}
-	fmt.Println(len(records), "results found.")
 
 	// Update the list
 	items := make([]list.Item, len(records))
