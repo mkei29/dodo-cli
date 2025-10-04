@@ -78,7 +78,7 @@ func CreateSearchCmd() *cobra.Command {
 	}
 	searchCmd.Flags().StringArrayVarP(&opts.query, "query", "q", nil, "Search query (for json output only)")
 	searchCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode")
-	searchCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com/search/v1", "Server endpoint for search")
+	searchCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com", "Server endpoint for search")
 	searchCmd.Flags().StringVar(&opts.format, "format", FormatTUI, "Output format (tui, json)")
 	return searchCmd
 }
@@ -304,6 +304,7 @@ func (m model) updateEnter(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint: ireturn
 	if err != nil {
 		m.errorMessage = fmt.Sprintf("Failed to execute the search: %s", err)
 	}
+	fmt.Println(len(records), "results found.")
 
 	// Update the list
 	items := make([]list.Item, len(records))
