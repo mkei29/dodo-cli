@@ -78,7 +78,7 @@ func CreateSearchCmd() *cobra.Command {
 	}
 	searchCmd.Flags().StringArrayVarP(&opts.query, "query", "q", nil, "Search query (for json output only)")
 	searchCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode")
-	searchCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com/search/v1", "Server endpoint for search")
+	searchCmd.Flags().StringVar(&opts.endpoint, "endpoint", "https://contents.dodo-doc.com", "Server endpoint for search")
 	searchCmd.Flags().StringVar(&opts.format, "format", FormatTUI, "Output format (tui, json)")
 	return searchCmd
 }
