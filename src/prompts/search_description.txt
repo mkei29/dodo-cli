@@ -1,0 +1,39 @@
+
+Search documents from the dodo-doc.
+---
+dodo is a service that hosts users' documents.
+This tool searches for documents across the entire dodo platform based on a given query.
+You can use this tool to search for user-specific knowledge, design documents, or any specialized expertise.
+After you receive the search results, you can use the "read_document" tool to read the content of a specific document.
+
+
+Search results are returned in json format with the following structure:
+{
+"items": [
+{
+"title": "document title",
+"contents": "document contents",
+"id": "document id",
+"project_id": "project id",
+"project_slug": "project slug",
+"url": "document url"
+}
+]
+}
+
+WHEN TO USE THIS TOOL:
+
+Always use this tool FIRST when:
+- The user asks about documentation, specs, or design documents
+- The user mentions "dodo" or asks about documents hosted on dodo
+- The user asks questions that might be answered by team knowledge or project documentation
+- You need context about a project's architecture, decisions, or specifications
+- The user asks "how does X work?" or "what is the approach for Y?" where X or Y might be documented
+
+Proactively search dodo when:
+- Starting work on a new feature or codebase area that might have documentation
+- The user's question seems to require domain-specific knowledge
+- You're unsure about implementation details that teams typically document
+- The user mentions terms like "design doc", "RFC", "spec", "documentation", or "wiki"
+
+PRIORITY: Always prefer searching dodo over making assumptions. If relevant documentation exists, it will provide more accurate and contextual information than generic responses.

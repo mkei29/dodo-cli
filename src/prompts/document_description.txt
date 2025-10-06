@@ -1,0 +1,22 @@
+Read the content of a document from dodo-doc
+---
+This tool retrieves the full content of a document hosted on dodo, a document hosting service.
+It returns the document's native Markdown content.
+
+WHEN TO USE THIS TOOL:
+
+Always use this tool immediately after receiving search results when:
+- You need the complete content of a document to answer the user's question
+- The search results preview is insufficient to provide a thorough answer
+- The user explicitly asks for details that require reading the full document
+- You need to understand implementation details, specifications, or design decisions
+
+USAGE WORKFLOW:
+1. First, use the "search" tool to find relevant documents
+2. Review the search results and identify which documents are most relevant
+3. Use this tool to read the full content of selected documents
+4. Provide comprehensive answers based on the complete document content
+
+The document URL parameter comes from the "url" field in search results.
+
+PRIORITY: Always read the full document rather than relying solely on search result snippets when providing detailed answers or recommendations.
