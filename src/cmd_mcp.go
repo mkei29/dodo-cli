@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 
@@ -12,38 +13,11 @@ import (
 	"github.com/toritoritori29/dodo-cli/src/openapi"
 )
 
-const SearchDescription = `
-Search documents from the dodo-doc.
----
-dodo is a service that hosts users' documents.
-This tool searches for documents across the entire dodo platform based on a given query.
-You can use this tool to search for user-specific knowledge, design documents, or any specialized expertise.
-After you receive the search results, you can use the "read_document" tool to read the content of a specific document.
+//go:embed prompts/search_description.txt
+var SearchDescription string
 
-
-Search results are returned in json format with the following structure:
-{
-"items": [
-{
-"title": "document title",
-"contents": "document contents",
-"id": "document id",
-"project_id": "project id",
-"project_slug": "project slug",
-"url": "document url"
-}
-]
-}
-`
-
-const DocumentDescription = `
-Read the content of a document from dodo-doc
----
-This tool allows you to retrieve the full content of a document hosted on dodo, a document hosting service.
-You can fetch the document’s native Markdown content.
-The document URL can be obtained from the results of the search tool.
-Use this tool when you need to read or process the raw content of a document directly.
-`
+//go:embed prompts/document_description.txt
+var DocumentDescription string
 
 type MCPArgs struct {
 	configPath string // config file path
