@@ -81,6 +81,7 @@ func TestSanitizePath(t *testing.T) {
 		{"./path/to/file.md", "path_to_file"},
 		{"/path/to/file.md", "path_to_file"},
 		{"path/to/file.md", "path_to_file"},
+		{"path/to/1234.md", "path_to_1234"},
 		{"/path/to/file", "path_to_file"},
 		{"path/to/file", "path_to_file"},
 		{"/file.md", "file"},

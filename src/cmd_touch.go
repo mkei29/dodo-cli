@@ -194,7 +194,7 @@ func sanitizePath(path string) string {
 	p = strings.TrimPrefix(p, "_")
 
 	// Remove disallowed characters
-	re := regexp.MustCompile(`[^a-zA-Z-_]+`)
+	re := regexp.MustCompile(`[^a-zA-Z-0-9_]+`)
 	p = re.ReplaceAllString(p, "")
 	return p
 }
