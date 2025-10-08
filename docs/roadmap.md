@@ -8,7 +8,7 @@ updated_at: "2025-09-19T00:34:55+09:00"
 
 # In Progress
 
-## Improvements Based on User Feedback
+## Enhancement Based on User Feedback
 
 We’re actively improving the product based on the feedback we’ve received.
 We welcome additional comments—please share your thoughts via the Google Form below.
@@ -16,10 +16,14 @@ We welcome additional comments—please share your thoughts via the Google Form 
 https://docs.google.com/forms/d/e/1FAIpQLSe8ccsW6C4rKE_Wd0DCjJtOqUXbuaWG6JfgUqKo6B0p2Z0-mw/viewform?usp=dialog
 
 ## More User-Friendly and Secure Authentication
+The current authentication mechanism is often somewhat unstable and inconvenient.
+We will improve these issues to provide a smoother experience.
+Specifically, we are planning the following:
 
-Right now, dodo-doc supports login via Google OIDC.
-Because session durations are relatively short, this can feel inconvenient.
-This task will enhance our authentication flow so a wider range of people can use dodo-doc comfortably and securely.
+* Secure long-term session maintenance using Refresh Tokens
+* Smooth login using FedCM
+* Simple CLI login with the implementation of a login command
+
 
 ## Paid Plans
 
