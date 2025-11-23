@@ -22,8 +22,10 @@ dodo-doc is currently in beta and offers only a Free plan.
 A paid Team Plan for teams is planned for a future release.
 :::
 
-
-## Main Features of dodo-doc
+# What dodo-doc can do
+dodo-doc is a documentation hosting service for developers.
+You can quickly host simple documents with easy operations from the CLI.
+The main features of dodo-doc are as follows:
 
 * **Developer-friendly**: Drop Markdown files into your workflow and upload—no special formats required.
 * **Easy setup**: Run dodo init to scaffold a .dodo.yaml config in seconds.
@@ -50,6 +52,18 @@ dodo search
 ```
 
 We’re actively shipping new features to make dodo-doc even better. Check the [roadmap](/roadmap) for what’s coming.
+
+
+## Other Alternatives
+
+### Other Hosting Services
+Other documentation hosting services such as [GitBook](https://www.gitbook.com/) and [Mintlify](https://www.mintlify.com/) also exist.
+We recommend using these services if you want to leverage reliability and cutting-edge AI technology.
+
+### Static File Hosting Services
+You can generate HTML files for documents using tools like [mdBook](https://rust-lang.github.io/mdBook/) or [Fumadocs](https://fumadocs.dev/) and upload them to static hosting services.
+There are various services such as Cloudflare Pages and GitHub Pages,
+and with GitHub Pages, you can also generate private documents that can only be viewed by users within your organization.
 
 ## Next Steps
 Ready to dive in? Create your dodo-doc account and host your first document.
