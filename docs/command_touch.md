@@ -8,13 +8,17 @@ updated_at: 2025-02-27T20:53:00+09:00
 
 # `touch` Command
 
-The `touch` command helps manage markdown files. It creates a new markdown file with the given title if it does not exist, or updates the frontmatter fields if the file already exists. This command is useful for maintaining consistent metadata across your documentation.
+The `touch` command helps manage markdown files. It creates a new markdown file with proper frontmatter if it doesn't exist, or updates the frontmatter fields if it already does. This ensures consistent metadata across your documentation.
 
 ## Usage
 
 ```bash
 dodo touch [flags]
 ```
+
+## Use Cases
+* Quickly scaffold new documentation files with correct frontmatter structure
+* Update timestamps and metadata for existing files without manual editing
 
 ## Flags
 * `-t, --title string`  
@@ -39,9 +43,9 @@ The `touch` command allows you to manage the frontmatter of markdown files, ensu
 ## Examples
 
 ```bash
-# Create a new markdown file including the front mater
+# Create a new markdown file with frontmatter
 $ dodo-cli touch example.md
 
-# Create a new markdown file with metadata for the front matter
+# Create a markdown file with custom metadata
 $ dodo-cli touch example.md --title "New Title" --path new-markdown
 ```

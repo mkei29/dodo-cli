@@ -8,13 +8,17 @@ updated_at: 2025-05-25T16:35:00+09:00
 
 # `preview` Command
 
-The `preview` command is used to upload the project to dodo-doc's preview environment. It is an alias of the `upload` command with a different default endpoint. This command facilitates the transfer of your project's documentation to the dodo-doc preview platform for testing purposes before deploying to production.
+The `preview` command uploads your project to dodo-doc's preview environment—a temporary, shareable version of your docs for testing before production deployment. It works just like `upload` but targets a different endpoint and generates a time-limited preview URL.
 
 ## Usage
 
 ```bash
 dodo preview [flags]
 ```
+
+## Use Cases
+* Verify that your local Markdown documentation renders correctly
+* Run in CI to validate documentation changes before merging to main
 
 ## Flags
 * `-c, --config string`  

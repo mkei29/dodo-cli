@@ -8,14 +8,18 @@ updated_at: 2025-02-27T20:51:20+09:00
 
 # `upload` Command
 
-The `upload` command publishes your project to dodo-doc.
-It reads your `.dodo.yaml`, bundles the referenced Markdown files, and sends them to the dodo-doc service so your documentation stays accessible and up to date.
+The `upload` command publishes your documentation to dodo-doc.
+It reads your `.dodo.yaml`, bundles all referenced Markdown files, and deploys them to make your docs accessible to readers.
 
-## Upload
+## Usage
 
 ```bash
 dodo-cli upload [flags]
 ```
+
+## Use Cases
+* Deploy your documentation to dodo-doc
+* Automatically deploy documentation when changes are merged to main via CI integration
 
 ## Flags
 

@@ -9,11 +9,11 @@ updated_at: "2025-09-15T19:49:41+09:00"
 Keeping documentation accurate is hard — teams move fast, pages go stale, and readers tune out. 
 dodo-doc fixes that by keeping docs in step with your code and easy to read. 
 
-It’s a lightweight, powerful hosting service built for software teams. 
+It’s a lightweight, powerful documentation hosting service built for developers. 
 Create an account, install a single CLI, and publish Markdown in minutes. 
 
 Browse live examples—including this page—to see what’s possible.
-Ready to try it? Follow the link below to install and get started:
+Ready to try it? Follow the link below to deploy your first documentation.
 
 https://document.do.dodo-doc.com/install
 
@@ -23,14 +23,19 @@ A paid Team Plan for teams is planned for a future release.
 :::
 
 # What dodo-doc can do
-dodo-doc is a documentation hosting service for developers.
-You can quickly host simple documents with easy operations from the CLI.
-The main features of dodo-doc are as follows:
 
-* **Developer-friendly**: Drop Markdown files into your workflow and upload—no special formats required.
-* **Easy setup**: Run dodo init to scaffold a .dodo.yaml config in seconds.
-* **CI/CD integration**: Ship docs from your pipeline with a single-binary CLI for automated, reliable deployments.
-* **Privacy controls**: Keep docs private with flexible visibility settings—great for personal notes or sensitive content.
+dodo-doc is a documentation hosting service for developers.
+It's designed to fit naturally into your development workflow, making it easy to keep documentation up to date.
+
+## Advantages for document readers
+* **Beautiful, modern interface**: Clean design that makes documentation easy to navigate and pleasant to read
+* **Terminal-first access**: Open and search docs with simple commands—no need to leave your terminal
+* **Privacy controls**: Keep docs private with flexible visibility settings—great for personal notes or sensitive content
+
+## Advantages for document writers
+* **Developer-friendly**: Drop Markdown files into your workflow and upload—no special formats required
+* **Easy setup**: Run `dodo init` to scaffold a .dodo.yaml config in seconds
+* **CI/CD integration**: Ship docs from your pipeline with a single-binary CLI for automated, reliable deployments
 
 dodo-doc is built for people who live in editors and terminals. Here are a few CLI commands you’ll use often:
 
@@ -56,7 +61,7 @@ We’re actively shipping new features to make dodo-doc even better. Check the [
 
 ## Other Alternatives
 
-### Other Hosting Services
+### Other Documentation Hosting Services
 Other documentation hosting services such as [GitBook](https://www.gitbook.com/) and [Mintlify](https://www.mintlify.com/) also exist.
 We recommend using these services if you want to leverage reliability and cutting-edge AI technology.
 

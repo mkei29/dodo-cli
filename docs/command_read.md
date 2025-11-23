@@ -7,7 +7,11 @@ updated_at: "2025-09-06T17:04:46+09:00"
 ---
 
 # `read` Command
-This command reads and displays the markdown content of a document from dodo-doc. It fetches the document content from the server and outputs it to stdout.
+This command retrieves and displays the raw markdown content of a doc from dodo-doc. It fetches the document from the server and outputs it to stdout, making it easy to pipe to other tools.
+
+## Use Cases
+* Fetch raw markdown to pass to AI agents or other processing tools
+* Read documentation content from the command line without opening a browser
 
 ## Usage
 
