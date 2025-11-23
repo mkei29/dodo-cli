@@ -8,7 +8,11 @@ updated_at: 2025-02-26T00:44:06+09:00
 
 # `check` Command
 
-The `check` command is used to validate the configuration file for dodo-doc. It ensures that all required fields are present and correctly formatted, helping to prevent errors during document processing.
+The `check` command validates your dodo-doc configuration file. It ensures all required fields are present and correctly formatted, catching errors before you deploy your documentation.
+
+## Use Cases
+* Validate your .dodo.yaml configuration after editing
+* Run in CI to validate .dodo.yaml changes in pull requests before merging to main
 
 ## Usage
 
