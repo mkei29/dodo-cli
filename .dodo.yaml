@@ -5,6 +5,7 @@ project:
   description: The dodo-doc documentation
   version: 0.0.29
   logo: "assets/logo.png"
+  repository: "https://github.com/mkei29/dodo-cli"
 pages:
   - markdown: docs/index.md
   - markdown: docs/install.md
@@ -22,6 +23,9 @@ pages:
       - markdown: docs/command_touch.md
       - markdown: docs/command_read.md
       - markdown: docs/command_mcp.md
+  - directory: "Best Practices"
+    children:
+      - markdown: docs/best_practice_keep_document_clean.md
   - markdown: docs/release_note.md
   - markdown: docs/roadmap.md
   - directory: "For Developers"

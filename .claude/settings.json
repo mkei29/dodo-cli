@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "dodo check",
+      "git diff --name-status *"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
