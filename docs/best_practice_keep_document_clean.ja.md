@@ -1,5 +1,5 @@
 ---
-title: "Keep document clean with LLM"
+title: "Keep Document Clean with LLM"
 path: "best_practice_keep_document_clean"
 description: ""
 created_at: "2025-12-09T23:20:28+09:00"
