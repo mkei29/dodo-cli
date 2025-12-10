@@ -26,13 +26,19 @@ pages:
       - markdown: docs/cicd_github.md
         path: "cicd_github"
         title: "GitHub Actions"
+annotation:
+  owner: docs-team
+  tags:
+    - internal
+    - handbook
 ```
 
-The YAML file has three top‑level sections:
+The YAML file has four top‑level sections:
 
 * **`version`** – specifies the version of the `.dodo.yaml` spec.
 * **`project`** – configures project‑level settings.
 * **`pages`** – defines the structure and content of the documentation.
+* **`annotation`** – optional free‑form metadata for your own workflows.
 
 Let’s look at each in detail.
 
@@ -138,3 +144,20 @@ Nodes with a `directory` field are **directory nodes**. Use a directory node to 
 
 * **`directory`** *(string, required)*: The directory label.
 * **`children`** *(Node\[], required)*: Child nodes contained in the directory.
+
+## Annotation
+
+Use `annotation` to store arbitrary metadata alongside `project` and `pages`. dodo-doc keeps this section as-is and does not validate or consume its contents, so you can shape it to fit your workflows (e.g., pipeline flags, ownership, feature toggles).
+
+```yaml
+annotation:
+  owner: docs-team
+  tags:
+    - internal
+    - handbook
+  feature_flags:
+    search: enabled
+    ai_summary: disabled
+```
+
+dodo-doc ignores the contents of `annotation` during processing; it exists purely for you to attach arbitrary metadata.

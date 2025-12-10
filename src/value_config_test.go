@@ -93,6 +93,37 @@ pages:
     sort_order: "asc"
 `
 
+const TestCaseWithAnnotation = `
+version: 1
+project:
+  project_id: "project_id"
+  name: "Test Project"
+pages:
+  - markdown: "README1.md"
+    path: "readme1"
+    title: "README1"
+annotation:
+  env: production
+  features:
+    rollout: 30
+  tags:
+    - alpha
+    - beta
+  note: "just a note"
+`
+
+const TestCaseWithInvalidAnnotationSyntax = `
+version: 1
+project:
+  project_id: "project_id"
+  name: "Test Project"
+pages:
+  - markdown: "README2.md"
+    path: "readme2"
+    title: "README2"
+annotation: [invalid
+`
+
 func TestParseConfigDetailsMatch(t *testing.T) {
 	t.Parallel()
 
@@ -465,6 +496,16 @@ func TestParseConfig(t *testing.T) {
 			name:     "invalid config: path field is invalid",
 			input:    TestCasePageInvalidPath,
 			expected: false,
+		},
+		{
+			name:     "invalid config: annotation has invalid YAML syntax",
+			input:    TestCaseWithInvalidAnnotationSyntax,
+			expected: false,
+		},
+		{
+			name:     "valid config: accepts annotation",
+			input:    TestCaseWithAnnotation,
+			expected: true,
 		},
 	}
 
