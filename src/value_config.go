@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/caarlos0/log"
+	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/parser"
 	"github.com/mattn/go-zglob"
@@ -122,15 +123,16 @@ func (m ConfigAsset) List(rootDir string) ([]string, error) {
 
 // A struct to keep the state of the parsing process.
 type ParseState struct {
-	filepath               string // The name of the file being parsed.
-	config                 Config // The config object being generated.
-	contents               []byte // The contents of the file being parsed.
-	rootPath               string
-	isVersionAlreadyParsed bool
-	isProjectAlreadyParsed bool
-	isPagesAlreadyParsed   bool
-	isAssetsAlreadyParsed  bool
-	errorSet               MultiError
+	filepath                  string // The name of the file being parsed.
+	config                    Config // The config object being generated.
+	contents                  []byte // The contents of the file being parsed.
+	rootPath                  string
+	isVersionAlreadyParsed    bool
+	isProjectAlreadyParsed    bool
+	isPagesAlreadyParsed      bool
+	isAssetsAlreadyParsed     bool
+	isAnnotationAlreadyParsed bool
+	errorSet                  MultiError
 }
 
 func NewParseState(filepath, workingDir string) *ParseState {
@@ -259,6 +261,10 @@ func parseRootItem(state *ParseState, node ast.Node) {
 	}
 	if mapping.Key.String() == "assets" {
 		parseConfigAssets(state, mapping)
+		return
+	}
+	if mapping.Key.String() == "annotation" {
+		parseConfigAnnotation(state, mapping)
 		return
 	}
 	state.errorSet.Add(state.buildParseError("unexpected key at the top level", mapping.Key))
@@ -854,4 +860,21 @@ func parseConfigAssets(state *ParseState, node *ast.MappingValueNode) {
 		assets = append(assets, ConfigAsset(v.Value))
 	}
 	state.config.Assets = assets
+}
+
+func parseConfigAnnotation(state *ParseState, node *ast.MappingValueNode) {
+	// This function should be called only once.
+	// annotation:
+	//   foo: bar
+	if state.isAnnotationAlreadyParsed {
+		state.errorSet.Add(state.buildParseError("there should be exactly one `annotation` section at the top level", node))
+		return
+	}
+	state.isAnnotationAlreadyParsed = true
+
+	var annotation any
+	if err := yaml.NodeToValue(node.Value, &annotation); err != nil {
+		state.errorSet.Add(state.buildParseError("failed to parse `annotation` field", node.Value))
+		return
+	}
 }

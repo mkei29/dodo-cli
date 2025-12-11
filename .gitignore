@@ -3,6 +3,7 @@ dist/
 output.zip
 .envrc
 .vscode
+.cache
 
 src/version.txt
 node_modules
