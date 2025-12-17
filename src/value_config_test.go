@@ -30,6 +30,7 @@ version: 1
 project:
   project_id: "project_id"
   name: "Test Project"
+  default_language: "JP"
   logo: "logo.png"
   repository: "https://github.com/mkei29/dodo-cli"
 pages:
@@ -63,6 +64,7 @@ func TestParseConfigDetailsMarkdown(t *testing.T) {
 	assert.Equal(t, "Test Project", conf.Project.Name)
 	assert.Equal(t, "logo.png", conf.Project.Logo)
 	assert.Equal(t, "https://github.com/mkei29/dodo-cli", conf.Project.Repository)
+	assert.Equal(t, "JP", conf.Project.DefaultLanguage)
 
 	// Check README1
 	assert.Equal(t, "README1.md", conf.Pages[0].Markdown)
@@ -246,6 +248,18 @@ project:
   project_id: "project_id"
   name: "Test Project"
 	repository: "xxxx",
+pages:
+  - markdown: "README2.md"
+    path: "readme2"
+    title: "README2"
+`
+
+const TestCaseWithInvalidDefaultLanguage = `
+version: 1
+project:
+  project_id: "project_id"
+  name: "Test Project"
+  default_language: "JPN"
 pages:
   - markdown: "README2.md"
     path: "readme2"
@@ -440,6 +454,11 @@ func TestParseConfig(t *testing.T) {
 		{
 			name:     "invalid config: invalid repository URL",
 			input:    TestCaseParseInvalidRepositoryURL,
+			expected: false,
+		},
+		{
+			name:     "invalid config: invalid default language",
+			input:    TestCaseWithInvalidDefaultLanguage,
 			expected: false,
 		},
 		{

@@ -53,12 +53,13 @@ path: "test-page-2"
 		config := &Config{
 			Version: "1",
 			Project: ConfigProject{
-				ProjectID:   "test-project-id",
-				Name:        "Test Project",
-				Description: "Test project description",
-				Version:     "1.0.0",
-				Logo:        "assets/test.png",
-				Repository:  "https://github.com/test/repo",
+				ProjectID:       "test-project-id",
+				Name:            "Test Project",
+				Description:     "Test project description",
+				Version:         "1.0.0",
+				Logo:            "assets/test.png",
+				Repository:      "https://github.com/test/repo",
+				DefaultLanguage: "JP",
 			},
 			Pages: []ConfigPage{
 				{
@@ -97,6 +98,7 @@ path: "test-page-2"
 		assert.Equal(t, "1.0.0", metadata.Project.Version)
 		assert.Equal(t, "assets/test.png", metadata.Project.Logo)
 		assert.Equal(t, "https://github.com/test/repo", metadata.Project.Repository)
+		assert.Equal(t, "JP", metadata.Project.DefaultLanguage)
 
 		// Verify page structure exists (detailed validation would require understanding Page struct)
 		assert.NotNil(t, metadata.Page)

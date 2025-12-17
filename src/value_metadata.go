@@ -72,22 +72,24 @@ func (m *Metadata) Serialize() ([]byte, error) {
 }
 
 type MetadataProject struct {
-	ProjectID   string `json:"project_id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Version     string `json:"version"`
-	Logo        string `json:"logo"`
-	Repository  string `json:"repository"`
+	ProjectID       string `json:"project_id"`
+	Name            string `json:"name"`
+	Description     string `json:"description"`
+	Version         string `json:"version"`
+	Logo            string `json:"logo"`
+	Repository      string `json:"repository"`
+	DefaultLanguage string `json:"default_language"`
 }
 
 func NewMetadataProjectFromConfig(c *Config) MetadataProject {
 	return MetadataProject{
-		ProjectID:   c.Project.ProjectID,
-		Name:        c.Project.Name,
-		Description: c.Project.Description,
-		Version:     c.Project.Version,
-		Logo:        c.Project.Logo,
-		Repository:  c.Project.Repository,
+		ProjectID:       c.Project.ProjectID,
+		Name:            c.Project.Name,
+		Description:     c.Project.Description,
+		Version:         c.Project.Version,
+		Logo:            c.Project.Logo,
+		Repository:      c.Project.Repository,
+		DefaultLanguage: c.Project.DefaultLanguage,
 	}
 }
 

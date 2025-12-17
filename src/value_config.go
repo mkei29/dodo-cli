@@ -54,12 +54,13 @@ type Config struct {
 }
 
 type ConfigProject struct {
-	ProjectID   string
-	Name        string
-	Description string
-	Version     string
-	Logo        string
-	Repository  string
+	ProjectID       string
+	Name            string
+	Description     string
+	Version         string
+	Logo            string
+	Repository      string
+	DefaultLanguage string
 }
 
 type ConfigPage struct {
@@ -377,6 +378,18 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 				continue
 			}
 			state.config.Project.Repository = v.Value
+		case "default_language":
+			v, ok := item.Value.(*ast.StringNode)
+			if !ok {
+				state.errorSet.Add(state.buildParseError("`default_language` field must be a string", item.Value))
+				continue
+			}
+			defaultLanguage := strings.ToUpper(v.Value)
+			if !isValidISOCountryCode(defaultLanguage) {
+				state.errorSet.Add(state.buildParseError("`default_language` field must be a valid ISO 3166-1 alpha-2 country code", item.Value))
+				continue
+			}
+			state.config.Project.DefaultLanguage = defaultLanguage
 		default:
 			state.errorSet.Add(state.buildParseError("the `project` does not accept the key: "+key, item))
 		}
@@ -399,6 +412,18 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 			state.errorSet.Add(state.buildParseError("the `repository` field must be a valid URL", node))
 		}
 	}
+}
+
+func isValidISOCountryCode(code string) bool {
+	if len(code) != 2 {
+		return false
+	}
+	for _, r := range code {
+		if r < 'A' || r > 'Z' {
+			return false
+		}
+	}
+	return true
 }
 
 func parseConfigPage(state *ParseState, node *ast.MappingValueNode) {
