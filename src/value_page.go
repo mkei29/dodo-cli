@@ -18,14 +18,21 @@ const (
 	PageTypeDirNodeWithPage = "DirNodeWithPage"
 )
 
-type PageSummary struct {
-	Type        string `json:"type"`
-	Filepath    string `json:"filepath"`
-	Hash        string `json:"hash"`
-	Path        string `json:"path"`
+type PageLanguageWiseInfo struct {
+	Language    string `json:"language"`
 	Title       string `json:"title"`
-	UpdatedAt   string `json:"updated_at"`
 	Description string `json:"description"`
+}
+
+type PageSummary struct {
+	Type        string                 `json:"type"`
+	Filepath    string                 `json:"filepath"`
+	Hash        string                 `json:"hash"`
+	Path        string                 `json:"path"`
+	Title       string                 `json:"title"`
+	Description string                 `json:"description"`
+	Language    []PageLanguageWiseInfo `json:"language"`
+	UpdatedAt   string                 `json:"updated_at"`
 }
 
 func NewPageSummary(filepath, path, title string) PageSummary {
@@ -57,20 +64,28 @@ type Page struct {
 	Path        string                  `json:"path"`
 	Title       string                  `json:"title"`
 	Description string                  `json:"description"`
+	Language    []PageLanguageWiseInfo  `json:"language"`
 	UpdatedAt   config.SerializableTime `json:"updated_at"`
 	Children    []Page                  `json:"children"`
 }
 
-func NewLeafNodeFromConfigPge(config *config.ConfigPageV1) Page {
+func NewLeafNodeFromConfigPage(configProject *config.ConfigProjectV1, configPage *config.ConfigPageV1) Page {
 	page := Page{
 		Type:        PageTypeLeafNode,
-		Filepath:    config.Markdown,
-		Hash:        fmt.Sprintf("%x", sha256.Sum256([]byte(config.Markdown))),
-		Path:        config.Path,
-		Title:       config.Title,
-		Description: config.Description,
-		UpdatedAt:   config.UpdatedAt,
-		Children:    []Page{},
+		Filepath:    configPage.Markdown,
+		Hash:        fmt.Sprintf("%x", sha256.Sum256([]byte(configPage.Markdown))),
+		Path:        configPage.Path,
+		Title:       configPage.Title,
+		Description: configPage.Description,
+		Language: []PageLanguageWiseInfo{
+			{
+				Language:    configProject.DefaultLanguage,
+				Title:       configPage.Title,
+				Description: configPage.Description,
+			},
+		},
+		UpdatedAt: configPage.UpdatedAt,
+		Children:  []Page{},
 	}
 	return page
 }
@@ -182,7 +197,7 @@ func CreatePageTree(conf *config.ConfigV1, rootDir string) (*Page, *appErrors.Mu
 
 	children := make([]Page, 0, len(conf.Pages))
 	for _, p := range conf.Pages {
-		c, merr := buildPage(rootDir, p)
+		c, merr := buildPage(rootDir, &conf.Project, &p)
 		if merr != nil {
 			errorSet.Merge(*merr)
 			continue
@@ -197,13 +212,13 @@ func CreatePageTree(conf *config.ConfigV1, rootDir string) (*Page, *appErrors.Mu
 	return &root, nil
 }
 
-func buildPage(rootDir string, c config.ConfigPageV1) ([]Page, *appErrors.MultiError) {
-	if c.MatchMarkdown() {
-		return transformMarkdown(rootDir, &c)
+func buildPage(rootDir string, configProject *config.ConfigProjectV1, configPage *config.ConfigPageV1) ([]Page, *appErrors.MultiError) {
+	if configPage.MatchMarkdown() {
+		return transformMarkdown(rootDir, configProject, configPage)
 	}
 
-	if c.MatchDirectory() {
-		return transformDirectory(rootDir, &c)
+	if configPage.MatchDirectory() {
+		return transformDirectory(rootDir, configProject, configPage)
 	}
 
 	err := appErrors.NewMultiError()
@@ -211,9 +226,9 @@ func buildPage(rootDir string, c config.ConfigPageV1) ([]Page, *appErrors.MultiE
 	return nil, &err
 }
 
-func transformMarkdown(rootDir string, c *config.ConfigPageV1) ([]Page, *appErrors.MultiError) {
+func transformMarkdown(rootDir string, configProject *config.ConfigProjectV1, configPage *config.ConfigPageV1) ([]Page, *appErrors.MultiError) {
 	merr := appErrors.NewMultiError()
-	filepath := filepath.Clean(filepath.Join(rootDir, c.Markdown))
+	filepath := filepath.Clean(filepath.Join(rootDir, configPage.Markdown))
 
 	if err := config.IsUnderRootPath(rootDir, filepath); err != nil {
 		merr.Add(fmt.Errorf("path should be under the rootDir. passed: %s", filepath))
@@ -221,17 +236,17 @@ func transformMarkdown(rootDir string, c *config.ConfigPageV1) ([]Page, *appErro
 	}
 
 	// First, populate the fields from the markdown front matter.
-	p := NewLeafNodeFromConfigPge(c)
+	p := NewLeafNodeFromConfigPage(configProject, configPage)
 	log.Debugf("Node Found. Type: Markdown, Filepath: '%s', Title: '%s', Path: '%s'", p.Filepath, p.Title, p.Path)
 	return []Page{p}, nil
 }
 
-func transformDirectory(rootDir string, c *config.ConfigPageV1) ([]Page, *appErrors.MultiError) {
+func transformDirectory(rootDir string, configProject *config.ConfigProjectV1, configPage *config.ConfigPageV1) ([]Page, *appErrors.MultiError) {
 	merr := appErrors.NewMultiError()
 
-	children := make([]Page, 0, len(c.Children))
-	for _, child := range c.Children {
-		pages, err := buildPage(rootDir, child)
+	children := make([]Page, 0, len(configPage.Children))
+	for _, child := range configPage.Children {
+		pages, err := buildPage(rootDir, configProject, &child)
 		if err != nil {
 			merr.Merge(*err)
 			continue
@@ -240,8 +255,15 @@ func transformDirectory(rootDir string, c *config.ConfigPageV1) ([]Page, *appErr
 	}
 
 	p := Page{
-		Type:     PageTypeDirNode,
-		Title:    c.Directory,
+		Type:  PageTypeDirNode,
+		Title: configPage.Directory,
+		Language: []PageLanguageWiseInfo{
+			{
+				Language:    configProject.DefaultLanguage,
+				Title:       configPage.Directory,
+				Description: "",
+			},
+		},
 		Children: children,
 	}
 	if merr.HasError() {

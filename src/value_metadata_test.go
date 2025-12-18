@@ -85,7 +85,7 @@ path: "test-page-2"
 		require.NoError(t, os.Chdir(dir))
 		defer os.Chdir(oldWd)
 
-		metadata, err := NewMetadataFromConfig(config)
+		metadata, err := NewMetadataFromConfigV1(config)
 		require.NoError(t, err)
 		require.NotNil(t, metadata)
 
@@ -127,7 +127,7 @@ path: "test-page-2"
 		require.NoError(t, os.Chdir(dir))
 		defer os.Chdir(oldWd)
 
-		metadata, err := NewMetadataFromConfig(config)
+		metadata, err := NewMetadataFromConfigV1(config)
 		require.NoError(t, err)
 		require.NotNil(t, metadata)
 
@@ -156,7 +156,7 @@ path: "test-page-2"
 		require.NoError(t, os.Chdir(dir))
 		defer os.Chdir(oldWd)
 
-		metadata, err := NewMetadataFromConfig(invalidConfig)
+		metadata, err := NewMetadataFromConfigV1(invalidConfig)
 		require.Error(t, err)
 		assert.Nil(t, metadata)
 	})
@@ -180,7 +180,7 @@ path: "test-page-2"
 		require.NoError(t, os.Chdir(dir))
 		defer os.Chdir(oldWd)
 
-		metadata, err := NewMetadataFromConfig(invalidConfig)
+		metadata, err := NewMetadataFromConfigV1(invalidConfig)
 		require.Error(t, err)
 		assert.Nil(t, metadata)
 	})

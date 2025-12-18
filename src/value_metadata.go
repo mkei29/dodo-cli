@@ -30,7 +30,7 @@ type Metadata struct {
 	Asset   []MetadataAsset `json:"asset"`
 }
 
-func NewMetadataFromConfig(conf *config.ConfigV1) (*Metadata, error) {
+func NewMetadataFromConfigV1(conf *config.ConfigV1) (*Metadata, error) {
 	project := NewMetadataProjectFromConfig(conf)
 	merr := appErrors.NewMultiError()
 

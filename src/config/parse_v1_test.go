@@ -64,7 +64,7 @@ func TestParseConfigDetailsMarkdown(t *testing.T) {
 	assert.Equal(t, "Test Project", conf.Project.Name)
 	assert.Equal(t, "logo.png", conf.Project.Logo)
 	assert.Equal(t, "https://github.com/mkei29/dodo-cli", conf.Project.Repository)
-	assert.Equal(t, "JP", conf.Project.DefaultLanguage)
+	assert.Equal(t, "jp", conf.Project.DefaultLanguage)
 
 	// Check README1
 	assert.Equal(t, "README1.md", conf.Pages[0].Markdown)

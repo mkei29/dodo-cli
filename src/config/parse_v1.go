@@ -385,24 +385,28 @@ func parseConfigProject(state *ParseStateV1, node *ast.MappingValueNode) { //nol
 				state.errorSet.Add(state.buildParseError("`default_language` field must be a string", item.Value))
 				continue
 			}
-			defaultLanguage := strings.ToUpper(v.Value)
-			if !isValidISOCountryCode(defaultLanguage) {
-				state.errorSet.Add(state.buildParseError("`default_language` field must be a valid ISO 3166-1 alpha-2 country code", item.Value))
-				continue
-			}
+			defaultLanguage := strings.ToLower(v.Value)
+
 			state.config.Project.DefaultLanguage = defaultLanguage
 		default:
 			state.errorSet.Add(state.buildParseError("the `project` does not accept the key: "+key, item))
 		}
 	}
 
+	// Post processing and validation.
+	if state.config.Project.DefaultLanguage == "" {
+		state.config.Project.DefaultLanguage = "en"
+	}
+
+	// Validate the required fields.
 	if state.config.Project.ProjectID == "" {
 		state.errorSet.Add(state.buildParseError("the `project` must have a `project_id` field longer than 1 character", node))
 	}
-
-	// Validate the fields.
 	if state.config.Project.Name == "" {
 		state.errorSet.Add(state.buildParseError("the `project` must have a `name` field longer than 1 character", node))
+	}
+	if !isValidISOCountryCode(state.config.Project.DefaultLanguage) {
+		state.errorSet.Add(state.buildParseError("`default_language` field must be a valid ISO 3166-1 alpha-2 country code", node))
 	}
 
 	// Validate the repository field.
@@ -420,7 +424,7 @@ func isValidISOCountryCode(code string) bool {
 		return false
 	}
 	for _, r := range code {
-		if r < 'A' || r > 'Z' {
+		if r < 'a' || r > 'z' {
 			return false
 		}
 	}

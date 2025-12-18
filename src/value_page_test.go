@@ -40,6 +40,7 @@ version: 1
 project:
   project_id: "project_id"
   name: "Test Project"
+  default_language: "en"
 pages:
   - markdown: "README1.md"
     path: "readme1"
@@ -71,6 +72,9 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 	assert.Equal(t, "readme1", page1.Path)
 	assert.Equal(t, "README2", page1.Title)
 	assert.Equal(t, "", page1.Description)
+	assert.Equal(t, "en", page1.Language[0].Language)
+	assert.Equal(t, "README2", page1.Language[0].Title)
+	assert.Equal(t, "", page1.Language[0].Description)
 	assert.Equal(t, "2021-01-01T00:00:00Z", page1.UpdatedAt.String())
 
 	page2 := page.Children[1]
@@ -78,6 +82,9 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 	assert.Equal(t, "readme2", page2.Path)
 	assert.Equal(t, "README2", page2.Title)
 	assert.Equal(t, "", page2.Description)
+	assert.Equal(t, "en", page2.Language[0].Language)
+	assert.Equal(t, "README2", page2.Language[0].Title)
+	assert.Equal(t, "", page2.Language[0].Description)
 	assert.Equal(t, "", page2.UpdatedAt.String())
 }
 
@@ -145,6 +152,9 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 	assert.Equal(t, "LeafNode", page1.Type)
 	assert.Equal(t, "readme1", page1.Path)
 	assert.Equal(t, "README1", page1.Title)
+	assert.Equal(t, "en", page1.Language[0].Language)
+	assert.Equal(t, "README1", page1.Language[0].Title)
+	assert.Equal(t, "", page1.Language[0].Description)
 	assert.Equal(t, "", page1.Description)
 	assert.Equal(t, "", page1.UpdatedAt.String())
 
@@ -187,14 +197,20 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	page1 := page.Children[0]
 	assert.Equal(t, "LeafNode", page1.Type)
 	assert.Equal(t, "README", page1.Title)
-	assert.Equal(t, "readme", page1.Path)
 	assert.Equal(t, "", page1.Description)
+	assert.Equal(t, "en", page1.Language[0].Language)
+	assert.Equal(t, "README", page1.Language[0].Title)
+	assert.Equal(t, "", page1.Language[0].Description)
+	assert.Equal(t, "readme", page1.Path)
 
 	page2 := page.Children[1]
 	assert.Equal(t, "LeafNode", page2.Type)
 	assert.Equal(t, "README", page2.Title)
-	assert.Equal(t, "readme", page2.Path)
 	assert.Equal(t, "", page2.Description)
+	assert.Equal(t, "en", page2.Language[0].Language)
+	assert.Equal(t, "README", page2.Language[0].Title)
+	assert.Equal(t, "", page2.Language[0].Description)
+	assert.Equal(t, "readme", page2.Path)
 }
 
 const TestCaseCreatePageWithDirectory = `
@@ -233,10 +249,16 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 	dir1 := page.Children[0]
 	assert.Equal(t, "DirNodeWithoutPage", dir1.Type)
 	assert.Equal(t, "directory", dir1.Title)
+	assert.Equal(t, "en", dir1.Language[0].Language)
+	assert.Equal(t, "directory", dir1.Language[0].Title)
+	assert.Equal(t, "", dir1.Language[0].Description)
 
 	page1 := dir1.Children[0]
 	assert.Equal(t, "README1", page1.Title)
 	assert.Equal(t, "readme1", page1.Path)
+	assert.Equal(t, "en", page1.Language[0].Language)
+	assert.Equal(t, "README1", page1.Language[0].Title)
+	assert.Equal(t, "", page1.Language[0].Description)
 }
 
 // Valid case.
@@ -245,6 +267,7 @@ version: 1
 project:
   project_id: "project_id"
   name: "project"
+  default_language: "ja"
 pages:
   - markdown: "README1.md"
     path: "readme1"

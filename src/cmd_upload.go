@@ -120,11 +120,11 @@ func executeUpload(args UploadArgs, env EnvArgs) (string, error) {
 	state := config.NewParseStateV1(args.file, "./")
 	conf, err := config.ParseConfigV1(state, configFile)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse the config file: %w", err)
 	}
 
 	// Transform config to metadata
-	metadata, err := NewMetadataFromConfig(conf)
+	metadata, err := NewMetadataFromConfigV1(conf)
 	if err != nil {
 		return "", err
 	}

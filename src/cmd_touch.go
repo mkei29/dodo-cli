@@ -137,7 +137,7 @@ func executeTouchUpdate(args TouchArgs) error {
 	log.Debug("Updating an existing markdown file")
 	matter, err := config.NewFrontMatterFromMarkdown(args.filepath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read front matter: %w", err)
 	}
 	log.Debug("Successfully read front matter")
 
@@ -158,7 +158,7 @@ func executeTouchUpdate(args TouchArgs) error {
 
 	// Rewrite a markdown
 	if err := matter.UpdateMarkdown(args.filepath); err != nil {
-		return err
+		return fmt.Errorf("failed to update markdown file: %w", err)
 	}
 	log.Infof("Successfully updated the markdown file: %s", args.filepath)
 	return nil
