@@ -26,6 +26,6 @@ git tag v0.0.1 -m release
 * pathに使える文字は[a-zA-Z0-9-_]に限定する。
 
 ### パースの流れ
-* Configを作成
-* ConfigからMetadataを作成
+* ConfigV1を作成
+* ConfigV1からMetadataを作成
 * MetadataからArchiveを作成

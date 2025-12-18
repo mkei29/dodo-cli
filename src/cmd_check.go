@@ -73,8 +73,8 @@ func checkCmdEntrypoint(args CheckArgs) error {
 	}
 	defer configFile.Close()
 
-	state := config.NewParseState(args.configPath, "./")
-	conf, err := config.ParseConfig(state, configFile)
+	state := config.NewParseStateV1(args.configPath, "./")
+	conf, err := config.ParseConfigV1(state, configFile)
 	if err != nil {
 		return err
 	}

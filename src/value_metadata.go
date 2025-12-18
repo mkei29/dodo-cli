@@ -30,7 +30,7 @@ type Metadata struct {
 	Asset   []MetadataAsset `json:"asset"`
 }
 
-func NewMetadataFromConfig(conf *config.Config) (*Metadata, error) {
+func NewMetadataFromConfig(conf *config.ConfigV1) (*Metadata, error) {
 	project := NewMetadataProjectFromConfig(conf)
 	merr := appErrors.NewMultiError()
 
@@ -83,7 +83,7 @@ type MetadataProject struct {
 	DefaultLanguage string `json:"default_language"`
 }
 
-func NewMetadataProjectFromConfig(c *config.Config) MetadataProject {
+func NewMetadataProjectFromConfig(c *config.ConfigV1) MetadataProject {
 	return MetadataProject{
 		ProjectID:       c.Project.ProjectID,
 		Name:            c.Project.Name,
@@ -109,7 +109,7 @@ func NewMetadataAsset(path string) MetadataAsset {
 	}
 }
 
-func NewMetadataAssetFromConfig(c *config.Config, rootDir string) ([]MetadataAsset, *appErrors.MultiError) {
+func NewMetadataAssetFromConfig(c *config.ConfigV1, rootDir string) ([]MetadataAsset, *appErrors.MultiError) {
 	// Create Assets struct from config.
 	merr := appErrors.NewMultiError()
 	metadataAssets := make([]MetadataAsset, 0, len(c.Assets)*10)

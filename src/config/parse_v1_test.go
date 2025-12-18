@@ -55,8 +55,8 @@ func TestParseConfigDetailsMarkdown(t *testing.T) {
 	readme2 := createTempFile(t, dir, "README2.md")
 	os.WriteFile(readme2, []byte(Readme2Contents), 0o600)
 
-	state := NewParseState("config.yaml", dir)
-	conf, err := ParseConfig(state, strings.NewReader(TestCaseForDetailCheckMarkdown))
+	state := NewParseStateV1("config.yaml", dir)
+	conf, err := ParseConfigV1(state, strings.NewReader(TestCaseForDetailCheckMarkdown))
 	require.NoError(t, err)
 
 	// Check metadata
@@ -138,8 +138,8 @@ func TestParseConfigDetailsMatch(t *testing.T) {
 	readme2 := createTempFile(t, dir, "README2.md")
 	os.WriteFile(readme2, []byte(Readme2Contents), 0o600)
 
-	state := NewParseState("config.yaml", dir)
-	conf, err := ParseConfig(state, strings.NewReader(TestCaseForDetailCheckMatch))
+	state := NewParseStateV1("config.yaml", dir)
+	conf, err := ParseConfigV1(state, strings.NewReader(TestCaseForDetailCheckMatch))
 	require.NoError(t, err)
 
 	// Check metadata
@@ -158,7 +158,7 @@ func TestParseConfigDetailsMatch(t *testing.T) {
 
 func TestSortPageSlice(t *testing.T) {
 	// Test sorting by title
-	pages := []ConfigPage{
+	pages := []ConfigPageV1{
 		{Title: "B"},
 		{Title: "A"},
 	}
@@ -173,7 +173,7 @@ func TestSortPageSlice(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test sorting by updated_at
-	pages = []ConfigPage{
+	pages = []ConfigPageV1{
 		{UpdatedAt: st1},
 		{UpdatedAt: st2},
 	}
@@ -184,7 +184,7 @@ func TestSortPageSlice(t *testing.T) {
 	assert.Equal(t, "2021-01-02T00:00:00Z", pages[1].UpdatedAt.String())
 
 	// Test sorting by created_at
-	pages = []ConfigPage{
+	pages = []ConfigPageV1{
 		{CreatedAt: st1},
 		{CreatedAt: st2},
 	}
@@ -533,8 +533,8 @@ func TestParseConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// DO NOT parallelize this test.
 			// If you parallelize this test, the temp file cleanup will occur before testing.
-			state := NewParseState("config.yaml", workingDir)
-			_, err := ParseConfig(state, strings.NewReader(testCase.input))
+			state := NewParseStateV1("config.yaml", workingDir)
+			_, err := ParseConfigV1(state, strings.NewReader(testCase.input))
 			if testCase.expected {
 				require.NoError(t, err)
 			} else {
@@ -552,7 +552,7 @@ func TestConfigAsset(t *testing.T) {
 	createTempFile(t, dir, "image2.png")
 	createTempFile(t, dir, "image3.jpg")
 
-	c := ConfigAsset("image*.png")
+	c := ConfigAssetV1("image*.png")
 	ls, err := c.List(dir)
 	require.NoError(t, err)
 
@@ -573,7 +573,7 @@ func TestDirectoryTraversal(t *testing.T) {
 	createTempFile(t, dir, "image1.png")
 	createTempFile(t, subdir, "image2.png")
 
-	c := ConfigAsset("../../image*.png")
+	c := ConfigAssetV1("../../image*.png")
 	_, err = c.List(subdir)
 	require.Error(t, err)
 }

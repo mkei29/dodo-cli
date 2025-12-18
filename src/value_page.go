@@ -61,7 +61,7 @@ type Page struct {
 	Children    []Page                  `json:"children"`
 }
 
-func NewLeafNodeFromConfigPge(config *config.ConfigPage) Page {
+func NewLeafNodeFromConfigPge(config *config.ConfigPageV1) Page {
 	page := Page{
 		Type:        PageTypeLeafNode,
 		Filepath:    config.Markdown,
@@ -174,7 +174,7 @@ func (p *Page) Add(page Page) {
 	p.Children = append(p.Children, page)
 }
 
-func CreatePageTree(conf *config.Config, rootDir string) (*Page, *appErrors.MultiError) {
+func CreatePageTree(conf *config.ConfigV1, rootDir string) (*Page, *appErrors.MultiError) {
 	errorSet := appErrors.NewMultiError()
 	root := Page{
 		Type: PageTypeRootNode,
@@ -197,7 +197,7 @@ func CreatePageTree(conf *config.Config, rootDir string) (*Page, *appErrors.Mult
 	return &root, nil
 }
 
-func buildPage(rootDir string, c config.ConfigPage) ([]Page, *appErrors.MultiError) {
+func buildPage(rootDir string, c config.ConfigPageV1) ([]Page, *appErrors.MultiError) {
 	if c.MatchMarkdown() {
 		return transformMarkdown(rootDir, &c)
 	}
@@ -211,7 +211,7 @@ func buildPage(rootDir string, c config.ConfigPage) ([]Page, *appErrors.MultiErr
 	return nil, &err
 }
 
-func transformMarkdown(rootDir string, c *config.ConfigPage) ([]Page, *appErrors.MultiError) {
+func transformMarkdown(rootDir string, c *config.ConfigPageV1) ([]Page, *appErrors.MultiError) {
 	merr := appErrors.NewMultiError()
 	filepath := filepath.Clean(filepath.Join(rootDir, c.Markdown))
 
@@ -226,7 +226,7 @@ func transformMarkdown(rootDir string, c *config.ConfigPage) ([]Page, *appErrors
 	return []Page{p}, nil
 }
 
-func transformDirectory(rootDir string, c *config.ConfigPage) ([]Page, *appErrors.MultiError) {
+func transformDirectory(rootDir string, c *config.ConfigPageV1) ([]Page, *appErrors.MultiError) {
 	merr := appErrors.NewMultiError()
 
 	children := make([]Page, 0, len(c.Children))

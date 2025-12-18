@@ -56,8 +56,8 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 	prepareFile(t, dir, "README1.md", "content")
 	prepareFile(t, dir, "README2.md", "content")
 
-	state := config.NewParseState("config.yaml", dir)
-	conf, err := config.ParseConfig(state, strings.NewReader(TestCaseCreatePageWithMarkdown))
+	state := config.NewParseStateV1("config.yaml", dir)
+	conf, err := config.ParseConfigV1(state, strings.NewReader(TestCaseCreatePageWithMarkdown))
 	require.NoError(t, err)
 
 	page, merr := CreatePageTree(conf, dir)
@@ -130,8 +130,8 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 	---
 	`)
 
-	state := config.NewParseState("config.yaml", dir)
-	conf, err := config.ParseConfig(state, strings.NewReader(TestCaseCreatePageTreeMatch))
+	state := config.NewParseStateV1("config.yaml", dir)
+	conf, err := config.ParseConfigV1(state, strings.NewReader(TestCaseCreatePageTreeMatch))
 	require.NoError(t, err, "should not return error")
 
 	page, merr := CreatePageTree(conf, dir)
@@ -176,8 +176,8 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	---
 	`)
 
-	state := config.NewParseState("config.yaml", dir)
-	conf, err := config.ParseConfig(state, strings.NewReader(TestCaseCreatePageHybridCase))
+	state := config.NewParseStateV1("config.yaml", dir)
+	conf, err := config.ParseConfigV1(state, strings.NewReader(TestCaseCreatePageHybridCase))
 	require.NoError(t, err, "should not return error")
 
 	page, merr := CreatePageTree(conf, dir)
@@ -221,8 +221,8 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 	---
 	`)
 
-	state := config.NewParseState("config.yaml", dir)
-	conf, err := config.ParseConfig(state, strings.NewReader(TestCaseCreatePageWithDirectory))
+	state := config.NewParseStateV1("config.yaml", dir)
+	conf, err := config.ParseConfigV1(state, strings.NewReader(TestCaseCreatePageWithDirectory))
 	require.NoError(t, err)
 
 	page, merr := CreatePageTree(conf, dir)
@@ -342,8 +342,8 @@ func TestIsValid(t *testing.T) {
 			prepareFile(t, dir, "README1.md", "")
 			prepareFile(t, dir, "README2.md", "")
 
-			state := config.NewParseState("config.yaml", dir)
-			conf, err := config.ParseConfig(state, strings.NewReader(c.content))
+			state := config.NewParseStateV1("config.yaml", dir)
+			conf, err := config.ParseConfigV1(state, strings.NewReader(c.content))
 			require.NoError(t, err, "should not return error: %v", err)
 			page, merr := CreatePageTree(conf, dir)
 			require.Nil(t, merr, "CreatePageTree should not failed if the valid case is specified: %v", err)

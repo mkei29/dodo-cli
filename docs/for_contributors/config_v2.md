@@ -1,7 +1,7 @@
 
 
 
-# Support Config V2
+# Support ConfigV1 V2
 
 ## TODO
 * default languageのバリデーションをちゃんとやる
