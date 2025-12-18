@@ -18,6 +18,7 @@ import (
 	"github.com/goccy/go-yaml/parser"
 	"github.com/mattn/go-zglob"
 	appErrors "github.com/toritoritori29/dodo-cli/src/errors"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -405,8 +406,8 @@ func parseConfigProject(state *ParseStateV1, node *ast.MappingValueNode) { //nol
 	if state.config.Project.Name == "" {
 		state.errorSet.Add(state.buildParseError("the `project` must have a `name` field longer than 1 character", node))
 	}
-	if !isValidISOCountryCode(state.config.Project.DefaultLanguage) {
-		state.errorSet.Add(state.buildParseError("`default_language` field must be a valid ISO 3166-1 alpha-2 country code", node))
+	if !isValidISOLanguageCode(state.config.Project.DefaultLanguage) {
+		state.errorSet.Add(state.buildParseError(fmt.Sprintf("`default_language` field must be a valid ISO 639-1 language code. given: %s", state.config.Project.DefaultLanguage), node))
 	}
 
 	// Validate the repository field.
@@ -419,16 +420,15 @@ func parseConfigProject(state *ParseStateV1, node *ast.MappingValueNode) { //nol
 	}
 }
 
-func isValidISOCountryCode(code string) bool {
+func isValidISOLanguageCode(code string) bool {
 	if len(code) != 2 {
 		return false
 	}
-	for _, r := range code {
-		if r < 'a' || r > 'z' {
-			return false
-		}
+	lower := strings.ToLower(code)
+	if _, err := language.ParseBase(lower); err == nil {
+		return true
 	}
-	return true
+	return false
 }
 
 func parseConfigPage(state *ParseStateV1, node *ast.MappingValueNode) {

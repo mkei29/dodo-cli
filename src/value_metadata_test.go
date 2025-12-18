@@ -60,7 +60,7 @@ path: "test-page-2"
 				Version:         "1.0.0",
 				Logo:            "assets/test.png",
 				Repository:      "https://github.com/test/repo",
-				DefaultLanguage: "JP",
+				DefaultLanguage: "ja",
 			},
 			Pages: []config.ConfigPageV1{
 				{
@@ -99,7 +99,7 @@ path: "test-page-2"
 		assert.Equal(t, "1.0.0", metadata.Project.Version)
 		assert.Equal(t, "assets/test.png", metadata.Project.Logo)
 		assert.Equal(t, "https://github.com/test/repo", metadata.Project.Repository)
-		assert.Equal(t, "JP", metadata.Project.DefaultLanguage)
+		assert.Equal(t, "ja", metadata.Project.DefaultLanguage)
 
 		// Verify page structure exists (detailed validation would require understanding Page struct)
 		assert.NotNil(t, metadata.Page)
