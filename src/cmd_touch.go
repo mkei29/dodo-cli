@@ -10,6 +10,7 @@ import (
 
 	"github.com/caarlos0/log"
 	"github.com/spf13/cobra"
+	"github.com/toritoritori29/dodo-cli/src/config"
 )
 
 // The `touch` command helps the user manage markdown files.
@@ -123,7 +124,7 @@ func executeTouchNew(args TouchArgs) error {
 	}
 
 	sanitized := sanitizePath(filepath)
-	matter := NewFrontMatter(args.title, sanitized, now)
+	matter := config.NewFrontMatter(args.title, sanitized, now)
 
 	if _, err := file.WriteString(matter.String()); err != nil {
 		return fmt.Errorf("failed to write front matter: %w", err)
@@ -134,7 +135,7 @@ func executeTouchNew(args TouchArgs) error {
 
 func executeTouchUpdate(args TouchArgs) error {
 	log.Debug("Updating an existing markdown file")
-	matter, err := NewFrontMatterFromMarkdown(args.filepath)
+	matter, err := config.NewFrontMatterFromMarkdown(args.filepath)
 	if err != nil {
 		return err
 	}
@@ -153,7 +154,7 @@ func executeTouchUpdate(args TouchArgs) error {
 	if err != nil {
 		return err
 	}
-	matter.UpdatedAt = NewSerializableTimeFromTime(now)
+	matter.UpdatedAt = config.NewSerializableTimeFromTime(now)
 
 	// Rewrite a markdown
 	if err := matter.UpdateMarkdown(args.filepath); err != nil {

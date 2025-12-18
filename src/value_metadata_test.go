@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/toritoritori29/dodo-cli/src/config"
 )
 
 func TestNewMetadataFromConfig(t *testing.T) {
@@ -50,9 +51,9 @@ path: "test-page-2"
 	t.Run("successful metadata creation", func(t *testing.T) {
 		t.Parallel()
 		// Create test config
-		config := &Config{
+		config := &config.Config{
 			Version: "1",
-			Project: ConfigProject{
+			Project: config.ConfigProject{
 				ProjectID:       "test-project-id",
 				Name:            "Test Project",
 				Description:     "Test project description",
@@ -61,7 +62,7 @@ path: "test-page-2"
 				Repository:      "https://github.com/test/repo",
 				DefaultLanguage: "JP",
 			},
-			Pages: []ConfigPage{
+			Pages: []config.ConfigPage{
 				{
 					Markdown: "README1.md",
 					Title:    "Test Page 1",
@@ -73,7 +74,7 @@ path: "test-page-2"
 					Path:     "test-page-2",
 				},
 			},
-			Assets: []ConfigAsset{
+			Assets: []config.ConfigAsset{
 				"assets/*",
 			},
 		}
@@ -111,14 +112,14 @@ path: "test-page-2"
 	// Test with empty config
 	t.Run("empty pages config", func(t *testing.T) {
 		t.Parallel()
-		config := &Config{
+		config := &config.Config{
 			Version: "1",
-			Project: ConfigProject{
+			Project: config.ConfigProject{
 				ProjectID: "test-project-id",
 				Name:      "Test Project",
 			},
-			Pages:  []ConfigPage{},
-			Assets: []ConfigAsset{},
+			Pages:  []config.ConfigPage{},
+			Assets: []config.ConfigAsset{},
 		}
 
 		oldWd, err := os.Getwd()
@@ -138,14 +139,14 @@ path: "test-page-2"
 	// Test with invalid asset MIME type
 	t.Run("invalid asset MIME type", func(t *testing.T) {
 		t.Parallel()
-		invalidConfig := &Config{
+		invalidConfig := &config.Config{
 			Version: "1",
-			Project: ConfigProject{
+			Project: config.ConfigProject{
 				ProjectID: "test-project-id",
 				Name:      "Test Project",
 			},
-			Pages: []ConfigPage{},
-			Assets: []ConfigAsset{
+			Pages: []config.ConfigPage{},
+			Assets: []config.ConfigAsset{
 				"*.txt", // This will match invalid.txt which has unsupported MIME type
 			},
 		}
@@ -163,15 +164,15 @@ path: "test-page-2"
 	// Test with invalid asset MIME type
 	t.Run("invalid logo MIME type", func(t *testing.T) {
 		t.Parallel()
-		invalidConfig := &Config{
+		invalidConfig := &config.Config{
 			Version: "1",
-			Project: ConfigProject{
+			Project: config.ConfigProject{
 				ProjectID: "test-project-id",
 				Name:      "Test Project",
 				Logo:      "invalid.txt", // invalid.txt has unsupported MIME type
 			},
-			Pages:  []ConfigPage{},
-			Assets: []ConfigAsset{},
+			Pages:  []config.ConfigPage{},
+			Assets: []config.ConfigAsset{},
 		}
 
 		oldWd, err := os.Getwd()

@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/caarlos0/log"
+	"github.com/toritoritori29/dodo-cli/src/config"
+	appErrors "github.com/toritoritori29/dodo-cli/src/errors"
 )
 
 var AvailableMimeTypes = []string{ //nolint: gochecknoglobals
@@ -28,12 +30,12 @@ type Metadata struct {
 	Asset   []MetadataAsset `json:"asset"`
 }
 
-func NewMetadataFromConfig(config *Config) (*Metadata, error) {
-	project := NewMetadataProjectFromConfig(config)
-	merr := NewMultiError()
+func NewMetadataFromConfig(conf *config.Config) (*Metadata, error) {
+	project := NewMetadataProjectFromConfig(conf)
+	merr := appErrors.NewMultiError()
 
 	// Validate Page structs from config.
-	page, err := CreatePageTree(config, ".")
+	page, err := CreatePageTree(conf, ".")
 	if err != nil {
 		merr.Merge(*err)
 	}
@@ -42,7 +44,7 @@ func NewMetadataFromConfig(config *Config) (*Metadata, error) {
 	}
 
 	// Validate Assets struct from config.
-	assets, err := NewMetadataAssetFromConfig(config, ".")
+	assets, err := NewMetadataAssetFromConfig(conf, ".")
 	if err != nil {
 		merr.Merge(*err)
 	}
@@ -81,7 +83,7 @@ type MetadataProject struct {
 	DefaultLanguage string `json:"default_language"`
 }
 
-func NewMetadataProjectFromConfig(c *Config) MetadataProject {
+func NewMetadataProjectFromConfig(c *config.Config) MetadataProject {
 	return MetadataProject{
 		ProjectID:       c.Project.ProjectID,
 		Name:            c.Project.Name,
@@ -107,9 +109,9 @@ func NewMetadataAsset(path string) MetadataAsset {
 	}
 }
 
-func NewMetadataAssetFromConfig(c *Config, rootDir string) ([]MetadataAsset, *MultiError) {
+func NewMetadataAssetFromConfig(c *config.Config, rootDir string) ([]MetadataAsset, *appErrors.MultiError) {
 	// Create Assets struct from config.
-	merr := NewMultiError()
+	merr := appErrors.NewMultiError()
 	metadataAssets := make([]MetadataAsset, 0, len(c.Assets)*10)
 	for _, a := range c.Assets {
 		files, err := a.List(rootDir)

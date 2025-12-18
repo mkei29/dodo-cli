@@ -1,14 +1,13 @@
-package main
+package errors
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/caarlos0/log"
 	"github.com/goccy/go-yaml/ast"
 )
 
-var ErrAlreadyHandled = errors.New("already handled error")
+var ErrAlreadyHandled = fmt.Errorf("already handled error")
 
 type AppError struct {
 	message string
@@ -70,15 +69,15 @@ func (e *MultiError) Summary() {
 }
 
 type ParseError struct {
-	filepath string
-	message  string
-	line     string
-	node     ast.Node
+	Filepath string
+	Message  string
+	Line     string
+	Node     ast.Node
 }
 
 func (e *ParseError) Error() string {
-	line := e.node.GetToken().Position.Line
-	return fmt.Sprintf("%s:%d: %s", e.filepath, line, e.message)
+	line := e.Node.GetToken().Position.Line
+	return fmt.Sprintf("%s:%d: %s", e.Filepath, line, e.Message)
 }
 
 func (e *ParseError) Is(target error) bool {

@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/caarlos0/log"
+	"github.com/toritoritori29/dodo-cli/src/config"
+	appErrors "github.com/toritoritori29/dodo-cli/src/errors"
 )
 
 const (
@@ -49,17 +51,17 @@ func NewPageHeaderFromPage(p *Page) PageSummary {
 }
 
 type Page struct {
-	Type        string           `json:"type"`
-	Filepath    string           `json:"filepath"`
-	Hash        string           `json:"hash"`
-	Path        string           `json:"path"`
-	Title       string           `json:"title"`
-	Description string           `json:"description"`
-	UpdatedAt   SerializableTime `json:"updated_at"`
-	Children    []Page           `json:"children"`
+	Type        string                  `json:"type"`
+	Filepath    string                  `json:"filepath"`
+	Hash        string                  `json:"hash"`
+	Path        string                  `json:"path"`
+	Title       string                  `json:"title"`
+	Description string                  `json:"description"`
+	UpdatedAt   config.SerializableTime `json:"updated_at"`
+	Children    []Page                  `json:"children"`
 }
 
-func NewLeafNodeFromConfigPge(config *ConfigPage) Page {
+func NewLeafNodeFromConfigPge(config *config.ConfigPage) Page {
 	page := Page{
 		Type:        PageTypeLeafNode,
 		Filepath:    config.Markdown,
@@ -92,8 +94,8 @@ func listPageHeader(list []PageSummary, p *Page) []PageSummary {
 // This function checks the following conditions:
 // 1. All pages have necessary fields.
 // 2. There are no duplicated paths.
-func (p *Page) IsValid() *MultiError {
-	errorSet := NewMultiError()
+func (p *Page) IsValid() *appErrors.MultiError {
+	errorSet := appErrors.NewMultiError()
 	p.isValid(true, &errorSet)
 	if errorSet.HasError() {
 		return &errorSet
@@ -103,7 +105,7 @@ func (p *Page) IsValid() *MultiError {
 	p.duplicationCount(pathMap, "")
 	for path, value := range pathMap {
 		if value > 1 {
-			errorSet.Add(NewAppError(fmt.Sprintf("duplicated path was found. path: `%s`", path)))
+			errorSet.Add(appErrors.NewAppError(fmt.Sprintf("duplicated path was found. path: `%s`", path)))
 		}
 	}
 	if errorSet.HasError() {
@@ -112,17 +114,17 @@ func (p *Page) IsValid() *MultiError {
 	return nil
 }
 
-func (p *Page) isValid(isRoot bool, errorSet *MultiError) {
+func (p *Page) isValid(isRoot bool, errorSet *appErrors.MultiError) {
 	if isRoot && p.Type != PageTypeRootNode {
-		errorSet.Add(NewAppError("Type for root node should be RootNode"))
+		errorSet.Add(appErrors.NewAppError("Type for root node should be RootNode"))
 		return
 	}
 	if !isRoot && p.Type == PageTypeRootNode {
-		errorSet.Add(NewAppError("Type for non-root node should not be RootNode"))
+		errorSet.Add(appErrors.NewAppError("Type for non-root node should not be RootNode"))
 		return
 	}
 	if p.Type == PageTypeLeafNode && p.Path == "" {
-		errorSet.Add(NewAppError("'path' is required for leaf node"))
+		errorSet.Add(appErrors.NewAppError("'path' is required for leaf node"))
 	}
 	for _, c := range p.Children {
 		c.isValid(false, errorSet)
@@ -172,14 +174,14 @@ func (p *Page) Add(page Page) {
 	p.Children = append(p.Children, page)
 }
 
-func CreatePageTree(config *Config, rootDir string) (*Page, *MultiError) {
-	errorSet := NewMultiError()
+func CreatePageTree(conf *config.Config, rootDir string) (*Page, *appErrors.MultiError) {
+	errorSet := appErrors.NewMultiError()
 	root := Page{
 		Type: PageTypeRootNode,
 	}
 
-	children := make([]Page, 0, len(config.Pages))
-	for _, p := range config.Pages {
+	children := make([]Page, 0, len(conf.Pages))
+	for _, p := range conf.Pages {
 		c, merr := buildPage(rootDir, p)
 		if merr != nil {
 			errorSet.Merge(*merr)
@@ -195,7 +197,7 @@ func CreatePageTree(config *Config, rootDir string) (*Page, *MultiError) {
 	return &root, nil
 }
 
-func buildPage(rootDir string, c ConfigPage) ([]Page, *MultiError) {
+func buildPage(rootDir string, c config.ConfigPage) ([]Page, *appErrors.MultiError) {
 	if c.MatchMarkdown() {
 		return transformMarkdown(rootDir, &c)
 	}
@@ -204,16 +206,16 @@ func buildPage(rootDir string, c ConfigPage) ([]Page, *MultiError) {
 		return transformDirectory(rootDir, &c)
 	}
 
-	err := NewMultiError()
-	err.Add(NewAppError("invalid configuration: doesn't match any pattern"))
+	err := appErrors.NewMultiError()
+	err.Add(appErrors.NewAppError("invalid configuration: doesn't match any pattern"))
 	return nil, &err
 }
 
-func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
-	merr := NewMultiError()
+func transformMarkdown(rootDir string, c *config.ConfigPage) ([]Page, *appErrors.MultiError) {
+	merr := appErrors.NewMultiError()
 	filepath := filepath.Clean(filepath.Join(rootDir, c.Markdown))
 
-	if err := IsUnderRootPath(rootDir, filepath); err != nil {
+	if err := config.IsUnderRootPath(rootDir, filepath); err != nil {
 		merr.Add(fmt.Errorf("path should be under the rootDir. passed: %s", filepath))
 		return nil, &merr
 	}
@@ -224,8 +226,8 @@ func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
 	return []Page{p}, nil
 }
 
-func transformDirectory(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
-	merr := NewMultiError()
+func transformDirectory(rootDir string, c *config.ConfigPage) ([]Page, *appErrors.MultiError) {
+	merr := appErrors.NewMultiError()
 
 	children := make([]Page, 0, len(c.Children))
 	for _, child := range c.Children {

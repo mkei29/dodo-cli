@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/caarlos0/log"
+	appErrors "github.com/toritoritori29/dodo-cli/src/errors"
 )
 
 const (
@@ -64,13 +65,13 @@ func (a *Archive) Close() error {
 	return nil
 }
 
-func (a *Archive) Archive(metadata *Metadata) *MultiError {
+func (a *Archive) Archive(metadata *Metadata) *appErrors.MultiError {
 	// Archive documents
 	zipWriter := zip.NewWriter(a.File)
 	defer zipWriter.Close()
 
 	// New docs logics
-	merr := NewMultiError()
+	merr := appErrors.NewMultiError()
 	for _, page := range metadata.Page.ListPageHeader() {
 		if page.Type != PageTypeLeafNode {
 			continue

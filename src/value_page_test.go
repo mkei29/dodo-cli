@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/toritoritori29/dodo-cli/src/config"
 )
 
 func prepareTempDir(t *testing.T) string {
@@ -55,8 +56,8 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 	prepareFile(t, dir, "README1.md", "content")
 	prepareFile(t, dir, "README2.md", "content")
 
-	state := NewParseState("config.yaml", dir)
-	conf, err := ParseConfig(state, strings.NewReader(TestCaseCreatePageWithMarkdown))
+	state := config.NewParseState("config.yaml", dir)
+	conf, err := config.ParseConfig(state, strings.NewReader(TestCaseCreatePageWithMarkdown))
 	require.NoError(t, err)
 
 	page, merr := CreatePageTree(conf, dir)
@@ -129,8 +130,8 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 	---
 	`)
 
-	state := NewParseState("config.yaml", dir)
-	conf, err := ParseConfig(state, strings.NewReader(TestCaseCreatePageTreeMatch))
+	state := config.NewParseState("config.yaml", dir)
+	conf, err := config.ParseConfig(state, strings.NewReader(TestCaseCreatePageTreeMatch))
 	require.NoError(t, err, "should not return error")
 
 	page, merr := CreatePageTree(conf, dir)
@@ -175,8 +176,8 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	---
 	`)
 
-	state := NewParseState("config.yaml", dir)
-	conf, err := ParseConfig(state, strings.NewReader(TestCaseCreatePageHybridCase))
+	state := config.NewParseState("config.yaml", dir)
+	conf, err := config.ParseConfig(state, strings.NewReader(TestCaseCreatePageHybridCase))
 	require.NoError(t, err, "should not return error")
 
 	page, merr := CreatePageTree(conf, dir)
@@ -220,8 +221,8 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 	---
 	`)
 
-	state := NewParseState("config.yaml", dir)
-	conf, err := ParseConfig(state, strings.NewReader(TestCaseCreatePageWithDirectory))
+	state := config.NewParseState("config.yaml", dir)
+	conf, err := config.ParseConfig(state, strings.NewReader(TestCaseCreatePageWithDirectory))
 	require.NoError(t, err)
 
 	page, merr := CreatePageTree(conf, dir)
@@ -341,8 +342,8 @@ func TestIsValid(t *testing.T) {
 			prepareFile(t, dir, "README1.md", "")
 			prepareFile(t, dir, "README2.md", "")
 
-			state := NewParseState("config.yaml", dir)
-			conf, err := ParseConfig(state, strings.NewReader(c.content))
+			state := config.NewParseState("config.yaml", dir)
+			conf, err := config.ParseConfig(state, strings.NewReader(c.content))
 			require.NoError(t, err, "should not return error: %v", err)
 			page, merr := CreatePageTree(conf, dir)
 			require.Nil(t, merr, "CreatePageTree should not failed if the valid case is specified: %v", err)

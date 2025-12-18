@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"bytes"
@@ -17,6 +17,7 @@ import (
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/parser"
 	"github.com/mattn/go-zglob"
+	appErrors "github.com/toritoritori29/dodo-cli/src/errors"
 )
 
 const (
@@ -133,7 +134,7 @@ type ParseState struct {
 	isPagesAlreadyParsed      bool
 	isAssetsAlreadyParsed     bool
 	isAnnotationAlreadyParsed bool
-	errorSet                  MultiError
+	errorSet                  appErrors.MultiError
 }
 
 func NewParseState(filepath, workingDir string) *ParseState {
@@ -145,11 +146,11 @@ func NewParseState(filepath, workingDir string) *ParseState {
 
 func (s *ParseState) buildParseError(message string, node ast.Node) error {
 	line := s.getLineFromNode(node)
-	return &ParseError{
-		filepath: s.filepath,
-		message:  message,
-		line:     line,
-		node:     node,
+	return &appErrors.ParseError{
+		Filepath: s.filepath,
+		Message:  message,
+		Line:     line,
+		Node:     node,
 	}
 }
 
