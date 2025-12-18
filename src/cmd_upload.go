@@ -9,6 +9,7 @@ import (
 
 	"github.com/caarlos0/log"
 	"github.com/spf13/cobra"
+	"github.com/toritoritori29/dodo-cli/src/config"
 )
 
 var AvailableFormats = []string{ //nolint: gochecknoglobals
@@ -116,14 +117,14 @@ func executeUpload(args UploadArgs, env EnvArgs) (string, error) {
 	}
 	defer configFile.Close()
 
-	state := NewParseState(args.file, "./")
-	config, err := ParseConfig(state, configFile)
+	state := config.NewParseStateV1(args.file, "./")
+	conf, err := config.ParseConfigV1(state, configFile)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse the config file: %w", err)
 	}
 
 	// Transform config to metadata
-	metadata, err := NewMetadataFromConfig(config)
+	metadata, err := NewMetadataFromConfigV1(conf)
 	if err != nil {
 		return "", err
 	}

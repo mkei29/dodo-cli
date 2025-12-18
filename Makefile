@@ -5,7 +5,7 @@ build:
 
 .PHONY: test
 test:
-	go test ./src
+	go test ./src/...
 
 .PHONY: fmt
 fmt:

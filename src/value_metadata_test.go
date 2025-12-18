@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/toritoritori29/dodo-cli/src/config"
 )
 
 func TestNewMetadataFromConfig(t *testing.T) {
@@ -50,17 +51,18 @@ path: "test-page-2"
 	t.Run("successful metadata creation", func(t *testing.T) {
 		t.Parallel()
 		// Create test config
-		config := &Config{
+		config := &config.ConfigV1{
 			Version: "1",
-			Project: ConfigProject{
-				ProjectID:   "test-project-id",
-				Name:        "Test Project",
-				Description: "Test project description",
-				Version:     "1.0.0",
-				Logo:        "assets/test.png",
-				Repository:  "https://github.com/test/repo",
+			Project: config.ConfigProjectV1{
+				ProjectID:       "test-project-id",
+				Name:            "Test Project",
+				Description:     "Test project description",
+				Version:         "1.0.0",
+				Logo:            "assets/test.png",
+				Repository:      "https://github.com/test/repo",
+				DefaultLanguage: "ja",
 			},
-			Pages: []ConfigPage{
+			Pages: []config.ConfigPageV1{
 				{
 					Markdown: "README1.md",
 					Title:    "Test Page 1",
@@ -72,7 +74,7 @@ path: "test-page-2"
 					Path:     "test-page-2",
 				},
 			},
-			Assets: []ConfigAsset{
+			Assets: []config.ConfigAssetV1{
 				"assets/*",
 			},
 		}
@@ -83,7 +85,7 @@ path: "test-page-2"
 		require.NoError(t, os.Chdir(dir))
 		defer os.Chdir(oldWd)
 
-		metadata, err := NewMetadataFromConfig(config)
+		metadata, err := NewMetadataFromConfigV1(config)
 		require.NoError(t, err)
 		require.NotNil(t, metadata)
 
@@ -97,6 +99,7 @@ path: "test-page-2"
 		assert.Equal(t, "1.0.0", metadata.Project.Version)
 		assert.Equal(t, "assets/test.png", metadata.Project.Logo)
 		assert.Equal(t, "https://github.com/test/repo", metadata.Project.Repository)
+		assert.Equal(t, "ja", metadata.Project.DefaultLanguage)
 
 		// Verify page structure exists (detailed validation would require understanding Page struct)
 		assert.NotNil(t, metadata.Page)
@@ -109,14 +112,14 @@ path: "test-page-2"
 	// Test with empty config
 	t.Run("empty pages config", func(t *testing.T) {
 		t.Parallel()
-		config := &Config{
+		config := &config.ConfigV1{
 			Version: "1",
-			Project: ConfigProject{
+			Project: config.ConfigProjectV1{
 				ProjectID: "test-project-id",
 				Name:      "Test Project",
 			},
-			Pages:  []ConfigPage{},
-			Assets: []ConfigAsset{},
+			Pages:  []config.ConfigPageV1{},
+			Assets: []config.ConfigAssetV1{},
 		}
 
 		oldWd, err := os.Getwd()
@@ -124,7 +127,7 @@ path: "test-page-2"
 		require.NoError(t, os.Chdir(dir))
 		defer os.Chdir(oldWd)
 
-		metadata, err := NewMetadataFromConfig(config)
+		metadata, err := NewMetadataFromConfigV1(config)
 		require.NoError(t, err)
 		require.NotNil(t, metadata)
 
@@ -136,14 +139,14 @@ path: "test-page-2"
 	// Test with invalid asset MIME type
 	t.Run("invalid asset MIME type", func(t *testing.T) {
 		t.Parallel()
-		invalidConfig := &Config{
+		invalidConfig := &config.ConfigV1{
 			Version: "1",
-			Project: ConfigProject{
+			Project: config.ConfigProjectV1{
 				ProjectID: "test-project-id",
 				Name:      "Test Project",
 			},
-			Pages: []ConfigPage{},
-			Assets: []ConfigAsset{
+			Pages: []config.ConfigPageV1{},
+			Assets: []config.ConfigAssetV1{
 				"*.txt", // This will match invalid.txt which has unsupported MIME type
 			},
 		}
@@ -153,7 +156,7 @@ path: "test-page-2"
 		require.NoError(t, os.Chdir(dir))
 		defer os.Chdir(oldWd)
 
-		metadata, err := NewMetadataFromConfig(invalidConfig)
+		metadata, err := NewMetadataFromConfigV1(invalidConfig)
 		require.Error(t, err)
 		assert.Nil(t, metadata)
 	})
@@ -161,15 +164,15 @@ path: "test-page-2"
 	// Test with invalid asset MIME type
 	t.Run("invalid logo MIME type", func(t *testing.T) {
 		t.Parallel()
-		invalidConfig := &Config{
+		invalidConfig := &config.ConfigV1{
 			Version: "1",
-			Project: ConfigProject{
+			Project: config.ConfigProjectV1{
 				ProjectID: "test-project-id",
 				Name:      "Test Project",
 				Logo:      "invalid.txt", // invalid.txt has unsupported MIME type
 			},
-			Pages:  []ConfigPage{},
-			Assets: []ConfigAsset{},
+			Pages:  []config.ConfigPageV1{},
+			Assets: []config.ConfigAssetV1{},
 		}
 
 		oldWd, err := os.Getwd()
@@ -177,7 +180,7 @@ path: "test-page-2"
 		require.NoError(t, os.Chdir(dir))
 		defer os.Chdir(oldWd)
 
-		metadata, err := NewMetadataFromConfig(invalidConfig)
+		metadata, err := NewMetadataFromConfigV1(invalidConfig)
 		require.Error(t, err)
 		assert.Nil(t, metadata)
 	})

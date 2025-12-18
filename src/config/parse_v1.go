@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"bytes"
@@ -17,6 +17,8 @@ import (
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/parser"
 	"github.com/mattn/go-zglob"
+	appErrors "github.com/toritoritori29/dodo-cli/src/errors"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -46,23 +48,24 @@ const (
 	ConfigPageDirectoryKeyChildren  = "children"
 )
 
-type Config struct {
+type ConfigV1 struct {
 	Version string
-	Project ConfigProject
-	Pages   []ConfigPage
-	Assets  []ConfigAsset
+	Project ConfigProjectV1
+	Pages   []ConfigPageV1
+	Assets  []ConfigAssetV1
 }
 
-type ConfigProject struct {
-	ProjectID   string
-	Name        string
-	Description string
-	Version     string
-	Logo        string
-	Repository  string
+type ConfigProjectV1 struct {
+	ProjectID       string
+	Name            string
+	Description     string
+	Version         string
+	Logo            string
+	Repository      string
+	DefaultLanguage string
 }
 
-type ConfigPage struct {
+type ConfigPageV1 struct {
 	// markdown syntax
 	Markdown    string
 	Title       string
@@ -73,28 +76,28 @@ type ConfigPage struct {
 
 	// directory syntax
 	Directory string
-	Children  []ConfigPage
+	Children  []ConfigPageV1
 
 	// NOTE: match syntax is translated to a markdown statement.
 }
 
 // Check if the page is a valid single page.
-func (c *ConfigPage) MatchMarkdown() bool {
+func (c *ConfigPageV1) MatchMarkdown() bool {
 	return c.Markdown != ""
 }
 
-func (c *ConfigPage) MatchDirectory() bool {
+func (c *ConfigPageV1) MatchDirectory() bool {
 	return c.Directory != ""
 }
 
-func (c *ConfigPage) isValidTitle() error {
+func (c *ConfigPageV1) isValidTitle() error {
 	if c.Title == "" {
 		return errors.New("the `title` field is required")
 	}
 	return nil
 }
 
-func (c *ConfigPage) isValidPath() error {
+func (c *ConfigPageV1) isValidPath() error {
 	// The path must contain only alphanumeric characters, periods (.), underscores (_), and hyphens (-).
 	if c.Path == "" {
 		return errors.New("the `path` field is required")
@@ -106,9 +109,9 @@ func (c *ConfigPage) isValidPath() error {
 	return nil
 }
 
-type ConfigAsset string
+type ConfigAssetV1 string
 
-func (m ConfigAsset) List(rootDir string) ([]string, error) {
+func (m ConfigAssetV1) List(rootDir string) ([]string, error) {
 	globPath := filepath.Clean(filepath.Join(rootDir, string(m)))
 	if err := IsUnderRootPath(rootDir, globPath); err != nil {
 		return nil, fmt.Errorf("invalid configuration: path must be under the root directory: path: %s", globPath)
@@ -122,37 +125,37 @@ func (m ConfigAsset) List(rootDir string) ([]string, error) {
 }
 
 // A struct to keep the state of the parsing process.
-type ParseState struct {
-	filepath                  string // The name of the file being parsed.
-	config                    Config // The config object being generated.
-	contents                  []byte // The contents of the file being parsed.
+type ParseStateV1 struct {
+	filepath                  string   // The name of the file being parsed.
+	config                    ConfigV1 // The config object being generated.
+	contents                  []byte   // The contents of the file being parsed.
 	rootPath                  string
 	isVersionAlreadyParsed    bool
 	isProjectAlreadyParsed    bool
 	isPagesAlreadyParsed      bool
 	isAssetsAlreadyParsed     bool
 	isAnnotationAlreadyParsed bool
-	errorSet                  MultiError
+	errorSet                  appErrors.MultiError
 }
 
-func NewParseState(filepath, workingDir string) *ParseState {
-	return &ParseState{
+func NewParseStateV1(filepath, workingDir string) *ParseStateV1 {
+	return &ParseStateV1{
 		filepath: filepath,
 		rootPath: workingDir,
 	}
 }
 
-func (s *ParseState) buildParseError(message string, node ast.Node) error {
+func (s *ParseStateV1) buildParseError(message string, node ast.Node) error {
 	line := s.getLineFromNode(node)
-	return &ParseError{
-		filepath: s.filepath,
-		message:  message,
-		line:     line,
-		node:     node,
+	return &appErrors.ParseError{
+		Filepath: s.filepath,
+		Message:  message,
+		Line:     line,
+		Node:     node,
 	}
 }
 
-func (s *ParseState) getLineFromNode(node ast.Node) string {
+func (s *ParseStateV1) getLineFromNode(node ast.Node) string {
 	lines := bytes.Split(s.contents, []byte("\n"))
 	lineNumber := node.GetToken().Position.Line - 1
 	if lineNumber < 0 || lineNumber >= len(lines) {
@@ -161,7 +164,7 @@ func (s *ParseState) getLineFromNode(node ast.Node) string {
 	return string(lines[lineNumber])
 }
 
-func (s *ParseState) getSecurePath(path string) (string, error) {
+func (s *ParseStateV1) getSecurePath(path string) (string, error) {
 	absRootPath, err := filepath.Abs(s.rootPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to get the absolute path of the working directory: %w", err)
@@ -181,13 +184,13 @@ func (s *ParseState) getSecurePath(path string) (string, error) {
 	return absPath, nil
 }
 
-// ParseConfig takes a reader and parses it into a Config struct.
+// ParseConfigV1 takes a reader and parses it into a ConfigV1 struct.
 // While parsing, it validates the config at the same time.
 // This is to provide a user-friendly error message.
 //
 // This function follows the implementation at:
 // https://github.com/goccy/go-yaml/blob/abc70836f5a5623a92cf51d4bf40cbaf8fed2faa/decode.go
-func ParseConfig(state *ParseState, reader io.Reader) (*Config, error) {
+func ParseConfigV1(state *ParseStateV1, reader io.Reader) (*ConfigV1, error) {
 	buf := new(bytes.Buffer)
 	_, err := io.Copy(buf, reader)
 	if err != nil {
@@ -211,7 +214,7 @@ func ParseConfig(state *ParseState, reader io.Reader) (*Config, error) {
 	return &state.config, nil
 }
 
-func parseRoot(state *ParseState, root *ast.File) {
+func parseRoot(state *ParseStateV1, root *ast.File) {
 	if len(root.Docs) != 1 {
 		state.errorSet.Add(fmt.Errorf("there should be only one document. Got %d", len(root.Docs)))
 		return
@@ -241,7 +244,7 @@ func parseRoot(state *ParseState, root *ast.File) {
 	}
 }
 
-func parseRootItem(state *ParseState, node ast.Node) {
+func parseRootItem(state *ParseStateV1, node ast.Node) {
 	mapping, ok := node.(*ast.MappingValueNode)
 	if !ok {
 		state.errorSet.Add(state.buildParseError("a key-value pair is expected at the top level", node))
@@ -270,7 +273,7 @@ func parseRootItem(state *ParseState, node ast.Node) {
 	state.errorSet.Add(state.buildParseError("unexpected key at the top level", mapping.Key))
 }
 
-func parseVersion(state *ParseState, node *ast.MappingValueNode) {
+func parseVersion(state *ParseStateV1, node *ast.MappingValueNode) {
 	// This function should be called only once.
 	// Receives an object like the following:
 	//
@@ -307,7 +310,7 @@ func parseVersion(state *ParseState, node *ast.MappingValueNode) {
 	state.config.Version = strconv.Itoa(versionNum)
 }
 
-func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolint: cyclop, funlen
+func parseConfigProject(state *ParseStateV1, node *ast.MappingValueNode) { //nolint: cyclop, funlen
 	// This function should be called only once.
 	// Receives an object like the following:
 	//
@@ -324,7 +327,7 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 	state.isProjectAlreadyParsed = true
 
 	// node.value should be a mapping type.
-	// ConfigProject needs name, description, and version.
+	// ConfigProjectV1 needs name, description, and version.
 	// And all of them are string type.
 	children, ok := node.Value.(*ast.MappingNode)
 	if !ok {
@@ -377,18 +380,34 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 				continue
 			}
 			state.config.Project.Repository = v.Value
+		case "default_language":
+			v, ok := item.Value.(*ast.StringNode)
+			if !ok {
+				state.errorSet.Add(state.buildParseError("`default_language` field must be a string", item.Value))
+				continue
+			}
+			defaultLanguage := strings.ToLower(v.Value)
+
+			state.config.Project.DefaultLanguage = defaultLanguage
 		default:
 			state.errorSet.Add(state.buildParseError("the `project` does not accept the key: "+key, item))
 		}
 	}
 
+	// Post processing and validation.
+	if state.config.Project.DefaultLanguage == "" {
+		state.config.Project.DefaultLanguage = "en"
+	}
+
+	// Validate the required fields.
 	if state.config.Project.ProjectID == "" {
 		state.errorSet.Add(state.buildParseError("the `project` must have a `project_id` field longer than 1 character", node))
 	}
-
-	// Validate the fields.
 	if state.config.Project.Name == "" {
 		state.errorSet.Add(state.buildParseError("the `project` must have a `name` field longer than 1 character", node))
+	}
+	if !isValidISOLanguageCode(state.config.Project.DefaultLanguage) {
+		state.errorSet.Add(state.buildParseError(fmt.Sprintf("`default_language` field must be a valid ISO 639-1 language code (e.g., 'ja'). given: %s", state.config.Project.DefaultLanguage), node))
 	}
 
 	// Validate the repository field.
@@ -401,7 +420,18 @@ func parseConfigProject(state *ParseState, node *ast.MappingValueNode) { //nolin
 	}
 }
 
-func parseConfigPage(state *ParseState, node *ast.MappingValueNode) {
+func isValidISOLanguageCode(code string) bool {
+	if len(code) != 2 {
+		return false
+	}
+	lower := strings.ToLower(code)
+	if _, err := language.ParseBase(lower); err == nil {
+		return true
+	}
+	return false
+}
+
+func parseConfigPage(state *ParseStateV1, node *ast.MappingValueNode) {
 	// This function should be called only once.
 	// Receives an object like the following:
 	//
@@ -425,7 +455,7 @@ func parseConfigPage(state *ParseState, node *ast.MappingValueNode) {
 	state.config.Pages = parseConfigPageSequence(state, sequence)
 }
 
-func parseConfigPageSequence(state *ParseState, sequence *ast.SequenceNode) []ConfigPage {
+func parseConfigPageSequence(state *ParseStateV1, sequence *ast.SequenceNode) []ConfigPageV1 {
 	// Receives an object like the following:
 	//
 	// xxx:
@@ -434,7 +464,7 @@ func parseConfigPageSequence(state *ParseState, sequence *ast.SequenceNode) []Co
 	//   - markdown: "README2.md"
 	//     ...
 
-	configPages := make([]ConfigPage, 0, len(sequence.Values))
+	configPages := make([]ConfigPageV1, 0, len(sequence.Values))
 	for _, item := range sequence.Values {
 		pageNode, ok := item.(*ast.MappingNode)
 		if !ok {
@@ -499,7 +529,7 @@ func estimateConfigPageType(mapping *ast.MappingNode) int {
 	return ConfigPageTypeUnknown
 }
 
-func parseConfigPageMarkdown(state *ParseState, mapping *ast.MappingNode) ConfigPage { //nolint: cyclop, funlen
+func parseConfigPageMarkdown(state *ParseStateV1, mapping *ast.MappingNode) ConfigPageV1 { //nolint: cyclop, funlen
 	// A markdown object has the following fields:
 	// {
 	//   "markdown": "README1.md",
@@ -509,7 +539,7 @@ func parseConfigPageMarkdown(state *ParseState, mapping *ast.MappingNode) Config
 	//   "updated_at": "2021-01-01T00:00:00Z"
 	// }
 
-	configPage := ConfigPage{}
+	configPage := ConfigPageV1{}
 
 	for _, item := range mapping.Values {
 		key := item.Key.String()
@@ -579,7 +609,7 @@ func parseConfigPageMarkdown(state *ParseState, mapping *ast.MappingNode) Config
 	return configPage
 }
 
-func fillFieldsFromMarkdown(state *ParseState, configPage *ConfigPage, mapping *ast.MappingNode) { //nolint: cyclop
+func fillFieldsFromMarkdown(state *ParseStateV1, configPage *ConfigPageV1, mapping *ast.MappingNode) { //nolint: cyclop
 	if configPage.Markdown == "" {
 		state.errorSet.Add(state.buildParseError("the `markdown` field is required", mapping))
 		return
@@ -615,7 +645,7 @@ func fillFieldsFromMarkdown(state *ParseState, configPage *ConfigPage, mapping *
 	}
 }
 
-func validateMarkdownPage(state *ParseState, configPage *ConfigPage, mapping *ast.MappingNode) bool {
+func validateMarkdownPage(state *ParseStateV1, configPage *ConfigPageV1, mapping *ast.MappingNode) bool {
 	ok := true
 	if err := configPage.isValidTitle(); err != nil {
 		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
@@ -628,7 +658,7 @@ func validateMarkdownPage(state *ParseState, configPage *ConfigPage, mapping *as
 	return ok
 }
 
-func parseConfigPageMatch(state *ParseState, mapping *ast.MappingNode) []ConfigPage { //nolint: cyclop
+func parseConfigPageMatch(state *ParseStateV1, mapping *ast.MappingNode) []ConfigPageV1 { //nolint: cyclop
 	// A match object has the following fields:
 	// {
 	//   "match": "docs/*.md",
@@ -687,7 +717,7 @@ func parseConfigPageMatch(state *ParseState, mapping *ast.MappingNode) []ConfigP
 	return buildConfigPageFromMatchStatement(state, mapping, match, sortKey, sortOrder)
 }
 
-func buildConfigPageFromMatchStatement(state *ParseState, mapping *ast.MappingNode, match, sortKey, sortOrder string) []ConfigPage {
+func buildConfigPageFromMatchStatement(state *ParseStateV1, mapping *ast.MappingNode, match, sortKey, sortOrder string) []ConfigPageV1 {
 	clean, err := state.getSecurePath(match)
 	if err != nil {
 		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
@@ -700,7 +730,7 @@ func buildConfigPageFromMatchStatement(state *ParseState, mapping *ast.MappingNo
 		return nil
 	}
 
-	pages := make([]ConfigPage, 0, len(matches))
+	pages := make([]ConfigPageV1, 0, len(matches))
 	for _, m := range matches {
 		matter, err := NewFrontMatterFromMarkdown(m)
 		if err != nil {
@@ -709,7 +739,7 @@ func buildConfigPageFromMatchStatement(state *ParseState, mapping *ast.MappingNo
 			continue
 		}
 
-		p := ConfigPage{
+		p := ConfigPageV1{
 			Markdown:    m,
 			Title:       matter.Title,
 			Path:        matter.Path,
@@ -731,7 +761,7 @@ func buildConfigPageFromMatchStatement(state *ParseState, mapping *ast.MappingNo
 	return pages
 }
 
-func validateMatchPage(state *ParseState, configPage *ConfigPage, mapping *ast.MappingNode) bool {
+func validateMatchPage(state *ParseStateV1, configPage *ConfigPageV1, mapping *ast.MappingNode) bool {
 	// Almost the same as validateMarkdownPage.
 	// But the error message is different.
 	ok := true
@@ -748,7 +778,7 @@ func validateMatchPage(state *ParseState, configPage *ConfigPage, mapping *ast.M
 	return ok
 }
 
-func sortPageSlice(sortKey, sortOrder string, pages []ConfigPage) error { //nolint: cyclop
+func sortPageSlice(sortKey, sortOrder string, pages []ConfigPageV1) error { //nolint: cyclop
 	if sortKey == "" && sortOrder == "" {
 		return nil
 	}
@@ -789,7 +819,7 @@ func sortPageSlice(sortKey, sortOrder string, pages []ConfigPage) error { //noli
 	return fmt.Errorf("invalid sort key: %s", sortKey)
 }
 
-func parseConfigPageDirectory(state *ParseState, mapping *ast.MappingNode) ConfigPage {
+func parseConfigPageDirectory(state *ParseStateV1, mapping *ast.MappingNode) ConfigPageV1 {
 	// A directory object has the following fields:
 	//
 	// {
@@ -801,7 +831,7 @@ func parseConfigPageDirectory(state *ParseState, mapping *ast.MappingNode) Confi
 	//     },
 	// }
 
-	configPage := ConfigPage{}
+	configPage := ConfigPageV1{}
 	for _, item := range mapping.Values {
 		key := item.Key.String()
 		switch key {
@@ -830,7 +860,7 @@ func parseConfigPageDirectory(state *ParseState, mapping *ast.MappingNode) Confi
 	return configPage
 }
 
-func parseConfigAssets(state *ParseState, node *ast.MappingValueNode) {
+func parseConfigAssets(state *ParseStateV1, node *ast.MappingValueNode) {
 	// This function should be called only once.
 	// Receives an object like the following:
 	//
@@ -850,19 +880,19 @@ func parseConfigAssets(state *ParseState, node *ast.MappingValueNode) {
 		return
 	}
 
-	assets := make([]ConfigAsset, 0, len(sequence.Values))
+	assets := make([]ConfigAssetV1, 0, len(sequence.Values))
 	for _, item := range sequence.Values {
 		v, ok := item.(*ast.StringNode)
 		if !ok {
 			state.errorSet.Add(state.buildParseError("an item in the `sequence` field must have a string type", item))
 			continue
 		}
-		assets = append(assets, ConfigAsset(v.Value))
+		assets = append(assets, ConfigAssetV1(v.Value))
 	}
 	state.config.Assets = assets
 }
 
-func parseConfigAnnotation(state *ParseState, node *ast.MappingValueNode) {
+func parseConfigAnnotation(state *ParseStateV1, node *ast.MappingValueNode) {
 	// This function should be called only once.
 	// annotation:
 	//   foo: bar

@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/toritoritori29/dodo-cli/src/config"
 )
 
 func prepareTempDir(t *testing.T) string {
@@ -39,6 +40,7 @@ version: 1
 project:
   project_id: "project_id"
   name: "Test Project"
+  default_language: "en"
 pages:
   - markdown: "README1.md"
     path: "readme1"
@@ -55,8 +57,8 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 	prepareFile(t, dir, "README1.md", "content")
 	prepareFile(t, dir, "README2.md", "content")
 
-	state := NewParseState("config.yaml", dir)
-	conf, err := ParseConfig(state, strings.NewReader(TestCaseCreatePageWithMarkdown))
+	state := config.NewParseStateV1("config.yaml", dir)
+	conf, err := config.ParseConfigV1(state, strings.NewReader(TestCaseCreatePageWithMarkdown))
 	require.NoError(t, err)
 
 	page, merr := CreatePageTree(conf, dir)
@@ -70,6 +72,9 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 	assert.Equal(t, "readme1", page1.Path)
 	assert.Equal(t, "README2", page1.Title)
 	assert.Equal(t, "", page1.Description)
+	assert.Equal(t, "en", page1.Language[0].Language)
+	assert.Equal(t, "README2", page1.Language[0].Title)
+	assert.Equal(t, "", page1.Language[0].Description)
 	assert.Equal(t, "2021-01-01T00:00:00Z", page1.UpdatedAt.String())
 
 	page2 := page.Children[1]
@@ -77,6 +82,9 @@ func TestCreatePageTreeWithMarkdown(t *testing.T) {
 	assert.Equal(t, "readme2", page2.Path)
 	assert.Equal(t, "README2", page2.Title)
 	assert.Equal(t, "", page2.Description)
+	assert.Equal(t, "en", page2.Language[0].Language)
+	assert.Equal(t, "README2", page2.Language[0].Title)
+	assert.Equal(t, "", page2.Language[0].Description)
 	assert.Equal(t, "", page2.UpdatedAt.String())
 }
 
@@ -129,8 +137,8 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 	---
 	`)
 
-	state := NewParseState("config.yaml", dir)
-	conf, err := ParseConfig(state, strings.NewReader(TestCaseCreatePageTreeMatch))
+	state := config.NewParseStateV1("config.yaml", dir)
+	conf, err := config.ParseConfigV1(state, strings.NewReader(TestCaseCreatePageTreeMatch))
 	require.NoError(t, err, "should not return error")
 
 	page, merr := CreatePageTree(conf, dir)
@@ -144,6 +152,9 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 	assert.Equal(t, "LeafNode", page1.Type)
 	assert.Equal(t, "readme1", page1.Path)
 	assert.Equal(t, "README1", page1.Title)
+	assert.Equal(t, "en", page1.Language[0].Language)
+	assert.Equal(t, "README1", page1.Language[0].Title)
+	assert.Equal(t, "", page1.Language[0].Description)
 	assert.Equal(t, "", page1.Description)
 	assert.Equal(t, "", page1.UpdatedAt.String())
 
@@ -175,8 +186,8 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	---
 	`)
 
-	state := NewParseState("config.yaml", dir)
-	conf, err := ParseConfig(state, strings.NewReader(TestCaseCreatePageHybridCase))
+	state := config.NewParseStateV1("config.yaml", dir)
+	conf, err := config.ParseConfigV1(state, strings.NewReader(TestCaseCreatePageHybridCase))
 	require.NoError(t, err, "should not return error")
 
 	page, merr := CreatePageTree(conf, dir)
@@ -186,14 +197,20 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	page1 := page.Children[0]
 	assert.Equal(t, "LeafNode", page1.Type)
 	assert.Equal(t, "README", page1.Title)
-	assert.Equal(t, "readme", page1.Path)
 	assert.Equal(t, "", page1.Description)
+	assert.Equal(t, "en", page1.Language[0].Language)
+	assert.Equal(t, "README", page1.Language[0].Title)
+	assert.Equal(t, "", page1.Language[0].Description)
+	assert.Equal(t, "readme", page1.Path)
 
 	page2 := page.Children[1]
 	assert.Equal(t, "LeafNode", page2.Type)
 	assert.Equal(t, "README", page2.Title)
-	assert.Equal(t, "readme", page2.Path)
 	assert.Equal(t, "", page2.Description)
+	assert.Equal(t, "en", page2.Language[0].Language)
+	assert.Equal(t, "README", page2.Language[0].Title)
+	assert.Equal(t, "", page2.Language[0].Description)
+	assert.Equal(t, "readme", page2.Path)
 }
 
 const TestCaseCreatePageWithDirectory = `
@@ -220,8 +237,8 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 	---
 	`)
 
-	state := NewParseState("config.yaml", dir)
-	conf, err := ParseConfig(state, strings.NewReader(TestCaseCreatePageWithDirectory))
+	state := config.NewParseStateV1("config.yaml", dir)
+	conf, err := config.ParseConfigV1(state, strings.NewReader(TestCaseCreatePageWithDirectory))
 	require.NoError(t, err)
 
 	page, merr := CreatePageTree(conf, dir)
@@ -232,10 +249,16 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 	dir1 := page.Children[0]
 	assert.Equal(t, "DirNodeWithoutPage", dir1.Type)
 	assert.Equal(t, "directory", dir1.Title)
+	assert.Equal(t, "en", dir1.Language[0].Language)
+	assert.Equal(t, "directory", dir1.Language[0].Title)
+	assert.Equal(t, "", dir1.Language[0].Description)
 
 	page1 := dir1.Children[0]
 	assert.Equal(t, "README1", page1.Title)
 	assert.Equal(t, "readme1", page1.Path)
+	assert.Equal(t, "en", page1.Language[0].Language)
+	assert.Equal(t, "README1", page1.Language[0].Title)
+	assert.Equal(t, "", page1.Language[0].Description)
 }
 
 // Valid case.
@@ -244,6 +267,7 @@ version: 1
 project:
   project_id: "project_id"
   name: "project"
+  default_language: "ja"
 pages:
   - markdown: "README1.md"
     path: "readme1"
@@ -341,8 +365,8 @@ func TestIsValid(t *testing.T) {
 			prepareFile(t, dir, "README1.md", "")
 			prepareFile(t, dir, "README2.md", "")
 
-			state := NewParseState("config.yaml", dir)
-			conf, err := ParseConfig(state, strings.NewReader(c.content))
+			state := config.NewParseStateV1("config.yaml", dir)
+			conf, err := config.ParseConfigV1(state, strings.NewReader(c.content))
 			require.NoError(t, err, "should not return error: %v", err)
 			page, merr := CreatePageTree(conf, dir)
 			require.Nil(t, merr, "CreatePageTree should not failed if the valid case is specified: %v", err)

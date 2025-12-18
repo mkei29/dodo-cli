@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/caarlos0/log"
+	"github.com/toritoritori29/dodo-cli/src/config"
+	appErrors "github.com/toritoritori29/dodo-cli/src/errors"
 )
 
 const (
@@ -16,14 +18,21 @@ const (
 	PageTypeDirNodeWithPage = "DirNodeWithPage"
 )
 
-type PageSummary struct {
-	Type        string `json:"type"`
-	Filepath    string `json:"filepath"`
-	Hash        string `json:"hash"`
-	Path        string `json:"path"`
+type PageLanguageWiseInfo struct {
+	Language    string `json:"language"`
 	Title       string `json:"title"`
-	UpdatedAt   string `json:"updated_at"`
 	Description string `json:"description"`
+}
+
+type PageSummary struct {
+	Type        string                 `json:"type"`
+	Filepath    string                 `json:"filepath"`
+	Hash        string                 `json:"hash"`
+	Path        string                 `json:"path"`
+	Title       string                 `json:"title"`
+	Description string                 `json:"description"`
+	Language    []PageLanguageWiseInfo `json:"language"`
+	UpdatedAt   string                 `json:"updated_at"`
 }
 
 func NewPageSummary(filepath, path, title string) PageSummary {
@@ -45,30 +54,39 @@ func NewPageHeaderFromPage(p *Page) PageSummary {
 		Path:        p.Path,
 		Title:       p.Title,
 		Description: p.Description,
+		Language:    p.Language,
 	}
 }
 
 type Page struct {
-	Type        string           `json:"type"`
-	Filepath    string           `json:"filepath"`
-	Hash        string           `json:"hash"`
-	Path        string           `json:"path"`
-	Title       string           `json:"title"`
-	Description string           `json:"description"`
-	UpdatedAt   SerializableTime `json:"updated_at"`
-	Children    []Page           `json:"children"`
+	Type        string                  `json:"type"`
+	Filepath    string                  `json:"filepath"`
+	Hash        string                  `json:"hash"`
+	Path        string                  `json:"path"`
+	Title       string                  `json:"title"`
+	Description string                  `json:"description"`
+	Language    []PageLanguageWiseInfo  `json:"language"`
+	UpdatedAt   config.SerializableTime `json:"updated_at"`
+	Children    []Page                  `json:"children"`
 }
 
-func NewLeafNodeFromConfigPge(config *ConfigPage) Page {
+func NewLeafNodeFromConfigPage(configProject *config.ConfigProjectV1, configPage *config.ConfigPageV1) Page {
 	page := Page{
 		Type:        PageTypeLeafNode,
-		Filepath:    config.Markdown,
-		Hash:        fmt.Sprintf("%x", sha256.Sum256([]byte(config.Markdown))),
-		Path:        config.Path,
-		Title:       config.Title,
-		Description: config.Description,
-		UpdatedAt:   config.UpdatedAt,
-		Children:    []Page{},
+		Filepath:    configPage.Markdown,
+		Hash:        fmt.Sprintf("%x", sha256.Sum256([]byte(configPage.Markdown))),
+		Path:        configPage.Path,
+		Title:       configPage.Title,
+		Description: configPage.Description,
+		Language: []PageLanguageWiseInfo{
+			{
+				Language:    configProject.DefaultLanguage,
+				Title:       configPage.Title,
+				Description: configPage.Description,
+			},
+		},
+		UpdatedAt: configPage.UpdatedAt,
+		Children:  []Page{},
 	}
 	return page
 }
@@ -92,8 +110,8 @@ func listPageHeader(list []PageSummary, p *Page) []PageSummary {
 // This function checks the following conditions:
 // 1. All pages have necessary fields.
 // 2. There are no duplicated paths.
-func (p *Page) IsValid() *MultiError {
-	errorSet := NewMultiError()
+func (p *Page) IsValid() *appErrors.MultiError {
+	errorSet := appErrors.NewMultiError()
 	p.isValid(true, &errorSet)
 	if errorSet.HasError() {
 		return &errorSet
@@ -103,7 +121,7 @@ func (p *Page) IsValid() *MultiError {
 	p.duplicationCount(pathMap, "")
 	for path, value := range pathMap {
 		if value > 1 {
-			errorSet.Add(NewAppError(fmt.Sprintf("duplicated path was found. path: `%s`", path)))
+			errorSet.Add(appErrors.NewAppError(fmt.Sprintf("duplicated path was found. path: `%s`", path)))
 		}
 	}
 	if errorSet.HasError() {
@@ -112,17 +130,17 @@ func (p *Page) IsValid() *MultiError {
 	return nil
 }
 
-func (p *Page) isValid(isRoot bool, errorSet *MultiError) {
+func (p *Page) isValid(isRoot bool, errorSet *appErrors.MultiError) {
 	if isRoot && p.Type != PageTypeRootNode {
-		errorSet.Add(NewAppError("Type for root node should be RootNode"))
+		errorSet.Add(appErrors.NewAppError("Type for root node should be RootNode"))
 		return
 	}
 	if !isRoot && p.Type == PageTypeRootNode {
-		errorSet.Add(NewAppError("Type for non-root node should not be RootNode"))
+		errorSet.Add(appErrors.NewAppError("Type for non-root node should not be RootNode"))
 		return
 	}
 	if p.Type == PageTypeLeafNode && p.Path == "" {
-		errorSet.Add(NewAppError("'path' is required for leaf node"))
+		errorSet.Add(appErrors.NewAppError("'path' is required for leaf node"))
 	}
 	for _, c := range p.Children {
 		c.isValid(false, errorSet)
@@ -172,15 +190,15 @@ func (p *Page) Add(page Page) {
 	p.Children = append(p.Children, page)
 }
 
-func CreatePageTree(config *Config, rootDir string) (*Page, *MultiError) {
-	errorSet := NewMultiError()
+func CreatePageTree(conf *config.ConfigV1, rootDir string) (*Page, *appErrors.MultiError) {
+	errorSet := appErrors.NewMultiError()
 	root := Page{
 		Type: PageTypeRootNode,
 	}
 
-	children := make([]Page, 0, len(config.Pages))
-	for _, p := range config.Pages {
-		c, merr := buildPage(rootDir, p)
+	children := make([]Page, 0, len(conf.Pages))
+	for _, p := range conf.Pages {
+		c, merr := buildPage(rootDir, &conf.Project, &p)
 		if merr != nil {
 			errorSet.Merge(*merr)
 			continue
@@ -195,41 +213,41 @@ func CreatePageTree(config *Config, rootDir string) (*Page, *MultiError) {
 	return &root, nil
 }
 
-func buildPage(rootDir string, c ConfigPage) ([]Page, *MultiError) {
-	if c.MatchMarkdown() {
-		return transformMarkdown(rootDir, &c)
+func buildPage(rootDir string, configProject *config.ConfigProjectV1, configPage *config.ConfigPageV1) ([]Page, *appErrors.MultiError) {
+	if configPage.MatchMarkdown() {
+		return transformMarkdown(rootDir, configProject, configPage)
 	}
 
-	if c.MatchDirectory() {
-		return transformDirectory(rootDir, &c)
+	if configPage.MatchDirectory() {
+		return transformDirectory(rootDir, configProject, configPage)
 	}
 
-	err := NewMultiError()
-	err.Add(NewAppError("invalid configuration: doesn't match any pattern"))
+	err := appErrors.NewMultiError()
+	err.Add(appErrors.NewAppError("invalid configuration: doesn't match any pattern"))
 	return nil, &err
 }
 
-func transformMarkdown(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
-	merr := NewMultiError()
-	filepath := filepath.Clean(filepath.Join(rootDir, c.Markdown))
+func transformMarkdown(rootDir string, configProject *config.ConfigProjectV1, configPage *config.ConfigPageV1) ([]Page, *appErrors.MultiError) {
+	merr := appErrors.NewMultiError()
+	filepath := filepath.Clean(filepath.Join(rootDir, configPage.Markdown))
 
-	if err := IsUnderRootPath(rootDir, filepath); err != nil {
+	if err := config.IsUnderRootPath(rootDir, filepath); err != nil {
 		merr.Add(fmt.Errorf("path should be under the rootDir. passed: %s", filepath))
 		return nil, &merr
 	}
 
 	// First, populate the fields from the markdown front matter.
-	p := NewLeafNodeFromConfigPge(c)
+	p := NewLeafNodeFromConfigPage(configProject, configPage)
 	log.Debugf("Node Found. Type: Markdown, Filepath: '%s', Title: '%s', Path: '%s'", p.Filepath, p.Title, p.Path)
 	return []Page{p}, nil
 }
 
-func transformDirectory(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
-	merr := NewMultiError()
+func transformDirectory(rootDir string, configProject *config.ConfigProjectV1, configPage *config.ConfigPageV1) ([]Page, *appErrors.MultiError) {
+	merr := appErrors.NewMultiError()
 
-	children := make([]Page, 0, len(c.Children))
-	for _, child := range c.Children {
-		pages, err := buildPage(rootDir, child)
+	children := make([]Page, 0, len(configPage.Children))
+	for _, child := range configPage.Children {
+		pages, err := buildPage(rootDir, configProject, &child)
 		if err != nil {
 			merr.Merge(*err)
 			continue
@@ -238,8 +256,15 @@ func transformDirectory(rootDir string, c *ConfigPage) ([]Page, *MultiError) {
 	}
 
 	p := Page{
-		Type:     PageTypeDirNode,
-		Title:    c.Directory,
+		Type:  PageTypeDirNode,
+		Title: configPage.Directory,
+		Language: []PageLanguageWiseInfo{
+			{
+				Language:    configProject.DefaultLanguage,
+				Title:       configPage.Directory,
+				Description: "",
+			},
+		},
 		Children: children,
 	}
 	if merr.HasError() {

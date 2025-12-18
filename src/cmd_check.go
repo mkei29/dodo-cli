@@ -7,6 +7,7 @@ import (
 
 	"github.com/caarlos0/log"
 	"github.com/spf13/cobra"
+	"github.com/toritoritori29/dodo-cli/src/config"
 )
 
 type CheckArgs struct {
@@ -72,13 +73,13 @@ func checkCmdEntrypoint(args CheckArgs) error {
 	}
 	defer configFile.Close()
 
-	state := NewParseState(args.configPath, "./")
-	config, err := ParseConfig(state, configFile)
+	state := config.NewParseStateV1(args.configPath, "./")
+	conf, err := config.ParseConfigV1(state, configFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse the config file: %w", err)
 	}
 
-	_, err = NewMetadataFromConfig(config)
+	_, err = NewMetadataFromConfigV1(conf)
 	if err != nil {
 		return fmt.Errorf("failed to convert config to metadata: %w", err)
 	}
