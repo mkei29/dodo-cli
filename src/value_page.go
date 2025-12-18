@@ -54,6 +54,7 @@ func NewPageHeaderFromPage(p *Page) PageSummary {
 		Path:        p.Path,
 		Title:       p.Title,
 		Description: p.Description,
+		Language:    p.Language,
 	}
 }
 

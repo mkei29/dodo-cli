@@ -407,7 +407,7 @@ func parseConfigProject(state *ParseStateV1, node *ast.MappingValueNode) { //nol
 		state.errorSet.Add(state.buildParseError("the `project` must have a `name` field longer than 1 character", node))
 	}
 	if !isValidISOLanguageCode(state.config.Project.DefaultLanguage) {
-		state.errorSet.Add(state.buildParseError(fmt.Sprintf("`default_language` field must be a valid ISO 639-1 language code. given: %s", state.config.Project.DefaultLanguage), node))
+		state.errorSet.Add(state.buildParseError(fmt.Sprintf("`default_language` field must be a valid ISO 639-1 language code (e.g., 'ja'). given: %s", state.config.Project.DefaultLanguage), node))
 	}
 
 	// Validate the repository field.
