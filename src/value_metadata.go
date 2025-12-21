@@ -39,7 +39,7 @@ func NewMetadataFromConfigV1(conf *config.ConfigV1) (*Metadata, error) {
 	if err != nil {
 		merr.Merge(*err)
 	}
-	if err = page.IsValid(); err != nil {
+	if err = page.IsValid(project.DefaultLanguage); err != nil {
 		merr.Merge(*err)
 	}
 

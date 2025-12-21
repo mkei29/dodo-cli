@@ -22,17 +22,18 @@ type PageLanguageWiseInfo struct {
 	Language    string `json:"language"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	Path        string `json:"path"`
 }
 
 type PageSummary struct {
-	Type        string                 `json:"type"`
-	Filepath    string                 `json:"filepath"`
-	Hash        string                 `json:"hash"`
-	Path        string                 `json:"path"`
-	Title       string                 `json:"title"`
-	Description string                 `json:"description"`
-	Language    []PageLanguageWiseInfo `json:"language"`
-	UpdatedAt   string                 `json:"updated_at"`
+	Type        string                  `json:"type"`
+	Filepath    string                  `json:"filepath"`
+	Hash        string                  `json:"hash"`
+	Path        string                  `json:"path"`
+	Title       string                  `json:"title"`
+	Description string                  `json:"description"`
+	Language    []PageLanguageWiseInfo  `json:"language"`
+	UpdatedAt   config.SerializableTime `json:"updated_at"`
 }
 
 func NewPageSummary(filepath, path, title string) PageSummary {
@@ -83,6 +84,7 @@ func NewLeafNodeFromConfigPage(configProject *config.ConfigProjectV1, configPage
 				Language:    configProject.DefaultLanguage,
 				Title:       configPage.Title,
 				Description: configPage.Description,
+				Path:        configPage.Path,
 			},
 		},
 		UpdatedAt: configPage.UpdatedAt,
@@ -110,13 +112,14 @@ func listPageHeader(list []PageSummary, p *Page) []PageSummary {
 // This function checks the following conditions:
 // 1. All pages have necessary fields.
 // 2. There are no duplicated paths.
-func (p *Page) IsValid() *appErrors.MultiError {
+func (p *Page) IsValid(defaultLang string) *appErrors.MultiError {
 	errorSet := appErrors.NewMultiError()
 	p.isValid(true, &errorSet)
 	if errorSet.HasError() {
 		return &errorSet
 	}
 
+	// Check if there are duplicated paths.
 	pathMap := make(map[string]int)
 	p.duplicationCount(pathMap, "")
 	for path, value := range pathMap {
@@ -124,6 +127,10 @@ func (p *Page) IsValid() *appErrors.MultiError {
 			errorSet.Add(appErrors.NewAppError(fmt.Sprintf("duplicated path was found. path: `%s`", path)))
 		}
 	}
+
+	// Check if all pages implement the default language.
+	p.isImplementDefaultLanguage(defaultLang, &errorSet)
+
 	if errorSet.HasError() {
 		return &errorSet
 	}
@@ -145,6 +152,25 @@ func (p *Page) isValid(isRoot bool, errorSet *appErrors.MultiError) {
 	for _, c := range p.Children {
 		c.isValid(false, errorSet)
 	}
+}
+
+func (p *Page) isImplementDefaultLanguage(lang string, errorSet *appErrors.MultiError) {
+	for i := range p.Children {
+		p.Children[i].isImplementDefaultLanguage(lang, errorSet)
+	}
+	if p.Type == PageTypeRootNode {
+		return
+	}
+
+	var otherLanguage PageSummary
+	for _, l := range p.Language {
+		if l.Language == lang {
+			return
+		}
+		otherLanguage = NewPageHeaderFromPage(p)
+	}
+	errorSet.Add(appErrors.NewAppError(fmt.Sprintf("there is no default language page corresponding to: %+v", otherLanguage.Title)))
+	return
 }
 
 func (p *Page) duplicationCount(pathMap map[string]int, parentPath string) {

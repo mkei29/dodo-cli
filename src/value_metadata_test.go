@@ -115,8 +115,9 @@ path: "test-page-2"
 		config := &config.ConfigV1{
 			Version: "1",
 			Project: config.ConfigProjectV1{
-				ProjectID: "test-project-id",
-				Name:      "Test Project",
+				ProjectID:       "test-project-id",
+				Name:            "Test Project",
+				DefaultLanguage: "en",
 			},
 			Pages:  []config.ConfigPageV1{},
 			Assets: []config.ConfigAssetV1{},
