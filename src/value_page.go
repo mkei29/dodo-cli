@@ -170,7 +170,6 @@ func (p *Page) isImplementDefaultLanguage(lang string, errorSet *appErrors.Multi
 		otherLanguage = NewPageHeaderFromPage(p)
 	}
 	errorSet.Add(appErrors.NewAppError(fmt.Sprintf("there is no default language page corresponding to: %+v", otherLanguage.Title)))
-	return
 }
 
 func (p *Page) duplicationCount(pathMap map[string]int, parentPath string) {
