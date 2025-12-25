@@ -1,7 +1,9 @@
 package config
 
 import (
+	"encoding/json"
 	"testing"
+	"time"
 )
 
 func TestNewSerializableTime(t *testing.T) {
@@ -23,5 +25,25 @@ func TestNewSerializableTime(t *testing.T) {
 		if result.String() != test.expected {
 			t.Errorf("NewSerializableTime(%s) = %v, expected %v", test.input, result, test.expected)
 		}
+	}
+}
+
+func TestSerializableTimeMarshalJSON(t *testing.T) {
+	zero := SerializableTime{}
+	zeroBytes, err := json.Marshal(zero)
+	if err != nil {
+		t.Fatalf("json.Marshal(zero) error = %v", err)
+	}
+	if string(zeroBytes) != `""` {
+		t.Fatalf("json.Marshal(zero) = %s, expected \"\"", zeroBytes)
+	}
+
+	nonZero := NewSerializableTimeFromTime(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
+	nonZeroBytes, err := json.Marshal(nonZero)
+	if err != nil {
+		t.Fatalf("json.Marshal(nonZero) error = %v", err)
+	}
+	if string(nonZeroBytes) != `"2025-01-01T00:00:00Z"` {
+		t.Fatalf("json.Marshal(nonZero) = %s, expected RFC3339 string", nonZeroBytes)
 	}
 }

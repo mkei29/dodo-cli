@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -34,6 +35,13 @@ func (t SerializableTime) String() string {
 		return ""
 	}
 	return t.Format(time.RFC3339)
+}
+
+func (t SerializableTime) MarshalJSON() ([]byte, error) {
+	if t.IsZero() {
+		return []byte(`""`), nil
+	}
+	return json.Marshal(t.Format(time.RFC3339))
 }
 
 func (t *SerializableTime) HasValue() bool {

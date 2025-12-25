@@ -371,7 +371,7 @@ func TestIsValid(t *testing.T) {
 			page, merr := CreatePageTree(conf, dir)
 			require.Nil(t, merr, "CreatePageTree should not failed if the valid case is specified: %v", err)
 
-			merr = page.IsValid()
+			merr = page.IsValid(conf.Project.DefaultLanguage)
 			if c.isValid {
 				require.Nil(t, merr, "should not return error: %v", merr)
 			} else {
