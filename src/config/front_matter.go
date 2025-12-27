@@ -24,12 +24,29 @@ const (
 
 // A struct that describes the markdown header.
 type FrontMatter struct {
-	Title       string
-	Path        string
-	Description string
-	CreatedAt   SerializableTime
-	UpdatedAt   SerializableTime
-	UnknownTags map[string]interface{}
+	Title           string
+	Link            string
+	Path            string
+	LanguageGroupID string
+	Description     string
+	CreatedAt       SerializableTime
+	UpdatedAt       SerializableTime
+	UnknownTags     map[string]interface{}
+}
+
+// Lang returns the language code from front matter if present.
+func (f *FrontMatter) Lang() string {
+	if value, ok := f.UnknownTags["lang"]; ok {
+		if text, ok := value.(string); ok && text != "" {
+			return strings.ToLower(text)
+		}
+	}
+	if value, ok := f.UnknownTags["language"]; ok {
+		if text, ok := value.(string); ok && text != "" {
+			return strings.ToLower(text)
+		}
+	}
+	return ""
 }
 
 func NewFrontMatter(title string, path string, now ...time.Time) *FrontMatter {
@@ -40,12 +57,14 @@ func NewFrontMatter(title string, path string, now ...time.Time) *FrontMatter {
 		currentTime = time.Now()
 	}
 	return &FrontMatter{
-		Title:       title,
-		Path:        path,
-		Description: "",
-		CreatedAt:   NewSerializableTimeFromTime(currentTime),
-		UpdatedAt:   NewSerializableTimeFromTime(currentTime),
-		UnknownTags: make(map[string]interface{}),
+		Title:           title,
+		Link:            "",
+		Path:            path,
+		LanguageGroupID: "",
+		Description:     "",
+		CreatedAt:       NewSerializableTimeFromTime(currentTime),
+		UpdatedAt:       NewSerializableTimeFromTime(currentTime),
+		UnknownTags:     make(map[string]interface{}),
 	}
 }
 
@@ -75,8 +94,12 @@ func NewFrontMatterFromMarkdown(filepath string) (*FrontMatter, error) { //nolin
 		switch strings.ToLower(k) {
 		case FrontMatterKeyTitle:
 			matter.Title = v
+		case "link":
+			matter.Link = v
 		case FrontMatterKeyPath:
 			matter.Path = v
+		case "language_group_id":
+			matter.LanguageGroupID = v
 		case FrontMatterDescription:
 			matter.Description = v
 		case FrontMatterKeyCreatedAt:
@@ -141,7 +164,13 @@ func (f *FrontMatter) String() string {
 	var text string
 	text += FrontMatterStart + "\n"
 	text += fmt.Sprintf("title: \"%s\"\n", f.Title)
+	if f.Link != "" {
+		text += fmt.Sprintf("link: \"%s\"\n", f.Link)
+	}
 	text += fmt.Sprintf("path: \"%s\"\n", f.Path)
+	if f.LanguageGroupID != "" {
+		text += fmt.Sprintf("language_group_id: \"%s\"\n", f.LanguageGroupID)
+	}
 	text += fmt.Sprintf("description: \"%s\"\n", f.Description)
 	text += fmt.Sprintf("created_at: \"%s\"\n", f.CreatedAt)
 	text += fmt.Sprintf("updated_at: \"%s\"\n", f.UpdatedAt)
