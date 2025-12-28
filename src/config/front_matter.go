@@ -20,7 +20,7 @@ const (
 	FrontMatterKeyPath      = "path"
 	FrontMatterKeyLink      = "link"
 	FrontMatterDescription  = "description"
-	FrontMatterKeyGroup     = "language_group_id"
+	FrontMatterKeyGroup     = "group"
 	FrontMatterKeyCreatedAt = "created_at"
 	FrontMatterKeyUpdatedAt = "updated_at"
 )

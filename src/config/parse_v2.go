@@ -838,6 +838,7 @@ func buildConfigPageFromMatchStatementV2(state *ParseStateV2, mapping *ast.Mappi
 			continue
 		}
 		page.LangPage[lang] = langItem
+		pagesByGroupID[matter.LanguageGroupID] = page
 	}
 
 	pages := utils.Values(pagesByGroupID)
