@@ -118,6 +118,7 @@ UnknownTag2: "unknown2"
 func TestFrontMatterString(t *testing.T) {
 	fm := NewFrontMatter("Test Title", "/test/path")
 
+	fm.LanguageGroupID = "test123"
 	fm.Description = "Test Description"
 	fm.CreatedAt = NewSerializableTimeFromTime(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
 	fm.UpdatedAt = NewSerializableTimeFromTime(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
@@ -127,6 +128,7 @@ func TestFrontMatterString(t *testing.T) {
 	expected := `---
 title: "Test Title"
 path: "/test/path"
+group: "test123"
 description: "Test Description"
 created_at: "2025-01-01T00:00:00Z"
 updated_at: "2025-01-01T00:00:00Z"

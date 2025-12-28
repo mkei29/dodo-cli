@@ -11,45 +11,42 @@ import (
 )
 
 func TestNewMetadataFromConfig(t *testing.T) {
-	t.Parallel()
+	// Test successful metadata creation
+	t.Run("successful metadata creation", func(t *testing.T) {
+		// Create temporary directory for test files
+		dir, err := os.MkdirTemp("", "metadata_test")
+		require.NoError(t, err)
+		t.Cleanup(func() { os.RemoveAll(dir) })
 
-	// Create temporary directory for test files
-	dir, err := os.MkdirTemp("", "metadata_test")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
-
-	// Create test markdown files
-	readme1 := filepath.Join(dir, "README1.md")
-	require.NoError(t, os.WriteFile(readme1, []byte(`---
+		// Create test markdown files
+		readme1 := filepath.Join(dir, "README1.md")
+		require.NoError(t, os.WriteFile(readme1, []byte(`---
 title: "Test Page 1"
 path: "test-page-1"
 ---
 # Test Page 1 Content`), 0o600))
 
-	readme2 := filepath.Join(dir, "README2.md")
-	require.NoError(t, os.WriteFile(readme2, []byte(`---
+		readme2 := filepath.Join(dir, "README2.md")
+		require.NoError(t, os.WriteFile(readme2, []byte(`---
 title: "Test Page 2"
 path: "test-page-2"
 ---
 # Test Page 2 Content`), 0o600))
 
-	// Create assets directory with test files
-	assetsDir := filepath.Join(dir, "assets")
-	require.NoError(t, os.Mkdir(assetsDir, 0o755))
+		// Create assets directory with test files
+		assetsDir := filepath.Join(dir, "assets")
+		require.NoError(t, os.Mkdir(assetsDir, 0o755))
 
-	// Create a dummy PNG file with proper PNG header
-	// PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
-	testImage := filepath.Join(assetsDir, "test.png")
-	pngHeader := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
-	require.NoError(t, os.WriteFile(testImage, pngHeader, 0o600))
+		// Create a dummy PNG file with proper PNG header
+		// PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
+		testImage := filepath.Join(assetsDir, "test.png")
+		pngHeader := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+		require.NoError(t, os.WriteFile(testImage, pngHeader, 0o600))
 
-	// Create a text file with .txt extension (not in AvailableMimeTypes)
-	invalidAsset := filepath.Join(dir, "invalid.txt")
-	require.NoError(t, os.WriteFile(invalidAsset, []byte("not an image"), 0o600))
+		// Create a text file with .txt extension (not in AvailableMimeTypes)
+		invalidAsset := filepath.Join(dir, "invalid.txt")
+		require.NoError(t, os.WriteFile(invalidAsset, []byte("not an image"), 0o600))
 
-	// Test successful metadata creation
-	t.Run("successful metadata creation", func(t *testing.T) {
-		t.Parallel()
 		// Create test config
 		config := &config.ConfigV1{
 			Version: "1",
@@ -111,7 +108,11 @@ path: "test-page-2"
 
 	// Test with empty config
 	t.Run("empty pages config", func(t *testing.T) {
-		t.Parallel()
+		// Create temporary directory for test files
+		dir, err := os.MkdirTemp("", "metadata_test")
+		require.NoError(t, err)
+		t.Cleanup(func() { os.RemoveAll(dir) })
+
 		config := &config.ConfigV1{
 			Version: "1",
 			Project: config.ConfigProjectV1{
@@ -139,7 +140,15 @@ path: "test-page-2"
 
 	// Test with invalid asset MIME type
 	t.Run("invalid asset MIME type", func(t *testing.T) {
-		t.Parallel()
+		// Create temporary directory for test files
+		dir, err := os.MkdirTemp("", "metadata_test")
+		require.NoError(t, err)
+		t.Cleanup(func() { os.RemoveAll(dir) })
+
+		// Create a text file with .txt extension (not in AvailableMimeTypes)
+		invalidAsset := filepath.Join(dir, "invalid.txt")
+		require.NoError(t, os.WriteFile(invalidAsset, []byte("not an image"), 0o600))
+
 		invalidConfig := &config.ConfigV1{
 			Version: "1",
 			Project: config.ConfigProjectV1{
@@ -164,7 +173,15 @@ path: "test-page-2"
 
 	// Test with invalid asset MIME type
 	t.Run("invalid logo MIME type", func(t *testing.T) {
-		t.Parallel()
+		// Create temporary directory for test files
+		dir, err := os.MkdirTemp("", "metadata_test")
+		require.NoError(t, err)
+		t.Cleanup(func() { os.RemoveAll(dir) })
+
+		// Create a text file with .txt extension (not in AvailableMimeTypes)
+		invalidAsset := filepath.Join(dir, "invalid.txt")
+		require.NoError(t, os.WriteFile(invalidAsset, []byte("not an image"), 0o600))
+
 		invalidConfig := &config.ConfigV1{
 			Version: "1",
 			Project: config.ConfigProjectV1{

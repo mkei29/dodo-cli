@@ -59,11 +59,19 @@ func NewFrontMatter(title string, path string, now ...time.Time) *FrontMatter {
 	} else {
 		currentTime = time.Now()
 	}
+
+	// Generate a unique language group ID
+	id, err := utils.RandomAlphaNumeric(12)
+	if err != nil {
+		// If we can't generate an ID, use empty string (should not happen in practice)
+		id = ""
+	}
+
 	return &FrontMatter{
 		Title:           title,
 		Link:            "",
 		Path:            path,
-		LanguageGroupID: "",
+		LanguageGroupID: id,
 		Description:     "",
 		CreatedAt:       NewSerializableTimeFromTime(currentTime),
 		UpdatedAt:       NewSerializableTimeFromTime(currentTime),
@@ -181,7 +189,7 @@ func (f *FrontMatter) String() string {
 	}
 	text += fmt.Sprintf("path: \"%s\"\n", f.Path)
 	if f.LanguageGroupID != "" {
-		text += fmt.Sprintf("language_group_id: \"%s\"\n", f.LanguageGroupID)
+		text += fmt.Sprintf("group: \"%s\"\n", f.LanguageGroupID)
 	}
 	text += fmt.Sprintf("description: \"%s\"\n", f.Description)
 	text += fmt.Sprintf("created_at: \"%s\"\n", f.CreatedAt)
