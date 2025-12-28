@@ -1,0 +1,29 @@
+version: 2
+project:
+  project_id: "project_id"
+  name: "Test Project"
+  default_language: "en"
+pages:
+  - type: markdown
+    lang:
+      en:
+        filepath: "README.en.md"
+        link: "guide"
+        title: "Guide"
+      ja:
+        filepath: "README.ja.md"
+        link: "guide"
+        title: "Guide JA"
+  - type: directory
+    lang:
+      en:
+        title: "English"
+      ja:
+        title: "Japanese"
+    children:
+      - type: markdown
+        filepath: "child.md"
+  - type: match
+    pattern: "./match-*.md"
+    sort_key: "title"
+    sort_order: "asc"

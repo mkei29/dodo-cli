@@ -16,31 +16,30 @@ import (
 	"github.com/goccy/go-yaml/parser"
 	"github.com/mattn/go-zglob"
 	appErrors "github.com/toritoritori29/dodo-cli/src/errors"
+	"github.com/toritoritori29/dodo-cli/src/utils"
 )
 
 const (
-	ConfigPageTypeMarkdownV2              = "markdown"
-	ConfigPageTypeMarkdownMultiLanguageV2 = "markdown_multilanguage"
-	ConfigPageTypeMatchV2                 = "match"
-	ConfigPageTypeDirectoryV2             = "directory"
-	ConfigPageTypeSectionV2               = "section"
+	ConfigPageTypeMarkdownV2               = "markdown"
+	ConfigPageTypeMarkdownMultiLanguageV2  = "markdown_multilanguage"
+	ConfigPageTypeMatchV2                  = "match"
+	ConfigPageTypeDirectoryV2              = "directory"
+	ConfigPageTypeDirectoryMultiLanguageV2 = "directory_multilanguage"
+	ConfigPageTypeSectionV2                = "section"
+	ConfigPageTypeSectionV2MultiLanguage   = "section_multilanguage"
 )
 
 const (
 	ConfigPageV2KeyType     = "type"
 	ConfigPageV2KeyLink     = "link"
 	ConfigPageV2KeyTitle    = "title"
+	ConfigPageV2KeyDesc     = "description"
 	ConfigPageV2KeyFilepath = "filepath"
 	ConfigPageV2KeyLang     = "lang"
 	ConfigPageV2KeyPattern  = "pattern"
 	ConfigPageV2KeySortKey  = "sort_key"
 	ConfigPageV2KeySortOrd  = "sort_order"
 	ConfigPageV2KeyChildren = "children"
-)
-
-const (
-	ConfigPageV2LegacyKeyMatch     = "match"
-	ConfigPageV2LegacyKeyDirectory = "directory"
 )
 
 type ConfigV2 struct {
@@ -64,26 +63,42 @@ type ConfigPageV2 struct {
 	// Type defines how this page entry should be parsed (markdown/markdown_multilanguage/match/directory/section).
 	Type string
 
-	// Lang holds per-locale variants (keyed by ISO 639-1 code).
-	Lang map[string]ConfigPageLangV2
-
-	// Path is used by section pages to define URL path segments.
-	Path string
-
-	// Match pattern fields for auto-discovery.
-	Pattern   string
-	SortKey   string
-	SortOrder string
+	// LangPage holds per-locale page variants (keyed by ISO 639-1 code).
+	LangPage map[string]ConfigPageLangPage
+	// LangDirectory holds per-locale directory titles (keyed by ISO 639-1 code).
+	LangDirectory map[string]ConfigPageLangDirectory
+	// LangSection holds per-locale section titles (keyed by ISO 639-1 code).
+	LangSection map[string]ConfigPageLangSection
 
 	// Children is used by directory/section entries.
 	Children []ConfigPageV2
 }
 
-type ConfigPageLangV2 struct {
-	// Link/Title/Filepath are the localized markdown fields.
-	Link     string
-	Title    string
-	Filepath string
+func (c *ConfigPageV2) SortKeyTitle(defaultLang string) string {
+	if len(c.LangPage) == 0 {
+		return "<invalid page>" // invalid state
+	}
+	if entry, ok := c.LangPage[defaultLang]; ok {
+		return entry.Title
+	}
+	return "<invalid page>" // invalid state
+}
+
+type ConfigPageLangPage struct {
+	Link        string
+	Title       string
+	Description string
+	Filepath    string
+}
+
+type ConfigPageLangDirectory struct {
+	Title       string
+	Description string
+}
+
+type ConfigPageLangSection struct {
+	Title       string
+	Description string
 }
 
 type ConfigAssetV2 string
@@ -397,8 +412,14 @@ func parseConfigPageSequenceV2(state *ParseStateV2, sequence *ast.SequenceNode) 
 		case ConfigPageTypeDirectoryV2:
 			p := parseConfigPageDirectoryV2(state, pageNode)
 			configPages = append(configPages, p)
+		case ConfigPageTypeDirectoryMultiLanguageV2:
+			p := parseConfigPageDirectoryMultiLanguageV2(state, pageNode)
+			configPages = append(configPages, p)
 		case ConfigPageTypeSectionV2:
 			p := parseConfigPageSectionV2(state, pageNode)
+			configPages = append(configPages, p)
+		case ConfigPageTypeSectionV2MultiLanguage:
+			p := parseConfigPageSectionMultiLanguageV2(state, pageNode)
 			configPages = append(configPages, p)
 		default:
 			state.errorSet.Add(state.buildParseError("unknown page type", pageNode))
@@ -430,7 +451,17 @@ func estimateConfigPageTypeV2(state *ParseStateV2, mapping *ast.MappingNode) str
 				return ConfigPageTypeMarkdownMultiLanguageV2
 			}
 			return ConfigPageTypeMarkdownV2
-		case ConfigPageTypeMatchV2, ConfigPageTypeDirectoryV2, ConfigPageTypeSectionV2:
+		case ConfigPageTypeDirectoryV2:
+			if hasLang {
+				return ConfigPageTypeDirectoryMultiLanguageV2
+			}
+			return ConfigPageTypeDirectoryV2
+		case ConfigPageTypeSectionV2:
+			if hasLang {
+				return ConfigPageTypeSectionV2MultiLanguage
+			}
+			return ConfigPageTypeSectionV2
+		case ConfigPageTypeMatchV2:
 			return strings.ToLower(v.Value)
 		default:
 			state.errorSet.Add(state.buildParseError("unknown page type: "+v.Value, item.Value))
@@ -438,75 +469,71 @@ func estimateConfigPageTypeV2(state *ParseStateV2, mapping *ast.MappingNode) str
 		}
 	}
 
-	for _, item := range mapping.Values {
-		switch item.Key.String() {
-		case ConfigPageV2LegacyKeyMatch:
-			return ConfigPageTypeMatchV2
-		case ConfigPageV2LegacyKeyDirectory:
-			return ConfigPageTypeDirectoryV2
-		}
-	}
-
 	state.errorSet.Add(state.buildParseError("this mapping does not match any page type", mapping))
 	return ""
 }
 
-func parseConfigPageMarkdownV2(state *ParseStateV2, mapping *ast.MappingNode) ConfigPageV2 { //nolint: cyclop, funlen
+// Parse Markdown Page --------------------------------------------------------
+func parseConfigPageMarkdownV2(state *ParseStateV2, mapping *ast.MappingNode) ConfigPageV2 {
 	configPage := ConfigPageV2{
 		Type: ConfigPageTypeMarkdownV2,
 	}
-	langConfig := ConfigPageLangV2{}
+	langItem := ConfigPageLangPage{}
 
 	for _, item := range mapping.Values {
 		key := item.Key.String()
 		switch key {
 		case ConfigPageV2KeyType:
 			continue
-		case ConfigPageV2KeyLang:
-			state.errorSet.Add(state.buildParseError("`lang` cannot be used in single-locale markdown", item.Value))
 		case ConfigPageV2KeyLink:
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
 				state.errorSet.Add(state.buildParseError("`link` field must be a string", item.Value))
 				continue
 			}
-			langConfig.Link = v.Value
+			langItem.Link = v.Value
 		case ConfigPageV2KeyTitle:
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
 				state.errorSet.Add(state.buildParseError("`title` field must be a string", item.Value))
 				continue
 			}
-			langConfig.Title = v.Value
+			langItem.Title = v.Value
+		case ConfigPageV2KeyDesc:
+			v, ok := item.Value.(*ast.StringNode)
+			if !ok {
+				state.errorSet.Add(state.buildParseError("`description` field must be a string", item.Value))
+				continue
+			}
+			langItem.Description = v.Value
 		case ConfigPageV2KeyFilepath:
 			v, ok := item.Value.(*ast.StringNode)
 			if !ok {
 				state.errorSet.Add(state.buildParseError("`filepath` field must be a string", item.Value))
 				continue
 			}
-			langConfig.Filepath = v.Value
+			langItem.Filepath = v.Value
 		default:
 			state.errorSet.Add(state.buildParseError("a markdown style page cannot accept the key: "+key, item))
 		}
 	}
 
-	fillSingleLangFromMarkdownV2(state, &langConfig, mapping)
-	validateMarkdownLangEntryV2(state, &langConfig, mapping)
+	fillSingleLangFromMarkdownV2(state, &langItem, mapping)
 	defaultLang := state.config.Project.DefaultLanguage
 	if defaultLang == "" {
 		defaultLang = "en"
 	}
-	configPage.Lang = map[string]ConfigPageLangV2{
-		defaultLang: langConfig,
+	configPage.LangPage = map[string]ConfigPageLangPage{
+		defaultLang: langItem,
 	}
+	validateConfigPageMarkdown(state, &configPage, mapping)
 	return configPage
 }
 
-func parseConfigPageMarkdownMultiLanguageV2(state *ParseStateV2, mapping *ast.MappingNode) ConfigPageV2 { //nolint: cyclop, funlen
+func parseConfigPageMarkdownMultiLanguageV2(state *ParseStateV2, mapping *ast.MappingNode) ConfigPageV2 {
 	configPage := ConfigPageV2{
 		Type: ConfigPageTypeMarkdownMultiLanguageV2,
 	}
-	var langNode *ast.MappingNode
 
 	for _, item := range mapping.Values {
 		key := item.Key.String()
@@ -519,25 +546,19 @@ func parseConfigPageMarkdownMultiLanguageV2(state *ParseStateV2, mapping *ast.Ma
 				state.errorSet.Add(state.buildParseError("`lang` field must be a mapping", item.Value))
 				continue
 			}
-			langNode = v
-		case ConfigPageV2KeyLink, ConfigPageV2KeyTitle, ConfigPageV2KeyFilepath:
+			configPage.LangPage = parseMarkdownLangEntriesV2(state, v)
+		case ConfigPageV2KeyLink, ConfigPageV2KeyTitle, ConfigPageV2KeyDesc, ConfigPageV2KeyFilepath:
 			state.errorSet.Add(state.buildParseError("single-locale fields cannot be used with `lang`", item.Value))
 		default:
 			state.errorSet.Add(state.buildParseError("a markdown style page cannot accept the key: "+key, item))
 		}
 	}
-
-	if langNode == nil {
-		state.errorSet.Add(state.buildParseError("`lang` field is required for multi-locale markdown", mapping))
-		return configPage
-	}
-	configPage.Lang = parseMarkdownLangMapV2(state, langNode)
-	validateLangMapV2(state, configPage.Lang, mapping)
+	validateConfigPageMarkdown(state, &configPage, mapping)
 	return configPage
 }
 
-func parseMarkdownLangMapV2(state *ParseStateV2, langNode *ast.MappingNode) map[string]ConfigPageLangV2 { //nolint: cyclop, funlen
-	langMap := make(map[string]ConfigPageLangV2)
+func parseMarkdownLangEntriesV2(state *ParseStateV2, langNode *ast.MappingNode) map[string]ConfigPageLangPage {
+	langMap := make(map[string]ConfigPageLangPage)
 	for _, item := range langNode.Values {
 		key := strings.ToLower(item.Key.String())
 		valueNode, ok := item.Value.(*ast.MappingNode)
@@ -545,7 +566,7 @@ func parseMarkdownLangMapV2(state *ParseStateV2, langNode *ast.MappingNode) map[
 			state.errorSet.Add(state.buildParseError("each language entry must be a mapping", item.Value))
 			continue
 		}
-		langConfig := ConfigPageLangV2{}
+		langConfig := ConfigPageLangPage{}
 		for _, child := range valueNode.Values {
 			childKey := child.Key.String()
 			switch childKey {
@@ -563,6 +584,13 @@ func parseMarkdownLangMapV2(state *ParseStateV2, langNode *ast.MappingNode) map[
 					continue
 				}
 				langConfig.Title = v.Value
+			case ConfigPageV2KeyDesc:
+				v, ok := child.Value.(*ast.StringNode)
+				if !ok {
+					state.errorSet.Add(state.buildParseError("`description` field must be a string", child.Value))
+					continue
+				}
+				langConfig.Description = v.Value
 			case ConfigPageV2KeyFilepath:
 				v, ok := child.Value.(*ast.StringNode)
 				if !ok {
@@ -574,21 +602,19 @@ func parseMarkdownLangMapV2(state *ParseStateV2, langNode *ast.MappingNode) map[
 				state.errorSet.Add(state.buildParseError("a markdown language entry cannot accept the key: "+childKey, child))
 			}
 		}
-
-		fillLangFieldsFromMarkdownV2(state, &langConfig, valueNode)
-		validateMarkdownLangEntryV2(state, &langConfig, valueNode)
+		fillSingleLangFromMarkdownV2(state, &langConfig, valueNode)
 		langMap[key] = langConfig
 	}
 	return langMap
 }
 
-func fillSingleLangFromMarkdownV2(state *ParseStateV2, langConfig *ConfigPageLangV2, mapping *ast.MappingNode) {
-	if langConfig.Filepath == "" {
+func fillSingleLangFromMarkdownV2(state *ParseStateV2, langPage *ConfigPageLangPage, mapping *ast.MappingNode) {
+	if langPage.Filepath == "" {
 		state.errorSet.Add(state.buildParseError("the `filepath` field is required", mapping))
 		return
 	}
 
-	clean, err := state.getSecurePath(langConfig.Filepath)
+	clean, err := state.getSecurePath(langPage.Filepath)
 	if err != nil {
 		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
 		return
@@ -596,61 +622,40 @@ func fillSingleLangFromMarkdownV2(state *ParseStateV2, langConfig *ConfigPageLan
 
 	p, err := NewFrontMatterFromMarkdown(clean)
 	if err != nil {
-		message := fmt.Sprintf("cannot read the markdown file: %s, %v", langConfig.Filepath, err.Error())
+		message := fmt.Sprintf("cannot read the markdown file: %s, %v", langPage.Filepath, err.Error())
 		state.errorSet.Add(state.buildParseError(message, mapping))
 		return
 	}
 
-	if langConfig.Title == "" && p.Title != "" {
-		langConfig.Title = p.Title
+	// Fill missing fields from the markdown front matter.
+	if langPage.Title == "" && p.Title != "" {
+		langPage.Title = p.Title
 	}
-	if langConfig.Link == "" && p.Link != "" {
-		langConfig.Link = p.Link
+	if langPage.Link == "" && p.Link != "" {
+		langPage.Link = p.Link
 	}
-}
-
-func fillLangFieldsFromMarkdownV2(state *ParseStateV2, langConfig *ConfigPageLangV2, mapping *ast.MappingNode) {
-	if langConfig.Filepath == "" {
-		state.errorSet.Add(state.buildParseError("the `filepath` field is required", mapping))
-		return
-	}
-
-	clean, err := state.getSecurePath(langConfig.Filepath)
-	if err != nil {
-		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
-		return
-	}
-
-	p, err := NewFrontMatterFromMarkdown(clean)
-	if err != nil {
-		message := fmt.Sprintf("cannot read the markdown file: %s, %v", langConfig.Filepath, err.Error())
-		state.errorSet.Add(state.buildParseError(message, mapping))
-		return
-	}
-
-	if langConfig.Title == "" && p.Title != "" {
-		langConfig.Title = p.Title
+	if langPage.Description == "" && p.Description != "" {
+		langPage.Description = p.Description
 	}
 }
 
-func validateMarkdownLangEntryV2(state *ParseStateV2, langConfig *ConfigPageLangV2, mapping *ast.MappingNode) {
-	if langConfig.Title == "" {
-		state.errorSet.Add(state.buildParseError("the `title` field is required", mapping))
-	}
-	if langConfig.Link == "" {
-		state.errorSet.Add(state.buildParseError("the `link` field is required", mapping))
-	}
-	if langConfig.Filepath == "" {
-		state.errorSet.Add(state.buildParseError("the `filepath` field is required", mapping))
+func validateConfigPageMarkdown(state *ParseStateV2, langConfig *ConfigPageV2, mapping *ast.MappingNode) {
+
+	for _, langItem := range langConfig.LangPage {
+		if langItem.Title == "" {
+			state.errorSet.Add(state.buildParseError("the `title` field is required", mapping))
+		}
+		if langItem.Link == "" {
+			state.errorSet.Add(state.buildParseError("the `link` field is required", mapping))
+		}
+		if langItem.Filepath == "" {
+			state.errorSet.Add(state.buildParseError("the `filepath` field is required", mapping))
+		}
 	}
 }
 
-func validateLangMapV2(state *ParseStateV2, langMap map[string]ConfigPageLangV2, mapping *ast.MappingNode) {
-	if len(langMap) == 0 {
-		state.errorSet.Add(state.buildParseError("`lang` must not be empty", mapping))
-		return
-	}
-	for code := range langMap {
+func validateLangKeySetV2(state *ParseStateV2, mapping *ast.MappingNode, keySet map[string]struct{}) {
+	for code := range keySet {
 		if !isValidISOLanguageCode(code) {
 			message := fmt.Sprintf("`lang` key must be a valid ISO 639-1 language code (e.g., 'ja'). given: %s", code)
 			state.errorSet.Add(state.buildParseError(message, mapping))
@@ -661,12 +666,13 @@ func validateLangMapV2(state *ParseStateV2, langMap map[string]ConfigPageLangV2,
 		state.errorSet.Add(state.buildParseError("internal error: default_language is empty", mapping))
 		return
 	}
-	if _, ok := langMap[defaultLang]; !ok {
+	if _, ok := keySet[defaultLang]; !ok {
 		state.errorSet.Add(state.buildParseError("`lang` must include the default language: "+defaultLang, mapping))
 	}
 }
 
-func parseConfigPageMatchV2(state *ParseStateV2, mapping *ast.MappingNode) []ConfigPageV2 { //nolint: cyclop
+// Parse Match Page -----------------------------------------------------------
+func parseConfigPageMatchV2(state *ParseStateV2, mapping *ast.MappingNode) []ConfigPageV2 {
 	var pattern string
 	var sortKey string
 	var sortOrder string
@@ -707,13 +713,6 @@ func parseConfigPageMatchV2(state *ParseStateV2, mapping *ast.MappingNode) []Con
 				continue
 			}
 			sortOrder = text
-		case ConfigPageV2LegacyKeyMatch:
-			v, ok := item.Value.(*ast.StringNode)
-			if !ok {
-				state.errorSet.Add(state.buildParseError("`match` field must be a string", item.Value))
-				continue
-			}
-			pattern = v.Value
 		default:
 			state.errorSet.Add(state.buildParseError("a match style page cannot accept the key", item))
 		}
@@ -723,7 +722,13 @@ func parseConfigPageMatchV2(state *ParseStateV2, mapping *ast.MappingNode) []Con
 		state.errorSet.Add(state.buildParseError("`sort_key` must not be empty if you specify `sort_order`", mapping))
 		return nil
 	}
-	return buildConfigPageFromMatchStatementV2(state, mapping, pattern, sortKey, sortOrder)
+	pages := buildConfigPageFromMatchStatementV2(state, mapping, pattern, sortKey, sortOrder)
+
+	// Run validation
+	for _, page := range pages {
+		validateConfigPageMarkdown(state, &page, mapping)
+	}
+	return pages
 }
 
 func buildConfigPageFromMatchStatementV2(state *ParseStateV2, mapping *ast.MappingNode, pattern, sortKey, sortOrder string) []ConfigPageV2 {
@@ -732,7 +737,6 @@ func buildConfigPageFromMatchStatementV2(state *ParseStateV2, mapping *ast.Mappi
 		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
 		return nil
 	}
-
 	matches, err := zglob.Glob(clean)
 	if err != nil {
 		message := fmt.Sprintf("failed to list files matching '%s': %v", pattern, err)
@@ -740,8 +744,7 @@ func buildConfigPageFromMatchStatementV2(state *ParseStateV2, mapping *ast.Mappi
 		return nil
 	}
 
-	entriesByGroup := make(map[string][]string)
-	matterByPath := make(map[string]*FrontMatter)
+	pagesByGroupID := make(map[string]ConfigPageV2)
 	for _, m := range matches {
 		matter, err := NewFrontMatterFromMarkdown(m)
 		if err != nil {
@@ -749,34 +752,36 @@ func buildConfigPageFromMatchStatementV2(state *ParseStateV2, mapping *ast.Mappi
 			state.errorSet.Add(state.buildParseError(message, mapping))
 			continue
 		}
+		langItem := ConfigPageLangPage{}
+		fillSingleLangFromMarkdownV2(state, &langItem, mapping)
 
-		groupID := strings.TrimSpace(matter.LanguageGroupID)
-		if groupID == "" {
-			state.errorSet.Add(state.buildParseError("`language_group_id` is required in markdown front matter for match pattern", mapping))
-			continue
-		}
-		if matter.Link == "" {
-			state.errorSet.Add(state.buildParseError("`link` is required in markdown front matter for match pattern", mapping))
-			continue
-		}
-		if matter.Title == "" {
-			state.errorSet.Add(state.buildParseError("`title` is required in markdown front matter for match pattern", mapping))
+		lang := getLanguageFromFrontmatterV2(matter, state.config.Project.DefaultLanguage)
+		if !isValidISOLanguageCode(lang) {
+			message := fmt.Sprintf("`lang` must be a valid ISO 639-1 language code. given: %s", lang)
+			state.errorSet.Add(state.buildParseError(message, mapping))
 			continue
 		}
 
-		matterByPath[m] = matter
-		entriesByGroup[groupID] = append(entriesByGroup[groupID], m)
+		page, ok := pagesByGroupID[matter.LanguageGroupID]
+		// If not exists, create a new page entry.
+		if !ok {
+			pagesByGroupID[matter.LanguageGroupID] = ConfigPageV2{
+				Type: ConfigPageTypeMarkdownMultiLanguageV2,
+				LangPage: map[string]ConfigPageLangPage{
+					lang: langItem,
+				},
+			}
+		}
+		// If exists, just add the lang entry.
+		if _, exists := page.LangPage[lang]; exists {
+			message := fmt.Sprintf("duplicate `lang` detected for link in match pattern: %s", lang)
+			state.errorSet.Add(state.buildParseError(message, mapping))
+			continue
+		}
+		page.LangPage[lang] = langItem
 	}
 
-	pages := make([]ConfigPageV2, 0, len(entriesByGroup))
-	for _, entries := range entriesByGroup {
-		page := buildMatchGroupV2(state, mapping, entries, matterByPath)
-		if page.Type == "" {
-			continue
-		}
-		pages = append(pages, page)
-	}
-
+	pages := utils.Values(pagesByGroupID)
 	if err := sortPageSliceV2(sortKey, sortOrder, pages, state.config.Project.DefaultLanguage); err != nil {
 		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
 		return nil
@@ -784,54 +789,15 @@ func buildConfigPageFromMatchStatementV2(state *ParseStateV2, mapping *ast.Mappi
 	return pages
 }
 
-func buildMatchGroupV2(state *ParseStateV2, mapping *ast.MappingNode, entries []string, matterByPath map[string]*FrontMatter) ConfigPageV2 {
-	if len(entries) == 0 {
-		state.errorSet.Add(state.buildParseError("internal error: match group is empty", mapping))
-		return ConfigPageV2{}
+func getLanguageFromFrontmatterV2(matter *FrontMatter, defaultLang string) string {
+	lang := strings.ToLower(matter.Lang())
+	if lang == "" {
+		lang = defaultLang
 	}
-	langMap := make(map[string]ConfigPageLangV2)
-	for _, path := range entries {
-		matter, ok := matterByPath[path]
-		if !ok || matter == nil {
-			state.errorSet.Add(state.buildParseError("internal error: missing front matter for matched file", mapping))
-			return ConfigPageV2{}
-		}
-		lang := strings.ToLower(matter.Lang())
-		if lang == "" {
-			lang = state.config.Project.DefaultLanguage
-		}
-		if !isValidISOLanguageCode(lang) {
-			message := fmt.Sprintf("`lang` must be a valid ISO 639-1 language code. given: %s", lang)
-			state.errorSet.Add(state.buildParseError(message, mapping))
-			return ConfigPageV2{}
-		}
-		if _, ok := langMap[lang]; ok {
-			state.errorSet.Add(state.buildParseError("duplicate `lang` detected for link", mapping))
-			return ConfigPageV2{}
-		}
-		link := matter.Link
-		if link == "" {
-			state.errorSet.Add(state.buildParseError("`link` is required in markdown front matter for match pattern", mapping))
-			return ConfigPageV2{}
-		}
-		if matter.Title == "" {
-			state.errorSet.Add(state.buildParseError("`title` is required in markdown front matter for match pattern", mapping))
-			return ConfigPageV2{}
-		}
-		langMap[lang] = ConfigPageLangV2{
-			Link:     link,
-			Title:    matter.Title,
-			Filepath: path,
-		}
-	}
-
-	return ConfigPageV2{
-		Type: ConfigPageTypeMarkdownMultiLanguageV2,
-		Lang: langMap,
-	}
+	return lang
 }
 
-func sortPageSliceV2(sortKey, sortOrder string, pages []ConfigPageV2, defaultLang string) error { //nolint: cyclop
+func sortPageSliceV2(sortKey, sortOrder string, pages []ConfigPageV2, defaultLang string) error {
 	if sortKey == "" && sortOrder == "" {
 		return nil
 	}
@@ -853,8 +819,8 @@ func sortPageSliceV2(sortKey, sortOrder string, pages []ConfigPageV2, defaultLan
 
 	if sortKey == "title" {
 		sort.Slice(pages, func(i, j int) bool {
-			left := pageTitleForSortV2(&pages[i], defaultLang)
-			right := pageTitleForSortV2(&pages[j], defaultLang)
+			left := pages[i].SortKeyTitle(defaultLang)
+			right := pages[j].SortKeyTitle(defaultLang)
 			return (left < right) == isASC
 		})
 		return nil
@@ -862,30 +828,12 @@ func sortPageSliceV2(sortKey, sortOrder string, pages []ConfigPageV2, defaultLan
 	return fmt.Errorf("invalid sort key: %s", sortKey)
 }
 
-func pageTitleForSortV2(page *ConfigPageV2, defaultLang string) string {
-	if len(page.Lang) == 0 {
-		return ""
-	}
-	if defaultLang != "" {
-		if entry, ok := page.Lang[defaultLang]; ok {
-			return entry.Title
-		}
-	}
-
-	keys := make([]string, 0, len(page.Lang))
-	for key := range page.Lang {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return page.Lang[keys[0]].Title
-}
-
-func parseConfigPageDirectoryV2(state *ParseStateV2, mapping *ast.MappingNode) ConfigPageV2 { //nolint: cyclop
+// Parse Directory Page -------------------------------------------------------
+func parseConfigPageDirectoryV2(state *ParseStateV2, mapping *ast.MappingNode) ConfigPageV2 {
 	configPage := ConfigPageV2{
 		Type: ConfigPageTypeDirectoryV2,
 	}
-	var langNode *ast.MappingNode
-	var title string
+	langItem := &ConfigPageLangDirectory{}
 
 	for _, item := range mapping.Values {
 		key := item.Key.String()
@@ -898,14 +846,7 @@ func parseConfigPageDirectoryV2(state *ParseStateV2, mapping *ast.MappingNode) C
 				state.errorSet.Add(state.buildParseError("`title` field must be a string", item.Value))
 				continue
 			}
-			title = v.Value
-		case ConfigPageV2KeyLang:
-			v, ok := item.Value.(*ast.MappingNode)
-			if !ok {
-				state.errorSet.Add(state.buildParseError("`lang` field must be a mapping", item.Value))
-				continue
-			}
-			langNode = v
+			langItem.Title = v.Value
 		case ConfigPageV2KeyChildren:
 			v, ok := item.Value.(*ast.SequenceNode)
 			if !ok {
@@ -918,108 +859,138 @@ func parseConfigPageDirectoryV2(state *ParseStateV2, mapping *ast.MappingNode) C
 		}
 	}
 
-	if langNode != nil {
-		if title != "" {
-			state.errorSet.Add(state.buildParseError("`lang` cannot be used with `title`", mapping))
-		}
-		configPage.Lang = parseDirectoryLangMapV2(state, langNode)
-		validateLangMapV2(state, configPage.Lang, mapping)
+	defaultLang := state.config.Project.DefaultLanguage
+	if defaultLang == "" {
+		defaultLang = "en"
 	}
-
-	if title != "" && len(configPage.Lang) == 0 {
-		defaultLang := state.config.Project.DefaultLanguage
-		if defaultLang == "" {
-			defaultLang = "en"
-		}
-		configPage.Lang = map[string]ConfigPageLangV2{
-			defaultLang: {
-				Title: title,
-			},
-		}
+	configPage.LangDirectory = map[string]ConfigPageLangDirectory{
+		defaultLang: *langItem,
 	}
-
-	if len(configPage.Lang) == 0 {
-		state.errorSet.Add(state.buildParseError("`title` or `lang` is required for directory", mapping))
-	}
-	if len(configPage.Children) == 0 {
-		state.errorSet.Add(state.buildParseError("`children` is required for directory", mapping))
-	}
+	validateConfigPageDirectory(state, configPage, mapping)
 	return configPage
 }
 
-func parseDirectoryLangMapV2(state *ParseStateV2, langNode *ast.MappingNode) map[string]ConfigPageLangV2 { //nolint: cyclop
-	langMap := make(map[string]ConfigPageLangV2)
-	for _, item := range langNode.Values {
-		key := strings.ToLower(item.Key.String())
-		valueNode, ok := item.Value.(*ast.MappingNode)
-		if !ok {
-			state.errorSet.Add(state.buildParseError("each language entry must be a mapping", item.Value))
-			continue
-		}
-		langConfig := ConfigPageLangV2{}
-		for _, child := range valueNode.Values {
-			childKey := child.Key.String()
-			switch childKey {
-			case ConfigPageV2KeyTitle:
-				v, ok := child.Value.(*ast.StringNode)
-				if !ok {
-					state.errorSet.Add(state.buildParseError("`title` field must be a string", child.Value))
-					continue
-				}
-				langConfig.Title = v.Value
-			default:
-				state.errorSet.Add(state.buildParseError("a directory language entry cannot accept the key: "+childKey, child))
-			}
-		}
-		if langConfig.Title == "" {
-			state.errorSet.Add(state.buildParseError("the `title` field is required", valueNode))
-		}
-		langMap[key] = langConfig
-	}
-	return langMap
-}
-
-func parseConfigPageSectionV2(state *ParseStateV2, mapping *ast.MappingNode) ConfigPageV2 { //nolint: cyclop, funlen
+func parseConfigPageDirectoryMultiLanguageV2(state *ParseStateV2, mapping *ast.MappingNode) ConfigPageV2 {
 	configPage := ConfigPageV2{
-		Type: ConfigPageTypeSectionV2,
+		Type: ConfigPageTypeDirectoryMultiLanguageV2,
 	}
-	var langNode *ast.MappingNode
-	var title string
-	var filepath string
-
 	for _, item := range mapping.Values {
 		key := item.Key.String()
 		switch key {
 		case ConfigPageV2KeyType:
 			continue
-		case "path":
-			v, ok := item.Value.(*ast.StringNode)
-			if !ok {
-				state.errorSet.Add(state.buildParseError("`path` field must be a string", item.Value))
-				continue
-			}
-			configPage.Path = v.Value
-		case ConfigPageV2KeyTitle:
-			v, ok := item.Value.(*ast.StringNode)
-			if !ok {
-				state.errorSet.Add(state.buildParseError("`title` field must be a string", item.Value))
-				continue
-			}
-			title = v.Value
-		case ConfigPageV2KeyFilepath:
-			v, ok := item.Value.(*ast.StringNode)
-			if !ok {
-				state.errorSet.Add(state.buildParseError("`filepath` field must be a string", item.Value))
-				continue
-			}
-			filepath = v.Value
 		case ConfigPageV2KeyLang:
 			v, ok := item.Value.(*ast.MappingNode)
 			if !ok {
 				state.errorSet.Add(state.buildParseError("`lang` field must be a mapping", item.Value))
 				continue
 			}
-			langNode = v
+			configPage.LangDirectory = parseDirectoryLangEntriesV2(state, v)
+		case ConfigPageV2KeyChildren:
+			v, ok := item.Value.(*ast.SequenceNode)
+			if !ok {
+				state.errorSet.Add(state.buildParseError("`children` field must be a sequence", item.Value))
+				continue
+			}
+			configPage.Children = parseConfigPageSequenceV2(state, v)
+		default:
+			state.errorSet.Add(state.buildParseError("a section style page cannot accept the key: "+key, item))
+		}
+	}
+	validateConfigPageDirectory(state, configPage, mapping)
+	return configPage
+}
+
+func parseDirectoryLangEntriesV2(state *ParseStateV2, mapping *ast.MappingNode) map[string]ConfigPageLangDirectory {
+	langMap := make(map[string]ConfigPageLangDirectory)
+
+	for _, item := range mapping.Values {
+		lang := strings.ToLower(item.Key.String())
+		entry, ok := item.Value.(*ast.MappingNode)
+		if !ok {
+			state.errorSet.Add(state.buildParseError("each language entry must be a mapping", item.Value))
+			continue
+		}
+
+		item := &ConfigPageLangDirectory{}
+		for _, field := range entry.Values {
+			key := field.Key.String()
+			switch key {
+			case ConfigPageV2KeyTitle:
+				v, ok := field.Value.(*ast.StringNode)
+				if !ok {
+					state.errorSet.Add(state.buildParseError("`title` field must be a string", field.Value))
+					continue
+				}
+				item.Title = v.Value
+			case ConfigPageV2KeyDesc:
+				v, ok := field.Value.(*ast.StringNode)
+				if !ok {
+					state.errorSet.Add(state.buildParseError("`description` field must be a string", field.Value))
+					continue
+				}
+				item.Description = v.Value
+			default:
+				state.errorSet.Add(state.buildParseError("a directory language entry cannot accept the key: "+key, field))
+			}
+		}
+		langMap[lang] = *item
+	}
+	return langMap
+}
+
+func validateConfigPageDirectory(state *ParseStateV2, page ConfigPageV2, mapping *ast.MappingNode) {
+	if len(page.LangSection) == 0 {
+		state.errorSet.Add(state.buildParseError("`lang` must not be empty", mapping))
+		return
+	}
+
+	// Check language keys follow ISO 639-1 codes
+	keySet := make(map[string]struct{}, len(page.LangSection))
+	for key := range page.LangSection {
+		keySet[key] = struct{}{}
+	}
+	validateLangKeySetV2(state, mapping, keySet)
+
+	// Check each language entry
+	for lang, entry := range page.LangSection {
+		if entry.Title == "" {
+			message := fmt.Sprintf("the `title` field is required for language: %s", lang)
+			state.errorSet.Add(state.buildParseError(message, mapping))
+		}
+		if len(page.Children) == 0 {
+			message := fmt.Sprintf("`children` is required for directory for language: %s", lang)
+			state.errorSet.Add(state.buildParseError(message, mapping))
+		}
+	}
+}
+
+// Parse Section Page -------------------------------------------------------
+func parseConfigPageSectionV2(state *ParseStateV2, mapping *ast.MappingNode) ConfigPageV2 {
+	configPage := ConfigPageV2{
+		Type: ConfigPageTypeSectionV2,
+	}
+	langItem := &ConfigPageLangSection{}
+
+	for _, item := range mapping.Values {
+		key := item.Key.String()
+		switch key {
+		case ConfigPageV2KeyType:
+			continue
+		case ConfigPageV2KeyTitle:
+			v, ok := item.Value.(*ast.StringNode)
+			if !ok {
+				state.errorSet.Add(state.buildParseError("`title` field must be a string", item.Value))
+				continue
+			}
+			langItem.Title = v.Value
+		case ConfigPageV2KeyDesc:
+			v, ok := item.Value.(*ast.StringNode)
+			if !ok {
+				state.errorSet.Add(state.buildParseError("`description` field must be a string", item.Value))
+				continue
+			}
+			langItem.Description = v.Value
 		case ConfigPageV2KeyChildren:
 			v, ok := item.Value.(*ast.SequenceNode)
 			if !ok {
@@ -1032,108 +1003,110 @@ func parseConfigPageSectionV2(state *ParseStateV2, mapping *ast.MappingNode) Con
 		}
 	}
 
-	if configPage.Path == "" {
-		state.errorSet.Add(state.buildParseError("the `path` field is required for section", mapping))
-	}
-
-	if langNode != nil {
-		if title != "" || filepath != "" {
-			state.errorSet.Add(state.buildParseError("`lang` cannot be used with `title` or `filepath`", mapping))
-		}
-		configPage.Lang = parseSectionLangMapV2(state, langNode)
-		validateLangMapV2(state, configPage.Lang, mapping)
-		return configPage
-	}
-
 	defaultLang := state.config.Project.DefaultLanguage
 	if defaultLang == "" {
 		defaultLang = "en"
 	}
-	singleLang := ConfigPageLangV2{
-		Title:    title,
-		Filepath: filepath,
+	configPage.LangSection = map[string]ConfigPageLangSection{
+		defaultLang: *langItem,
 	}
-	fillSectionLangFromMarkdownV2(state, &singleLang, mapping)
-	if singleLang.Title == "" {
-		state.errorSet.Add(state.buildParseError("the `title` field is required", mapping))
-	}
-	if singleLang.Filepath == "" {
-		state.errorSet.Add(state.buildParseError("the `filepath` field is required", mapping))
-	}
-	configPage.Lang = map[string]ConfigPageLangV2{
-		defaultLang: singleLang,
-	}
+	validateConfigPageSection(state, configPage, mapping)
 	return configPage
 }
 
-func parseSectionLangMapV2(state *ParseStateV2, langNode *ast.MappingNode) map[string]ConfigPageLangV2 { //nolint: cyclop
-	langMap := make(map[string]ConfigPageLangV2)
-	for _, item := range langNode.Values {
-		key := strings.ToLower(item.Key.String())
-		valueNode, ok := item.Value.(*ast.MappingNode)
+func parseConfigPageSectionMultiLanguageV2(state *ParseStateV2, mapping *ast.MappingNode) ConfigPageV2 {
+	configPage := ConfigPageV2{
+		Type: ConfigPageTypeSectionV2,
+	}
+
+	for _, item := range mapping.Values {
+		key := item.Key.String()
+		switch key {
+		case ConfigPageV2KeyType:
+			continue
+		case ConfigPageV2KeyLang:
+			v, ok := item.Value.(*ast.MappingNode)
+			if !ok {
+				state.errorSet.Add(state.buildParseError("`lang` field must be a mapping", item.Value))
+				continue
+			}
+			configPage.LangSection = parseSectionLangEntriesV2(state, v)
+		case ConfigPageV2KeyChildren:
+			v, ok := item.Value.(*ast.SequenceNode)
+			if !ok {
+				state.errorSet.Add(state.buildParseError("`children` field must be a sequence", item.Value))
+				continue
+			}
+			configPage.Children = parseConfigPageSequenceV2(state, v)
+		default:
+			state.errorSet.Add(state.buildParseError("a section style page cannot accept the key: "+key, item))
+		}
+	}
+	validateConfigPageSection(state, configPage, mapping)
+	return configPage
+}
+
+func parseSectionLangEntriesV2(state *ParseStateV2, mapping *ast.MappingNode) map[string]ConfigPageLangSection {
+	langMap := make(map[string]ConfigPageLangSection)
+
+	for _, item := range mapping.Values {
+		lang := strings.ToLower(item.Key.String())
+		entry, ok := item.Value.(*ast.MappingNode)
 		if !ok {
 			state.errorSet.Add(state.buildParseError("each language entry must be a mapping", item.Value))
 			continue
 		}
-		langConfig := ConfigPageLangV2{}
-		for _, child := range valueNode.Values {
-			childKey := child.Key.String()
-			switch childKey {
+
+		item := &ConfigPageLangSection{}
+		for _, field := range entry.Values {
+			key := field.Key.String()
+			switch key {
 			case ConfigPageV2KeyTitle:
-				v, ok := child.Value.(*ast.StringNode)
+				v, ok := field.Value.(*ast.StringNode)
 				if !ok {
-					state.errorSet.Add(state.buildParseError("`title` field must be a string", child.Value))
+					state.errorSet.Add(state.buildParseError("`title` field must be a string", field.Value))
 					continue
 				}
-				langConfig.Title = v.Value
-			case ConfigPageV2KeyFilepath, "path":
-				v, ok := child.Value.(*ast.StringNode)
+				item.Title = v.Value
+			case ConfigPageV2KeyDesc:
+				v, ok := field.Value.(*ast.StringNode)
 				if !ok {
-					state.errorSet.Add(state.buildParseError("`filepath` field must be a string", child.Value))
+					state.errorSet.Add(state.buildParseError("`description` field must be a string", field.Value))
 					continue
 				}
-				langConfig.Filepath = v.Value
+				item.Description = v.Value
 			default:
-				state.errorSet.Add(state.buildParseError("a section language entry cannot accept the key: "+childKey, child))
+				state.errorSet.Add(state.buildParseError("a section language entry cannot accept the key: "+key, field))
 			}
 		}
-
-		fillSectionLangFromMarkdownV2(state, &langConfig, valueNode)
-		if langConfig.Title == "" {
-			state.errorSet.Add(state.buildParseError("the `title` field is required", valueNode))
-		}
-		if langConfig.Filepath == "" {
-			state.errorSet.Add(state.buildParseError("the `filepath` field is required", valueNode))
-		}
-		langMap[key] = langConfig
+		langMap[lang] = *item
 	}
 	return langMap
 }
 
-func fillSectionLangFromMarkdownV2(state *ParseStateV2, langConfig *ConfigPageLangV2, mapping *ast.MappingNode) {
-	if langConfig.Filepath == "" {
-		state.errorSet.Add(state.buildParseError("the `filepath` field is required", mapping))
+func validateConfigPageSection(state *ParseStateV2, page ConfigPageV2, mapping *ast.MappingNode) {
+	if len(page.LangSection) == 0 {
+		state.errorSet.Add(state.buildParseError("`lang` must not be empty", mapping))
 		return
 	}
 
-	clean, err := state.getSecurePath(langConfig.Filepath)
-	if err != nil {
-		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
-		return
+	// Check language keys follow ISO 639-1 codes
+	keySet := make(map[string]struct{}, len(page.LangSection))
+	for key := range page.LangSection {
+		keySet[key] = struct{}{}
 	}
+	validateLangKeySetV2(state, mapping, keySet)
 
-	p, err := NewFrontMatterFromMarkdown(clean)
-	if err != nil {
-		message := fmt.Sprintf("cannot read the markdown file: %s, %v", langConfig.Filepath, err.Error())
-		state.errorSet.Add(state.buildParseError(message, mapping))
-		return
-	}
-
-	if langConfig.Title == "" && p.Title != "" {
-		langConfig.Title = p.Title
+	// Check each language entry
+	for lang, entry := range page.LangSection {
+		if entry.Title == "" {
+			message := fmt.Sprintf("the `title` field is required for language: %s", lang)
+			state.errorSet.Add(state.buildParseError(message, mapping))
+		}
 	}
 }
 
+// Other Sections --------------------------------------------------------------
 func parseConfigAssetsV2(state *ParseStateV2, node *ast.MappingValueNode) {
 	if state.isAssetsAlreadyParsed {
 		state.errorSet.Add(state.buildParseError("there should be exactly one `assets` section at the top level", node))

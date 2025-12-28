@@ -37,9 +37,10 @@ matchによるパターンマッチ.
 - type: directory
   title: "English"
   children:
-    - markdown: docs/cicd_github.md
-      path: "cicd_github"
+    - type: markdown
+      link: "cicd_github"
       title: "GitHub Actions"
+      filepath: "./test.md"
 
 # マルチロケール対応版
 - type: directory
@@ -49,24 +50,34 @@ matchによるパターンマッチ.
     ja:
       title: "Japanese"
   children:
-    - markdown: docs/cicd_github.md
-      path: "cicd_github"
+    - type: markdown
+      link: "cicd_github"
       title: "GitHub Actions"
+      filepath: "./test.md"
 ```
 
 `type: section` 殆どtype directoryと同じ
 ```yaml
+#  シングルロケール対応版
   - type: section
-      en:
-        title: ""
-        path
-    path: "test"
+    title: "test"
+    children:
+    - type: markdown
+      link: "cicd_github"
+      title: "GitHub Actions"
+      filepath: "./test.md"
+
+# マルチロケール対応
+  - type: section
       en: 
-        title: ""
-        path: docs/index.md
+        title: "English"
       ja: 
-        title: ""
-        path: docs/index.ja.md
+        title: "Japanese"
+    children:
+    - type: markdown
+      link: "cicd_github"
+      title: "GitHub Actions"
+      filepath: "./test.md"
 ```
 
 
@@ -77,3 +88,14 @@ matchによるパターンマッチ.
 * language_group_idは必須じゃなくしたい。
 
 matchEntryV2のような中途半端な構造体を作らないでください。FrontmatterはLangを持つ可能性があります。
+
+validateConfigPageSectionでDefaultLanguageが存在することを確認する。
+parseDirectoryLangEntriesV2のDefaultの存在確認
+
+	defaultLang := state.config.Project.DefaultLanguage
+	if defaultLang == "" {
+		defaultLang = "en"
+	}
+  この手のロジックを撲滅
+
+  validateMarkdownLangEntryV2の修正

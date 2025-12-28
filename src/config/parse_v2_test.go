@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -9,208 +10,123 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const v2ReadmeContents = `
----
-title: "README"
-link: "readme"
----
-`
-
-func TestParseConfigV2MarkdownSingleLocale(t *testing.T) {
-	t.Parallel()
-
-	dir, err := os.MkdirTemp("", "")
+func loadTestCaseV2(t *testing.T, name string) (string, string) {
+	t.Helper()
+	root := filepath.Join("test_cases", "v2", name)
+	data, err := os.ReadFile(filepath.Join(root, ".dodo.yaml"))
 	require.NoError(t, err)
-	defer os.RemoveAll(dir)
-
-	readme := createTempFile(t, dir, "README.md")
-	require.NoError(t, os.WriteFile(readme, []byte(v2ReadmeContents), 0o600))
-
-	input := `
-version: 2
-project:
-  project_id: "project_id"
-  name: "Test Project"
-pages:
-  - type: markdown
-    filepath: "README.md"
-`
-
-	state := NewParseStateV2("config.yaml", dir)
-	conf, err := ParseConfigV2(state, strings.NewReader(input))
-	require.NoError(t, err)
-
-	require.Len(t, conf.Pages, 1)
-	assert.Equal(t, ConfigPageTypeMarkdownV2, conf.Pages[0].Type)
-	require.Len(t, conf.Pages[0].Lang, 1)
-	assert.Equal(t, "README.md", conf.Pages[0].Lang["en"].Filepath)
-	assert.Equal(t, "README", conf.Pages[0].Lang["en"].Title)
-	assert.Equal(t, "readme", conf.Pages[0].Lang["en"].Link)
+	return root, string(data)
 }
 
-func TestParseConfigV2MarkdownMultiLocale(t *testing.T) {
-	t.Parallel()
-
-	dir, err := os.MkdirTemp("", "")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
-
-	readmeEN := createTempFile(t, dir, "README.en.md")
-	require.NoError(t, os.WriteFile(readmeEN, []byte(v2ReadmeContents), 0o600))
-	readmeJA := createTempFile(t, dir, "README.ja.md")
-	require.NoError(t, os.WriteFile(readmeJA, []byte(v2ReadmeContents), 0o600))
-
-	input := `
-version: 2
-project:
-  project_id: "project_id"
-  name: "Test Project"
-  default_language: "en"
-pages:
-  - type: markdown
-    lang:
-      en:
-        filepath: "README.en.md"
-        link: "guide"
-        title: "Guide"
-      ja:
-        filepath: "README.ja.md"
-        link: "guide"
-        title: "Guide JA"
-`
-
-	state := NewParseStateV2("config.yaml", dir)
-	conf, err := ParseConfigV2(state, strings.NewReader(input))
-	require.NoError(t, err)
-
-	require.Len(t, conf.Pages, 1)
-	assert.Equal(t, ConfigPageTypeMarkdownV2, conf.Pages[0].Type)
-	require.Len(t, conf.Pages[0].Lang, 2)
-	assert.Equal(t, "Guide", conf.Pages[0].Lang["en"].Title)
-	assert.Equal(t, "guide", conf.Pages[0].Lang["en"].Link)
-	assert.Equal(t, "Guide JA", conf.Pages[0].Lang["ja"].Title)
-	assert.Equal(t, "guide", conf.Pages[0].Lang["ja"].Link)
+func findPageByType(pages []ConfigPageV2, pageType string) *ConfigPageV2 {
+	for i := range pages {
+		if pages[i].Type == pageType {
+			return &pages[i]
+		}
+	}
+	return nil
 }
 
-func TestParseConfigV2MatchMultiLocale(t *testing.T) {
-	t.Parallel()
-
-	dir, err := os.MkdirTemp("", "")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
-
-	docEN := createTempFile(t, dir, "doc.en.md")
-	require.NoError(t, os.WriteFile(docEN, []byte(`
----
-title: "Guide"
-link: "guide"
-lang: "en"
-language_group_id: "guide"
----
-`), 0o600))
-	docJA := createTempFile(t, dir, "doc.ja.md")
-	require.NoError(t, os.WriteFile(docJA, []byte(`
----
-title: "Guide JA"
-link: "guide"
-lang: "ja"
-language_group_id: "guide"
----
-`), 0o600))
-
-	input := `
-version: 2
-project:
-  project_id: "project_id"
-  name: "Test Project"
-  default_language: "en"
-pages:
-  - type: match
-    pattern: "./*.md"
-    sort_key: "title"
-    sort_order: "asc"
-`
-
-	state := NewParseStateV2("config.yaml", dir)
-	conf, err := ParseConfigV2(state, strings.NewReader(input))
-	require.NoError(t, err)
-
-	require.Len(t, conf.Pages, 1)
-	assert.Equal(t, ConfigPageTypeMarkdownV2, conf.Pages[0].Type)
-	require.Len(t, conf.Pages[0].Lang, 2)
-	assert.Equal(t, "Guide", conf.Pages[0].Lang["en"].Title)
-	assert.Equal(t, "Guide JA", conf.Pages[0].Lang["ja"].Title)
+func findPageByLink(pages []ConfigPageV2, link string) *ConfigPageV2 {
+	for i := range pages {
+		for _, lang := range pages[i].LangPage {
+			if lang.Link == link {
+				return &pages[i]
+			}
+		}
+	}
+	return nil
 }
 
-func TestParseConfigV2DirectoryWithLang(t *testing.T) {
-	t.Parallel()
+func TestParseConfigV2(t *testing.T) {
+	tests := []struct {
+		name     string
+		caseName string
+		assert   func(t *testing.T, conf *ConfigV2)
+	}{
+		{
+			name:     "markdown_single_locale",
+			caseName: "1_valid_single_language",
+			assert: func(t *testing.T, conf *ConfigV2) {
+				page := findPageByLink(conf.Pages, "readme")
+				require.NotNil(t, page)
+				assert.Equal(t, ConfigPageTypeMarkdownV2, page.Type)
+				require.Len(t, page.LangPage, 1)
+				assert.Equal(t, "README.md", page.LangPage["en"].Filepath)
+				assert.Equal(t, "README", page.LangPage["en"].Title)
+				assert.Equal(t, "Readme description", page.LangPage["en"].Description)
+				assert.Equal(t, "readme-path", page.LangPage["en"].Path)
+				assert.Equal(t, "readme", page.LangPage["en"].Link)
+			},
+		},
+		{
+			name:     "markdown_multi_locale",
+			caseName: "2_valid_multi_language",
+			assert: func(t *testing.T, conf *ConfigV2) {
+				page := findPageByLink(conf.Pages, "guide")
+				require.NotNil(t, page)
+				assert.Equal(t, ConfigPageTypeMarkdownMultiLanguageV2, page.Type)
+				require.Len(t, page.LangPage, 2)
+				assert.Equal(t, "Guide", page.LangPage["en"].Title)
+				assert.Equal(t, "Guide description", page.LangPage["en"].Description)
+				assert.Equal(t, "guide-path-en", page.LangPage["en"].Path)
+				assert.Equal(t, "guide", page.LangPage["en"].Link)
+				assert.Equal(t, "Guide JA", page.LangPage["ja"].Title)
+				assert.Equal(t, "Guide description JA", page.LangPage["ja"].Description)
+				assert.Equal(t, "guide-path-ja", page.LangPage["ja"].Path)
+				assert.Equal(t, "guide", page.LangPage["ja"].Link)
+			},
+		},
+		{
+			name:     "match_multi_locale",
+			caseName: "2_valid_multi_language",
+			assert: func(t *testing.T, conf *ConfigV2) {
+				page := findPageByLink(conf.Pages, "match-guide")
+				require.NotNil(t, page)
+				require.Len(t, page.LangPage, 2)
+				assert.Equal(t, "Guide", page.LangPage["en"].Title)
+				assert.Equal(t, "Match guide description", page.LangPage["en"].Description)
+				assert.Equal(t, "match-guide-en", page.LangPage["en"].Path)
+				assert.Equal(t, "Guide JA", page.LangPage["ja"].Title)
+				assert.Equal(t, "Match guide description JA", page.LangPage["ja"].Description)
+				assert.Equal(t, "match-guide-ja", page.LangPage["ja"].Path)
+			},
+		},
+		{
+			name:     "directory_with_lang",
+			caseName: "2_valid_multi_language",
+			assert: func(t *testing.T, conf *ConfigV2) {
+				page := findPageByType(conf.Pages, ConfigPageTypeDirectoryV2)
+				require.NotNil(t, page)
+				require.Len(t, page.LangDirectory, 2)
+				assert.Equal(t, "English", page.LangDirectory["en"].Title)
+				assert.Equal(t, "Japanese", page.LangDirectory["ja"].Title)
+				require.Len(t, page.Children, 1)
+				assert.Equal(t, ConfigPageTypeMarkdownV2, page.Children[0].Type)
+			},
+		},
+		{
+			name:     "section_single_locale",
+			caseName: "1_valid_single_language",
+			assert: func(t *testing.T, conf *ConfigV2) {
+				page := findPageByType(conf.Pages, ConfigPageTypeSectionV2)
+				require.NotNil(t, page)
+				assert.Equal(t, "guide", page.Path)
+				require.Len(t, page.LangPage, 1)
+				assert.Equal(t, "README", page.LangPage["en"].Title)
+			},
+		},
+	}
 
-	dir, err := os.MkdirTemp("", "")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
-
-	child := createTempFile(t, dir, "child.md")
-	require.NoError(t, os.WriteFile(child, []byte(v2ReadmeContents), 0o600))
-
-	input := `
-version: 2
-project:
-  project_id: "project_id"
-  name: "Test Project"
-  default_language: "en"
-pages:
-  - type: directory
-    lang:
-      en:
-        title: "English"
-      ja:
-        title: "Japanese"
-    children:
-      - type: markdown
-        filepath: "child.md"
-`
-
-	state := NewParseStateV2("config.yaml", dir)
-	conf, err := ParseConfigV2(state, strings.NewReader(input))
-	require.NoError(t, err)
-
-	require.Len(t, conf.Pages, 1)
-	assert.Equal(t, ConfigPageTypeDirectoryV2, conf.Pages[0].Type)
-	require.Len(t, conf.Pages[0].Lang, 2)
-	assert.Equal(t, "English", conf.Pages[0].Lang["en"].Title)
-	assert.Equal(t, "Japanese", conf.Pages[0].Lang["ja"].Title)
-	require.Len(t, conf.Pages[0].Children, 1)
-	assert.Equal(t, ConfigPageTypeMarkdownV2, conf.Pages[0].Children[0].Type)
-}
-
-func TestParseConfigV2SectionSingleLocale(t *testing.T) {
-	t.Parallel()
-
-	dir, err := os.MkdirTemp("", "")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
-
-	section := createTempFile(t, dir, "section.md")
-	require.NoError(t, os.WriteFile(section, []byte(v2ReadmeContents), 0o600))
-
-	input := `
-version: 2
-project:
-  project_id: "project_id"
-  name: "Test Project"
-pages:
-  - type: section
-    path: "guide"
-    filepath: "section.md"
-`
-
-	state := NewParseStateV2("config.yaml", dir)
-	conf, err := ParseConfigV2(state, strings.NewReader(input))
-	require.NoError(t, err)
-
-	require.Len(t, conf.Pages, 1)
-	assert.Equal(t, ConfigPageTypeSectionV2, conf.Pages[0].Type)
-	assert.Equal(t, "guide", conf.Pages[0].Path)
-	require.Len(t, conf.Pages[0].Lang, 1)
-	assert.Equal(t, "README", conf.Pages[0].Lang["en"].Title)
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			dir, input := loadTestCaseV2(t, tc.caseName)
+			state := NewParseStateV2("config.yaml", dir)
+			conf, err := ParseConfigV2(state, strings.NewReader(input))
+			require.NoError(t, err)
+			tc.assert(t, conf)
+		})
+	}
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/adrg/frontmatter"
+	"github.com/toritoritori29/dodo-cli/src/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -17,7 +18,9 @@ const (
 
 	FrontMatterKeyTitle     = "title"
 	FrontMatterKeyPath      = "path"
+	FrontMatterKeyLink      = "link"
 	FrontMatterDescription  = "description"
+	FrontMatterKeyGroup     = "language_group_id"
 	FrontMatterKeyCreatedAt = "created_at"
 	FrontMatterKeyUpdatedAt = "updated_at"
 )
@@ -94,11 +97,11 @@ func NewFrontMatterFromMarkdown(filepath string) (*FrontMatter, error) { //nolin
 		switch strings.ToLower(k) {
 		case FrontMatterKeyTitle:
 			matter.Title = v
-		case "link":
+		case FrontMatterKeyLink:
 			matter.Link = v
 		case FrontMatterKeyPath:
 			matter.Path = v
-		case "language_group_id":
+		case FrontMatterKeyGroup:
 			matter.LanguageGroupID = v
 		case FrontMatterDescription:
 			matter.Description = v
@@ -117,6 +120,15 @@ func NewFrontMatterFromMarkdown(filepath string) (*FrontMatter, error) { //nolin
 		default:
 			matter.UnknownTags[k] = v
 		}
+	}
+
+	// If group ID is not set, assign the random value
+	if matter.LanguageGroupID == "" {
+		id, err := utils.RandomAlphaNumeric(12)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate language group ID: %w", err)
+		}
+		matter.LanguageGroupID = id
 	}
 	return &matter, nil
 }

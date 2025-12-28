@@ -1,0 +1,15 @@
+version: 2
+project:
+  project_id: "project_id"
+  name: "Test Project"
+pages:
+  - type: markdown
+    filepath: "README.md"
+  - type: section
+    path: "guide"
+    filepath: "section.md"
+  - type: directory
+    title: "Docs"
+    children:
+      - type: markdown
+        filepath: "child.md"

@@ -1,0 +1,4 @@
+---
+title: "Child"
+link: "child"
+---
