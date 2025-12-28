@@ -164,7 +164,8 @@ func (s *ParseStateV1) getLineFromNode(node ast.Node) string {
 	return string(lines[lineNumber])
 }
 
-func (s *ParseStateV1) getSecurePath(path string) (string, error) {
+// getAbsolutePath converts a relative path to an absolute path and validates it's under the root directory.
+func (s *ParseStateV1) getAbsolutePath(path string) (string, error) {
 	absRootPath, err := filepath.Abs(s.rootPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to get the absolute path of the working directory: %w", err)
@@ -614,7 +615,7 @@ func fillFieldsFromMarkdown(state *ParseStateV1, configPage *ConfigPageV1, mappi
 		state.errorSet.Add(state.buildParseError("the `markdown` field is required", mapping))
 		return
 	}
-	clean, err := state.getSecurePath(configPage.Markdown)
+	clean, err := state.getAbsolutePath(configPage.Markdown)
 	if err != nil {
 		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
 		return
@@ -718,7 +719,7 @@ func parseConfigPageMatch(state *ParseStateV1, mapping *ast.MappingNode) []Confi
 }
 
 func buildConfigPageFromMatchStatement(state *ParseStateV1, mapping *ast.MappingNode, match, sortKey, sortOrder string) []ConfigPageV1 {
-	clean, err := state.getSecurePath(match)
+	clean, err := state.getAbsolutePath(match)
 	if err != nil {
 		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
 		return nil

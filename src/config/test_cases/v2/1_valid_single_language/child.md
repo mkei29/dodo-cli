@@ -1,4 +1,0 @@
----
-title: "Child"
-link: "child"
----

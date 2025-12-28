@@ -5,20 +5,22 @@ type: markdownによる単一のmarkdown指定
   - type: markdown
     link: "" # filepathのmarkdown内に記述があれば省略可能
     title: "" # filepathのmarkdown内に記述があれば省略可能
+    description: "" # filepathのmarkdown内に記述があれば省略可能
     filepath: ""
 
   # 複数ロケールに対応する場合
   - type: markdown
-    # defaultLangの指定が
     lang:
       en:
         link: ""
-        filepath: ""
         title: "" # filepathのmarkdown内に記述があれば省略可能
-      ja:
-        link: "" # localesを使う場合には省略不可. filepathにlinkが書かれていても無視してwarningを出す
+        description: "" # filepathのmarkdown内に記述があれば省略可能
         filepath: ""
+      ja:
+        link: ""
         title: ""
+        description: ""
+        filepath: ""
 ```
 
 matchによるパターンマッチ.
@@ -36,6 +38,7 @@ matchによるパターンマッチ.
 # 単一ロケール版 (内部的には default_language の lang に格納される)
 - type: directory
   title: "English"
+  description: "" # 省略可能
   children:
     - type: markdown
       link: "cicd_github"
@@ -47,8 +50,10 @@ matchによるパターンマッチ.
   lang:
     en:
       title: "English"
+      description: "" # 省略可能
     ja:
       title: "Japanese"
+      description: "" # 省略可能
   children:
     - type: markdown
       link: "cicd_github"
@@ -58,22 +63,26 @@ matchによるパターンマッチ.
 
 `type: section` 殆どtype directoryと同じ
 ```yaml
-#  シングルロケール対応版
-  - type: section
-    title: "test"
-    children:
+# シングルロケール対応版
+- type: section
+  title: "test"
+  description: "" # 省略可能
+  children:
     - type: markdown
       link: "cicd_github"
       title: "GitHub Actions"
       filepath: "./test.md"
 
-# マルチロケール対応
-  - type: section
-      en: 
-        title: "English"
-      ja: 
-        title: "Japanese"
-    children:
+# マルチロケール対応版
+- type: section
+  lang:
+    en:
+      title: "English"
+      description: "" # 省略可能
+    ja:
+      title: "Japanese"
+      description: "" # 省略可能
+  children:
     - type: markdown
       link: "cicd_github"
       title: "GitHub Actions"
@@ -81,21 +90,14 @@ matchによるパターンマッチ.
 ```
 
 
-* Pathの説明がおかしそう
-* PageにDescription相当の機能がなさそう
-* fillLangFieldsFromMarkdownV2でtitle以外の補完を指定なさそう
-* matchで言語毎のパスを指定できなさそう
-* language_group_idは必須じゃなくしたい。
+## 実装状況
 
-matchEntryV2のような中途半端な構造体を作らないでください。FrontmatterはLangを持つ可能性があります。
+### 完了した機能
+- ✅ Description機能（全てのページタイプでdescriptionフィールドをサポート）
+- ✅ fillSingleLangFromMarkdownV2でtitle, link, descriptionを補完
+- ✅ matchで言語毎のパスを指定（buildConfigPageFromMatchStatementV2で実装）
+- ✅ validateConfigPageSection/DirectoryでDefaultLanguageの存在確認（validateLangKeySetV2経由）
+- ✅ 各validationでvalidateLangKeySetV2を呼び出し
 
-validateConfigPageSectionでDefaultLanguageが存在することを確認する。
-parseDirectoryLangEntriesV2のDefaultの存在確認
-
-	defaultLang := state.config.Project.DefaultLanguage
-	if defaultLang == "" {
-		defaultLang = "en"
-	}
-  この手のロジックを撲滅
-
-  validateMarkdownLangEntryV2の修正
+### 未完了・検討中の項目
+* language_group_idの必須を緩和する（frontmatter仕様の変更が必要）

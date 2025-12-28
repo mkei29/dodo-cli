@@ -42,6 +42,10 @@ const (
 	ConfigPageV2KeyChildren = "children"
 )
 
+const (
+	SystemDefaultLanguageV2 = "en"
+)
+
 type ConfigV2 struct {
 	Version string
 	Project ConfigProjectV2
@@ -57,6 +61,13 @@ type ConfigProjectV2 struct {
 	Logo            string
 	Repository      string
 	DefaultLanguage string
+}
+
+func (c *ConfigProjectV2) GetDefaultLanguageOrFallback() string {
+	if c.DefaultLanguage != "" {
+		return c.DefaultLanguage
+	}
+	return SystemDefaultLanguageV2
 }
 
 type ConfigPageV2 struct {
@@ -155,7 +166,8 @@ func (s *ParseStateV2) getLineFromNode(node ast.Node) string {
 	return string(lines[lineNumber])
 }
 
-func (s *ParseStateV2) getSecurePath(path string) (string, error) {
+// getAbsolutePath converts a relative path to an absolute path and validates it's under the root directory.
+func (s *ParseStateV2) getAbsolutePath(path string) (string, error) {
 	absRootPath, err := filepath.Abs(s.rootPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to get the absolute path of the working directory: %w", err)
@@ -173,6 +185,27 @@ func (s *ParseStateV2) getSecurePath(path string) (string, error) {
 		return "", fmt.Errorf("the file being parsed is not under the root directory: %s", absPath)
 	}
 	return absPath, nil
+}
+
+// getRelativePath converts an absolute path to a relative path and validates it's under the root directory.
+func (s *ParseStateV2) getRelativePath(absPath string) (string, error) {
+	absRootPath, err := filepath.Abs(s.rootPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get the absolute path of the working directory: %w", err)
+	}
+
+	absRootPath = filepath.Clean(absRootPath)
+	cleanAbsPath := filepath.Clean(absPath)
+
+	if !strings.HasPrefix(cleanAbsPath, absRootPath) {
+		return "", fmt.Errorf("the file is not under the root directory: %s", absPath)
+	}
+
+	relPath, err := filepath.Rel(absRootPath, cleanAbsPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get relative path: %w", err)
+	}
+	return relPath, nil
 }
 
 func ParseConfigV2(state *ParseStateV2, reader io.Reader) (*ConfigV2, error) {
@@ -355,7 +388,7 @@ func parseConfigProjectV2(state *ParseStateV2, node *ast.MappingValueNode) { //n
 		state.errorSet.Add(state.buildParseError("the `project` must have a `name` field longer than 1 character", node))
 	}
 	if state.config.Project.DefaultLanguage == "" {
-		state.config.Project.DefaultLanguage = "en"
+		state.config.Project.DefaultLanguage = SystemDefaultLanguageV2
 	}
 	if !isValidISOLanguageCode(state.config.Project.DefaultLanguage) {
 		message := fmt.Sprintf("`default_language` field must be a valid ISO 639-1 language code (e.g., 'ja'). given: %s", state.config.Project.DefaultLanguage)
@@ -518,11 +551,12 @@ func parseConfigPageMarkdownV2(state *ParseStateV2, mapping *ast.MappingNode) Co
 		}
 	}
 
-	fillSingleLangFromMarkdownV2(state, &langItem, mapping)
-	defaultLang := state.config.Project.DefaultLanguage
-	if defaultLang == "" {
-		defaultLang = "en"
+	if err := fillSingleLangFromMarkdownV2(state, &langItem, mapping); err != nil {
+		// Error already recorded in fillSingleLangFromMarkdownV2
+		return configPage
 	}
+
+	defaultLang := state.config.Project.DefaultLanguage
 	configPage.LangPage = map[string]ConfigPageLangPage{
 		defaultLang: langItem,
 	}
@@ -602,29 +636,31 @@ func parseMarkdownLangEntriesV2(state *ParseStateV2, langNode *ast.MappingNode) 
 				state.errorSet.Add(state.buildParseError("a markdown language entry cannot accept the key: "+childKey, child))
 			}
 		}
-		fillSingleLangFromMarkdownV2(state, &langConfig, valueNode)
+		if err := fillSingleLangFromMarkdownV2(state, &langConfig, valueNode); err != nil {
+			continue
+		}
 		langMap[key] = langConfig
 	}
 	return langMap
 }
 
-func fillSingleLangFromMarkdownV2(state *ParseStateV2, langPage *ConfigPageLangPage, mapping *ast.MappingNode) {
+func fillSingleLangFromMarkdownV2(state *ParseStateV2, langPage *ConfigPageLangPage, mapping *ast.MappingNode) error {
 	if langPage.Filepath == "" {
 		state.errorSet.Add(state.buildParseError("the `filepath` field is required", mapping))
-		return
+		return fmt.Errorf("the `filepath` field is required")
 	}
 
-	clean, err := state.getSecurePath(langPage.Filepath)
+	clean, err := state.getAbsolutePath(langPage.Filepath)
 	if err != nil {
 		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
-		return
+		return err
 	}
 
 	p, err := NewFrontMatterFromMarkdown(clean)
 	if err != nil {
 		message := fmt.Sprintf("cannot read the markdown file: %s, %v", langPage.Filepath, err.Error())
 		state.errorSet.Add(state.buildParseError(message, mapping))
-		return
+		return err
 	}
 
 	// Fill missing fields from the markdown front matter.
@@ -637,11 +673,18 @@ func fillSingleLangFromMarkdownV2(state *ParseStateV2, langPage *ConfigPageLangP
 	if langPage.Description == "" && p.Description != "" {
 		langPage.Description = p.Description
 	}
+	return nil
 }
 
-func validateConfigPageMarkdown(state *ParseStateV2, langConfig *ConfigPageV2, mapping *ast.MappingNode) {
+func validateConfigPageMarkdown(state *ParseStateV2, page *ConfigPageV2, mapping *ast.MappingNode) {
+	// Check language keys follow ISO 639-1 codes
+	keySet := make(map[string]struct{}, len(page.LangPage))
+	for key := range page.LangPage {
+		keySet[key] = struct{}{}
+	}
+	validateLangKeySetV2(state, mapping, keySet)
 
-	for _, langItem := range langConfig.LangPage {
+	for _, langItem := range page.LangPage {
 		if langItem.Title == "" {
 			state.errorSet.Add(state.buildParseError("the `title` field is required", mapping))
 		}
@@ -667,7 +710,9 @@ func validateLangKeySetV2(state *ParseStateV2, mapping *ast.MappingNode, keySet 
 		return
 	}
 	if _, ok := keySet[defaultLang]; !ok {
-		state.errorSet.Add(state.buildParseError("`lang` must include the default language: "+defaultLang, mapping))
+		supported := strings.Join(utils.Keys(keySet), ",")
+		message := fmt.Sprintf("the default language (%s) is not included in the `lang` keys. existing languages: [%s]", defaultLang, supported)
+		state.errorSet.Add(state.buildParseError(message, mapping))
 	}
 }
 
@@ -732,7 +777,7 @@ func parseConfigPageMatchV2(state *ParseStateV2, mapping *ast.MappingNode) []Con
 }
 
 func buildConfigPageFromMatchStatementV2(state *ParseStateV2, mapping *ast.MappingNode, pattern, sortKey, sortOrder string) []ConfigPageV2 {
-	clean, err := state.getSecurePath(pattern)
+	clean, err := state.getAbsolutePath(pattern)
 	if err != nil {
 		state.errorSet.Add(state.buildParseError(err.Error(), mapping))
 		return nil
@@ -752,8 +797,21 @@ func buildConfigPageFromMatchStatementV2(state *ParseStateV2, mapping *ast.Mappi
 			state.errorSet.Add(state.buildParseError(message, mapping))
 			continue
 		}
-		langItem := ConfigPageLangPage{}
-		fillSingleLangFromMarkdownV2(state, &langItem, mapping)
+
+		// Glob returns absolute paths, Convert absolute path to relative path from rootPath.
+		relPath, err := state.getRelativePath(m)
+		if err != nil {
+			state.errorSet.Add(state.buildParseError(err.Error(), mapping))
+			continue
+		}
+
+		langItem := ConfigPageLangPage{
+			Filepath: relPath,
+		}
+		if err := fillSingleLangFromMarkdownV2(state, &langItem, mapping); err != nil {
+			// Error already recorded in fillSingleLangFromMarkdownV2
+			continue
+		}
 
 		lang := getLanguageFromFrontmatterV2(matter, state.config.Project.DefaultLanguage)
 		if !isValidISOLanguageCode(lang) {
@@ -771,6 +829,7 @@ func buildConfigPageFromMatchStatementV2(state *ParseStateV2, mapping *ast.Mappi
 					lang: langItem,
 				},
 			}
+			continue
 		}
 		// If exists, just add the lang entry.
 		if _, exists := page.LangPage[lang]; exists {
@@ -860,9 +919,6 @@ func parseConfigPageDirectoryV2(state *ParseStateV2, mapping *ast.MappingNode) C
 	}
 
 	defaultLang := state.config.Project.DefaultLanguage
-	if defaultLang == "" {
-		defaultLang = "en"
-	}
 	configPage.LangDirectory = map[string]ConfigPageLangDirectory{
 		defaultLang: *langItem,
 	}
@@ -940,27 +996,21 @@ func parseDirectoryLangEntriesV2(state *ParseStateV2, mapping *ast.MappingNode) 
 }
 
 func validateConfigPageDirectory(state *ParseStateV2, page ConfigPageV2, mapping *ast.MappingNode) {
-	if len(page.LangSection) == 0 {
-		state.errorSet.Add(state.buildParseError("`lang` must not be empty", mapping))
-		return
-	}
-
 	// Check language keys follow ISO 639-1 codes
-	keySet := make(map[string]struct{}, len(page.LangSection))
-	for key := range page.LangSection {
+	keySet := make(map[string]struct{}, len(page.LangDirectory))
+	for key := range page.LangDirectory {
 		keySet[key] = struct{}{}
 	}
 	validateLangKeySetV2(state, mapping, keySet)
 
 	// Check each language entry
-	for lang, entry := range page.LangSection {
+	for lang, entry := range page.LangDirectory {
 		if entry.Title == "" {
 			message := fmt.Sprintf("the `title` field is required for language: %s", lang)
 			state.errorSet.Add(state.buildParseError(message, mapping))
 		}
 		if len(page.Children) == 0 {
-			message := fmt.Sprintf("`children` is required for directory for language: %s", lang)
-			state.errorSet.Add(state.buildParseError(message, mapping))
+			state.errorSet.Add(state.buildParseError("there is no children page for this directory", mapping))
 		}
 	}
 }
@@ -1004,9 +1054,6 @@ func parseConfigPageSectionV2(state *ParseStateV2, mapping *ast.MappingNode) Con
 	}
 
 	defaultLang := state.config.Project.DefaultLanguage
-	if defaultLang == "" {
-		defaultLang = "en"
-	}
 	configPage.LangSection = map[string]ConfigPageLangSection{
 		defaultLang: *langItem,
 	}
@@ -1085,11 +1132,6 @@ func parseSectionLangEntriesV2(state *ParseStateV2, mapping *ast.MappingNode) ma
 }
 
 func validateConfigPageSection(state *ParseStateV2, page ConfigPageV2, mapping *ast.MappingNode) {
-	if len(page.LangSection) == 0 {
-		state.errorSet.Add(state.buildParseError("`lang` must not be empty", mapping))
-		return
-	}
-
 	// Check language keys follow ISO 639-1 codes
 	keySet := make(map[string]struct{}, len(page.LangSection))
 	for key := range page.LangSection {
