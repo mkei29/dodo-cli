@@ -298,3 +298,180 @@ func transformDirectory(rootDir string, configProject *config.ConfigProjectV1, c
 	log.Debugf("Node Found. Type: Directory, Title: %s", p.Title)
 	return []Page{p}, nil
 }
+
+// CreatePageTreeV2 creates a page tree from ConfigV2.
+func CreatePageTreeV2(conf *config.ConfigV2, rootDir string) (*Page, *appErrors.MultiError) {
+	errorSet := appErrors.NewMultiError()
+	root := Page{
+		Type: PageTypeRootNode,
+	}
+
+	children := make([]Page, 0, len(conf.Pages))
+	for _, p := range conf.Pages {
+		c, merr := buildPageV2(rootDir, &conf.Project, &p)
+		if merr != nil {
+			errorSet.Merge(*merr)
+			continue
+		}
+		children = append(children, c...)
+	}
+	if errorSet.HasError() {
+		return nil, &errorSet
+	}
+
+	root.Children = children
+	return &root, nil
+}
+
+func buildPageV2(rootDir string, configProject *config.ConfigProjectV2, configPage *config.ConfigPageV2) ([]Page, *appErrors.MultiError) {
+	defaultLang := configProject.GetDefaultLanguageOrFallback()
+
+	switch configPage.Type {
+	case config.ConfigPageTypeMarkdownV2, config.ConfigPageTypeMarkdownMultiLanguageV2:
+		return transformMarkdownV2(rootDir, defaultLang, configPage)
+	case config.ConfigPageTypeSectionV2, config.ConfigPageTypeSectionV2MultiLanguage:
+		return transformSectionV2(rootDir, configProject, configPage)
+	case config.ConfigPageTypeDirectoryV2, config.ConfigPageTypeDirectoryMultiLanguageV2:
+		return transformDirectoryV2(rootDir, configProject, configPage)
+	default:
+		err := appErrors.NewMultiError()
+		err.Add(appErrors.NewAppError("unknown page type: " + configPage.Type))
+		return nil, &err
+	}
+}
+
+func transformMarkdownV2(rootDir, defaultLang string, configPage *config.ConfigPageV2) ([]Page, *appErrors.MultiError) {
+	merr := appErrors.NewMultiError()
+
+	// Get default language page info
+	langPage, ok := configPage.LangPage[defaultLang]
+	if !ok {
+		merr.Add(fmt.Errorf("default language (%s) not found in page", defaultLang))
+		return nil, &merr
+	}
+
+	filepath := filepath.Clean(filepath.Join(rootDir, langPage.Filepath))
+	if err := config.IsUnderRootPath(rootDir, filepath); err != nil {
+		merr.Add(fmt.Errorf("path should be under the rootDir. passed: %s", filepath))
+		return nil, &merr
+	}
+
+	// Build language info for all languages
+	languageInfo := make([]PageLanguageWiseInfo, 0, len(configPage.LangPage))
+	for lang, lp := range configPage.LangPage {
+		languageInfo = append(languageInfo, PageLanguageWiseInfo{
+			Language:    lang,
+			Title:       lp.Title,
+			Description: lp.Description,
+			Path:        lp.Link,
+		})
+	}
+
+	p := Page{
+		Type:        PageTypeLeafNode,
+		Filepath:    langPage.Filepath,
+		Hash:        fmt.Sprintf("%x", sha256.Sum256([]byte(langPage.Filepath))),
+		Path:        langPage.Link,
+		Title:       langPage.Title,
+		Description: langPage.Description,
+		Language:    languageInfo,
+		Children:    []Page{},
+	}
+
+	log.Debugf("Node Found. Type: Markdown, Filepath: '%s', Title: '%s', Path: '%s'", p.Filepath, p.Title, p.Path)
+	return []Page{p}, nil
+}
+
+func transformSectionV2(rootDir string, configProject *config.ConfigProjectV2, configPage *config.ConfigPageV2) ([]Page, *appErrors.MultiError) {
+	merr := appErrors.NewMultiError()
+	defaultLang := configProject.GetDefaultLanguageOrFallback()
+
+	// Get default language section info
+	langSection, ok := configPage.LangSection[defaultLang]
+	if !ok {
+		merr.Add(fmt.Errorf("default language (%s) not found in section", defaultLang))
+		return nil, &merr
+	}
+
+	children := make([]Page, 0, len(configPage.Children))
+	for _, child := range configPage.Children {
+		pages, err := buildPageV2(rootDir, configProject, &child)
+		if err != nil {
+			merr.Merge(*err)
+			continue
+		}
+		children = append(children, pages...)
+	}
+
+	// Build language info for all languages
+	languageInfo := make([]PageLanguageWiseInfo, 0, len(configPage.LangSection))
+	for lang, ls := range configPage.LangSection {
+		languageInfo = append(languageInfo, PageLanguageWiseInfo{
+			Language:    lang,
+			Title:       ls.Title,
+			Description: ls.Description,
+			Path:        "",
+		})
+	}
+
+	p := Page{
+		Type:        PageTypeDirNode,
+		Title:       langSection.Title,
+		Description: langSection.Description,
+		Language:    languageInfo,
+		Children:    children,
+	}
+
+	if merr.HasError() {
+		return nil, &merr
+	}
+	log.Debugf("Node Found. Type: Section, Title: %s", p.Title)
+	return []Page{p}, nil
+}
+
+func transformDirectoryV2(rootDir string, configProject *config.ConfigProjectV2, configPage *config.ConfigPageV2) ([]Page, *appErrors.MultiError) {
+	merr := appErrors.NewMultiError()
+	defaultLang := configProject.GetDefaultLanguageOrFallback()
+
+	// Get default language directory info
+	langDir, ok := configPage.LangDirectory[defaultLang]
+	if !ok {
+		merr.Add(fmt.Errorf("default language (%s) not found in directory", defaultLang))
+		return nil, &merr
+	}
+
+	children := make([]Page, 0, len(configPage.Children))
+	for _, child := range configPage.Children {
+		pages, err := buildPageV2(rootDir, configProject, &child)
+		if err != nil {
+			merr.Merge(*err)
+			continue
+		}
+		children = append(children, pages...)
+	}
+
+	// Build language info for all languages
+	languageInfo := make([]PageLanguageWiseInfo, 0, len(configPage.LangDirectory))
+	for lang, ld := range configPage.LangDirectory {
+		languageInfo = append(languageInfo, PageLanguageWiseInfo{
+			Language:    lang,
+			Title:       ld.Title,
+			Description: ld.Description,
+			Path:        "",
+		})
+	}
+
+	p := Page{
+		Type:        PageTypeDirNode,
+		Title:       langDir.Title,
+		Description: langDir.Description,
+		Language:    languageInfo,
+		Children:    children,
+	}
+
+	if merr.HasError() {
+		return nil, &merr
+	}
+	log.Debugf("Node Found. Type: Directory, Title: %s", p.Title)
+	return []Page{p}, nil
+}
