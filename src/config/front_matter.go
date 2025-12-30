@@ -29,7 +29,6 @@ const (
 type FrontMatter struct {
 	Title           string
 	Link            string
-	Path            string
 	LanguageGroupID string
 	Description     string
 	CreatedAt       SerializableTime
@@ -69,8 +68,7 @@ func NewFrontMatter(title string, path string, now ...time.Time) *FrontMatter {
 
 	return &FrontMatter{
 		Title:           title,
-		Link:            "",
-		Path:            path,
+		Link:            path,
 		LanguageGroupID: id,
 		Description:     "",
 		CreatedAt:       NewSerializableTimeFromTime(currentTime),
@@ -107,8 +105,6 @@ func NewFrontMatterFromMarkdown(filepath string) (*FrontMatter, error) { //nolin
 			matter.Title = v
 		case FrontMatterKeyLink:
 			matter.Link = v
-		case FrontMatterKeyPath:
-			matter.Path = v
 		case FrontMatterKeyGroup:
 			matter.LanguageGroupID = v
 		case FrontMatterDescription:
@@ -187,7 +183,6 @@ func (f *FrontMatter) String() string {
 	if f.Link != "" {
 		text += fmt.Sprintf("link: \"%s\"\n", f.Link)
 	}
-	text += fmt.Sprintf("path: \"%s\"\n", f.Path)
 	if f.LanguageGroupID != "" {
 		text += fmt.Sprintf("group: \"%s\"\n", f.LanguageGroupID)
 	}

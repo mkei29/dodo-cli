@@ -107,13 +107,13 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 	prepareFile(t, dir, "README1.md", `
 	---
   title: README1
-  path: readme1
+  link: readme1
 	---
 	`)
 	prepareFile(t, dir, "README2.md", `
 	---
   title: README2
-  path: readme2
+  link: readme2
 	---
 	`)
 
@@ -121,19 +121,19 @@ func TestCreatePageTreeWithMatch(t *testing.T) {
 	prepareFile(t, dir, "README3.md", `
 	---
   title: README3
-  path: readme3
+  link: readme3
 	---
 	`)
 	prepareFile(t, sub, "README4.md", `
 	---
   title: README4
-  path: readme4
+  link: readme4
 	---
 	`)
 	prepareFile(t, sub, "README5.md", `
 	---
   title: README5
-  path: readme5
+  link: readme5
 	---
 	`)
 
@@ -181,7 +181,7 @@ func TestCreatePageTreeWithHybridCase(t *testing.T) {
 	prepareFile(t, dir, "README.md", `
 	---
   title: README
-  path: readme
+  link: readme
 	---
 	`)
 
@@ -232,7 +232,7 @@ func TestCreatePageTreeWithDirectory(t *testing.T) {
 	prepareFile(t, dir, "README1.md", `
 	---
   title: README1
-  path: readme1
+  link: readme1
 	---
 	`)
 

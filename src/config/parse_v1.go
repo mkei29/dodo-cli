@@ -632,8 +632,8 @@ func fillFieldsFromMarkdown(state *ParseStateV1, configPage *ConfigPageV1, mappi
 	if configPage.Title == "" && p.Title != "" {
 		configPage.Title = p.Title
 	}
-	if configPage.Path == "" && p.Path != "" {
-		configPage.Path = p.Path
+	if configPage.Path == "" && p.Link != "" {
+		configPage.Path = p.Link
 	}
 	if configPage.Description == "" && p.Description != "" {
 		configPage.Description = p.Description
@@ -743,7 +743,7 @@ func buildConfigPageFromMatchStatement(state *ParseStateV1, mapping *ast.Mapping
 		p := ConfigPageV1{
 			Markdown:    m,
 			Title:       matter.Title,
-			Path:        matter.Path,
+			Path:        matter.Link,
 			Description: matter.Description,
 			UpdatedAt:   matter.UpdatedAt,
 			CreatedAt:   matter.CreatedAt,

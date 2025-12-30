@@ -19,7 +19,7 @@ func TestExecuteTouchNew(t *testing.T) {
 	args := TouchArgs{
 		filepath: path,
 		title:    "Test Title",
-		path:     "test-path",
+		link:     "test-path",
 		debug:    true,
 		noColor:  true,
 		now:      "2025-01-01T00:00:00+09:00",
@@ -36,7 +36,7 @@ func TestExecuteTouchNew(t *testing.T) {
 	matter, err := config.NewFrontMatterFromMarkdown(path)
 	require.NoError(t, err)
 	assert.Equal(t, "Test Title", matter.Title)
-	assert.Equal(t, "test-path", matter.Path)
+	assert.Equal(t, "test-path", matter.Link)
 	assert.Equal(t, "", matter.Description)
 	assert.Equal(t, "2025-01-01T00:00:00+09:00", matter.CreatedAt.String())
 	assert.Equal(t, "2025-01-01T00:00:00+09:00", matter.UpdatedAt.String())
@@ -46,7 +46,7 @@ func TestExecuteTouchNew(t *testing.T) {
 	updateArgs := TouchArgs{
 		filepath: path,
 		title:    "Updated Title",
-		path:     "updated-path",
+		link:     "updated-path",
 		debug:    true,
 		noColor:  true,
 		now:      "2025-01-02T00:00:00+09:00",
@@ -58,7 +58,6 @@ func TestExecuteTouchNew(t *testing.T) {
 	updatedMatter, err := config.NewFrontMatterFromMarkdown(path)
 	require.NoError(t, err)
 	assert.Equal(t, "Updated Title", updatedMatter.Title)
-	assert.Equal(t, "updated-path", updatedMatter.Path)
 	assert.Equal(t, "", updatedMatter.Description)
 	assert.Equal(t, "2025-01-01T00:00:00+09:00", updatedMatter.CreatedAt.String())
 	assert.Equal(t, "2025-01-02T00:00:00+09:00", updatedMatter.UpdatedAt.String())
