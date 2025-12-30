@@ -20,7 +20,7 @@ import (
 type TouchArgs struct {
 	filepath string
 	title    string
-	path     string
+	link     string
 	debug    bool
 	noColor  bool
 	now      string
@@ -66,7 +66,7 @@ func CreateTouchCmd() *cobra.Command {
 		},
 	}
 	touchCmd.Flags().StringVarP(&opts.title, "title", "t", "", "the title of newly created file")
-	touchCmd.Flags().StringVarP(&opts.path, "path", "p", "", "the URL path of the file")
+	touchCmd.Flags().StringVarP(&opts.link, "link", "l", "", "the URL path of the file")
 	touchCmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode if set this flag")
 	touchCmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
 	touchCmd.Flags().StringVar(&opts.now, "now", "", "the current time in RFC3339 format")
@@ -114,8 +114,8 @@ func executeTouchNew(args TouchArgs) error {
 	defer file.Close()
 
 	filepath := args.filepath
-	if args.path != "" {
-		filepath = args.path
+	if args.link != "" {
+		filepath = args.link
 	}
 
 	now, err := parseTime(args.now)
@@ -145,8 +145,8 @@ func executeTouchUpdate(args TouchArgs) error {
 	if args.title != "" {
 		matter.Title = args.title
 	}
-	if args.path != "" {
-		matter.Path = args.path
+	if args.link != "" {
+		matter.Link = args.link
 	}
 
 	// Update time

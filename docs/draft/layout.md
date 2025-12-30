@@ -1,6 +1,6 @@
 ---
 title: How to use dodo
-path: /how_to_use_dodo
+link: /how_to_use_dodo
 ---
 
 

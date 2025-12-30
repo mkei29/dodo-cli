@@ -15,7 +15,7 @@ func TestNewFrontMatter(t *testing.T) {
 	fm := NewFrontMatter(title, path)
 
 	assert.Equal(t, title, fm.Title, "expected title to be %s, got %s", title, fm.Title)
-	assert.Equal(t, path, fm.Path, "expected path to be %s, got %s", path, fm.Path)
+	assert.Equal(t, path, fm.Link, "expected link to be %s, got %s", path, fm.Link)
 	assert.False(t, fm.CreatedAt.IsZero(), "expected CreatedAt to be set, got zero value")
 	assert.False(t, fm.UpdatedAt.IsZero(), "expected UpdatedAt to be set, got zero value")
 	assert.Equal(t, "", fm.Description, "expected description to be empty, got %s", fm.Description)
@@ -24,7 +24,7 @@ func TestNewFrontMatter(t *testing.T) {
 func TestNewFrontMatterFromMarkdown(t *testing.T) {
 	content := `---
 title: Test Title
-path: /test/path
+link: /test/path
 description: Test Description
 created_at: 2023-10-01T00:00:00Z
 updated_at: 2023-10-01T00:00:00Z
@@ -49,7 +49,6 @@ updated_at: 2023-10-01T00:00:00Z
 	}
 
 	assert.Equal(t, "Test Title", fm.Title, "expected title 'Test Title', got %s", fm.Title)
-	assert.Equal(t, "/test/path", fm.Path, "expected path '/test/path', got %s", fm.Path)
 	assert.Equal(t, "Test Description", fm.Description, "expected description 'Test Description', got %s", fm.Description)
 
 	expectedTime, err := NewSerializableTime("2023-10-01T00:00:00Z")
@@ -81,7 +80,7 @@ func TestNewFrontMatterFromMarkdownWithoutFrontMater(t *testing.T) {
 func TestNewFrontMatterFromMarkdownWithUnknownTags(t *testing.T) {
 	content := `---
 title: Test Title
-path: /test/path
+link: /test/path
 description: Test Description
 created_at: 2023-10-01T00:00:00Z
 updated_at: 2023-10-01T00:00:00Z
@@ -118,6 +117,7 @@ UnknownTag2: "unknown2"
 func TestFrontMatterString(t *testing.T) {
 	fm := NewFrontMatter("Test Title", "/test/path")
 
+	fm.LanguageGroupID = "test123"
 	fm.Description = "Test Description"
 	fm.CreatedAt = NewSerializableTimeFromTime(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
 	fm.UpdatedAt = NewSerializableTimeFromTime(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
@@ -126,7 +126,8 @@ func TestFrontMatterString(t *testing.T) {
 
 	expected := `---
 title: "Test Title"
-path: "/test/path"
+link: "/test/path"
+group: "test123"
 description: "Test Description"
 created_at: "2025-01-01T00:00:00Z"
 updated_at: "2025-01-01T00:00:00Z"

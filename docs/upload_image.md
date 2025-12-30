@@ -1,6 +1,6 @@
 ---
 title: "Upload Image"
-path: "upload_image"
+link: "upload_image"
 description: ""
 created_at: "2025-09-20T00:18:32+09:00"
 updated_at: "2025-09-20T00:18:32+09:00"

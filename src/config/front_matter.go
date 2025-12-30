@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/adrg/frontmatter"
+	"github.com/toritoritori29/dodo-cli/src/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -17,19 +18,37 @@ const (
 
 	FrontMatterKeyTitle     = "title"
 	FrontMatterKeyPath      = "path"
+	FrontMatterKeyLink      = "link"
 	FrontMatterDescription  = "description"
+	FrontMatterKeyGroup     = "group"
 	FrontMatterKeyCreatedAt = "created_at"
 	FrontMatterKeyUpdatedAt = "updated_at"
 )
 
 // A struct that describes the markdown header.
 type FrontMatter struct {
-	Title       string
-	Path        string
-	Description string
-	CreatedAt   SerializableTime
-	UpdatedAt   SerializableTime
-	UnknownTags map[string]interface{}
+	Title           string
+	Link            string
+	LanguageGroupID string
+	Description     string
+	CreatedAt       SerializableTime
+	UpdatedAt       SerializableTime
+	UnknownTags     map[string]interface{}
+}
+
+// Lang returns the language code from front matter if present.
+func (f *FrontMatter) Lang() string {
+	if value, ok := f.UnknownTags["lang"]; ok {
+		if text, ok := value.(string); ok && text != "" {
+			return strings.ToLower(text)
+		}
+	}
+	if value, ok := f.UnknownTags["language"]; ok {
+		if text, ok := value.(string); ok && text != "" {
+			return strings.ToLower(text)
+		}
+	}
+	return ""
 }
 
 func NewFrontMatter(title string, path string, now ...time.Time) *FrontMatter {
@@ -39,13 +58,22 @@ func NewFrontMatter(title string, path string, now ...time.Time) *FrontMatter {
 	} else {
 		currentTime = time.Now()
 	}
+
+	// Generate a unique language group ID
+	id, err := utils.RandomAlphaNumeric(12)
+	if err != nil {
+		// If we can't generate an ID, use empty string (should not happen in practice)
+		id = ""
+	}
+
 	return &FrontMatter{
-		Title:       title,
-		Path:        path,
-		Description: "",
-		CreatedAt:   NewSerializableTimeFromTime(currentTime),
-		UpdatedAt:   NewSerializableTimeFromTime(currentTime),
-		UnknownTags: make(map[string]interface{}),
+		Title:           title,
+		Link:            path,
+		LanguageGroupID: id,
+		Description:     "",
+		CreatedAt:       NewSerializableTimeFromTime(currentTime),
+		UpdatedAt:       NewSerializableTimeFromTime(currentTime),
+		UnknownTags:     make(map[string]interface{}),
 	}
 }
 
@@ -75,8 +103,10 @@ func NewFrontMatterFromMarkdown(filepath string) (*FrontMatter, error) { //nolin
 		switch strings.ToLower(k) {
 		case FrontMatterKeyTitle:
 			matter.Title = v
-		case FrontMatterKeyPath:
-			matter.Path = v
+		case FrontMatterKeyLink:
+			matter.Link = v
+		case FrontMatterKeyGroup:
+			matter.LanguageGroupID = v
 		case FrontMatterDescription:
 			matter.Description = v
 		case FrontMatterKeyCreatedAt:
@@ -94,6 +124,15 @@ func NewFrontMatterFromMarkdown(filepath string) (*FrontMatter, error) { //nolin
 		default:
 			matter.UnknownTags[k] = v
 		}
+	}
+
+	// If group ID is not set, assign the random value
+	if matter.LanguageGroupID == "" {
+		id, err := utils.RandomAlphaNumeric(12)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate language group ID: %w", err)
+		}
+		matter.LanguageGroupID = id
 	}
 	return &matter, nil
 }
@@ -141,7 +180,12 @@ func (f *FrontMatter) String() string {
 	var text string
 	text += FrontMatterStart + "\n"
 	text += fmt.Sprintf("title: \"%s\"\n", f.Title)
-	text += fmt.Sprintf("path: \"%s\"\n", f.Path)
+	if f.Link != "" {
+		text += fmt.Sprintf("link: \"%s\"\n", f.Link)
+	}
+	if f.LanguageGroupID != "" {
+		text += fmt.Sprintf("group: \"%s\"\n", f.LanguageGroupID)
+	}
 	text += fmt.Sprintf("description: \"%s\"\n", f.Description)
 	text += fmt.Sprintf("created_at: \"%s\"\n", f.CreatedAt)
 	text += fmt.Sprintf("updated_at: \"%s\"\n", f.UpdatedAt)

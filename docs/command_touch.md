@@ -1,6 +1,6 @@
 ---
 title: touch
-path: command_touch
+link: command_touch
 description: 
 created_at: 2025-02-27T20:53:00+09:00
 updated_at: 2025-02-27T20:53:00+09:00

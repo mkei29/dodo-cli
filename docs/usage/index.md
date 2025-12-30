@@ -1,4 +1,4 @@
 ---
 title: How to use dodo
-path: /usage
+link: /usage
 ---

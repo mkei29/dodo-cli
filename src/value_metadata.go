@@ -65,6 +65,41 @@ func NewMetadataFromConfigV1(conf *config.ConfigV1) (*Metadata, error) {
 	return &metadata, nil
 }
 
+func NewMetadataFromConfigV2(conf *config.ConfigV2) (*Metadata, error) {
+	project := NewMetadataProjectFromConfigV2(conf)
+	merr := appErrors.NewMultiError()
+
+	// Validate Page structs from config.
+	page, err := CreatePageTreeV2(conf, ".")
+	if err != nil {
+		merr.Merge(*err)
+	}
+	if err = page.IsValid(project.DefaultLanguage); err != nil {
+		merr.Merge(*err)
+	}
+
+	// Validate Assets struct from config.
+	assets, err := NewMetadataAssetFromConfigV2(conf, ".")
+	if err != nil {
+		merr.Merge(*err)
+	}
+
+	if merr.HasError() {
+		return nil, &merr
+	}
+	log.Debugf("successfully created a project from the config. project ID: %s", project.ProjectID)
+	log.Debugf("successfully created pages from the config. found %d pages", page.Count())
+	log.Debugf("successfully created assets from the config. found %d assets", len(assets))
+
+	metadata := Metadata{
+		Version: "1",
+		Project: project,
+		Page:    *page,
+		Asset:   assets,
+	}
+	return &metadata, nil
+}
+
 func (m *Metadata) Serialize() ([]byte, error) {
 	s, err := json.Marshal(m)
 	if err != nil {
@@ -92,6 +127,18 @@ func NewMetadataProjectFromConfig(c *config.ConfigV1) MetadataProject {
 		Logo:            c.Project.Logo,
 		Repository:      c.Project.Repository,
 		DefaultLanguage: c.Project.DefaultLanguage,
+	}
+}
+
+func NewMetadataProjectFromConfigV2(c *config.ConfigV2) MetadataProject {
+	return MetadataProject{
+		ProjectID:       c.Project.ProjectID,
+		Name:            c.Project.Name,
+		Description:     c.Project.Description,
+		Version:         c.Project.Version,
+		Logo:            c.Project.Logo,
+		Repository:      c.Project.Repository,
+		DefaultLanguage: c.Project.GetDefaultLanguageOrFallback(),
 	}
 }
 
@@ -154,4 +201,39 @@ func (a *MetadataAsset) IsValidDataType() error {
 func (a *MetadataAsset) EstimateMimeType() string {
 	ext := strings.ToLower(filepath.Ext(a.Path))
 	return mime.TypeByExtension(ext)
+}
+
+func NewMetadataAssetFromConfigV2(c *config.ConfigV2, rootDir string) ([]MetadataAsset, *appErrors.MultiError) {
+	// Create Assets struct from config.
+	merr := appErrors.NewMultiError()
+	metadataAssets := make([]MetadataAsset, 0, len(c.Assets)*10)
+	for _, a := range c.Assets {
+		files, err := a.List(rootDir)
+		if err != nil {
+			merr.Add(err)
+		}
+
+		for _, f := range files {
+			ma := NewMetadataAsset(f)
+			if err = ma.IsValidDataType(); err != nil {
+				merr.Add(fmt.Errorf("asset file is invalid: %s: %w", f, err))
+				continue
+			}
+			metadataAssets = append(metadataAssets, ma)
+		}
+	}
+
+	// Add logo as an asset if exists.
+	if c.Project.Logo != "" {
+		logoAsset := NewMetadataAsset(c.Project.Logo)
+		if err := logoAsset.IsValidDataType(); err != nil {
+			merr.Add(err)
+		} else {
+			metadataAssets = append(metadataAssets, logoAsset)
+		}
+	}
+	if merr.HasError() {
+		return nil, &merr
+	}
+	return metadataAssets, nil
 }

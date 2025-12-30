@@ -1,6 +1,6 @@
 ---
 title: "Release Note"
-path: "release_note"
+link: "release_note"
 description: ""
 created_at: "2025-09-19T00:36:29+09:00"
 updated_at: "2025-09-19T00:36:29+09:00"

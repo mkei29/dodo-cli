@@ -1,6 +1,6 @@
 ---
 title: mcp
-path: command_mcp
+link: command_mcp
 description: "A document about mcp command"
 created_at: "2025-09-06T17:04:46+09:00"
 updated_at: "2025-09-06T17:04:46+09:00"

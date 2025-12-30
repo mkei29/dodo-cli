@@ -1,6 +1,6 @@
 ---
 title: "CI/CD"
-path: "cicd_github"
+link: "cicd_github"
 description: ""
 created_at: "2025-09-16T00:51:21+09:00"
 updated_at: "2025-09-16T00:51:21+09:00"

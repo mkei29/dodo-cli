@@ -1,6 +1,6 @@
 ---
 title: "Install"
-path: "install"
+link: "install"
 description: "Setup the CLI tool"
 created_at: "2025-09-15T22:01:55+09:00"
 updated_at: "2025-09-15T22:01:55+09:00"

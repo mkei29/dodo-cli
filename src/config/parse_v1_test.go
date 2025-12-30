@@ -14,14 +14,14 @@ import (
 const Readme1Contents = `
 ---
 title: "README1"
-path: "readme1"
+link: "readme1"
 ---
 `
 
 const Readme2Contents = `
 ---
 title: "README2"
-path: "readme2"
+link: "readme2"
 ---
 `
 

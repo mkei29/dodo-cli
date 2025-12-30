@@ -1,6 +1,6 @@
 ---
 title: "Markdown Syntax"
-path: "markdown_syntax"
+link: "markdown_syntax"
 description: ""
 created_at: "2025-09-18T23:25:21+09:00"
 updated_at: "2025-09-18T23:25:21+09:00"

@@ -1,6 +1,6 @@
 ---
 title: "Roadmap"
-path: "roadmap"
+link: "roadmap"
 description: ""
 created_at: "2025-09-19T00:34:55+09:00"
 updated_at: "2025-09-19T00:34:55+09:00"

@@ -1,6 +1,6 @@
 ---
 title: "Release Flow"
-path: "for_contributors_release_flow"
+link: "for_contributors_release_flow"
 description: ""
 created_at: "2025-09-15T19:27:45+09:00"
 updated_at: "2025-09-15T19:27:45+09:00"

@@ -64,7 +64,7 @@ func CreateCheckCmd() *cobra.Command {
 	return checkCmd
 }
 
-func checkCmdEntrypoint(args CheckArgs) error {
+func checkCmdEntrypoint(args CheckArgs) error { //nolint: cyclop
 	// Read config file
 	log.Debugf("config file: %s", args.configPath)
 	configFile, err := os.Open(args.configPath)
@@ -73,15 +73,40 @@ func checkCmdEntrypoint(args CheckArgs) error {
 	}
 	defer configFile.Close()
 
-	state := config.NewParseStateV1(args.configPath, "./")
-	conf, err := config.ParseConfigV1(state, configFile)
+	// Detect config version and parse the config file
+	version, err := config.DetectConfigVersion(configFile)
 	if err != nil {
-		return fmt.Errorf("failed to parse the config file: %w", err)
+		return fmt.Errorf("failed to detect the config version: %w", err)
 	}
 
-	_, err = NewMetadataFromConfigV1(conf)
-	if err != nil {
-		return fmt.Errorf("failed to convert config to metadata: %w", err)
+	// Reset file pointer to the beginning for subsequent parsing
+	if _, err := configFile.Seek(0, 0); err != nil {
+		return fmt.Errorf("failed to reset file pointer: %w", err)
+	}
+
+	switch version {
+	case 1:
+		state := config.NewParseStateV1(args.configPath, "./")
+		conf, err := config.ParseConfigV1(state, configFile)
+		if err != nil {
+			return fmt.Errorf("failed to parse the config file: %w", err)
+		}
+		_, err = NewMetadataFromConfigV1(conf)
+		if err != nil {
+			return err
+		}
+	case 2:
+		state := config.NewParseStateV2(args.configPath, "./")
+		conf, err := config.ParseConfigV2(state, configFile)
+		if err != nil {
+			return fmt.Errorf("failed to parse the config file: %w", err)
+		}
+		_, err = NewMetadataFromConfigV2(conf)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unsupported config version: %d", version)
 	}
 	return nil
 }

@@ -1,6 +1,6 @@
 ---
 title: "Yaml Spec"
-path: "yaml_spec"
+link: "yaml_spec"
 description: ""
 created\_at: "2025-09-18T23:26:46+09:00"
 updated\_at: "2025-09-18T23:26:46+09:00"
@@ -123,7 +123,7 @@ When using match nodes, each matched document must declare its own title and pat
 ```yaml
 ---
 title: "What is dodo"
-path: "what_is_dodo"
+link: "what_is_dodo"
 ---
 ```
 

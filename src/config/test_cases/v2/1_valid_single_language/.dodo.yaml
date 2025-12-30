@@ -1,0 +1,25 @@
+version: 2
+project:
+  project_id: "project_id"
+  name: "Test Project"
+pages:
+  - type: markdown
+    filepath: "README.md"
+  - type: section
+    title: "Section"
+    children:
+      # Explicit link and title
+      - type: markdown
+        title: "File1"
+        link: "file1"
+        filepath: "file1.md"
+      # Implicit link and title
+      - type: markdown
+        filepath: "file2.md"
+  - type: directory
+    title: "Docs"
+    children:
+      - type: match
+        pattern: "directory/*.md"
+        sort_key: "title"
+        sort_order: "asc"

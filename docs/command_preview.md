@@ -1,6 +1,6 @@
 ---
 title: preview
-path: command_preview
+link: command_preview
 description: 
 created_at: 2025-05-25T16:35:00+09:00
 updated_at: 2025-05-25T16:35:00+09:00

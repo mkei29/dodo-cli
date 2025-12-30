@@ -1,6 +1,6 @@
 ---
 title: check
-path: command_check
+link: command_check
 description: 
 created_at: 2025-02-26T00:44:06+09:00
 updated_at: 2025-02-26T00:44:06+09:00

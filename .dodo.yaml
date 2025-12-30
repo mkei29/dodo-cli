@@ -1,38 +1,61 @@
-version: 1
+version: 2
 project:
-  project_id: "document"
+  project_id: "testd"
   name: dodo-doc
   description: The dodo-doc documentation
   version: 0.0.29
   logo: "assets/logo.png"
   repository: "https://github.com/mkei29/dodo-cli"
+  default_language: "en"
 pages:
-  - markdown: docs/index.md
-  - markdown: docs/install.md
-  - markdown: docs/quick_start.md
-  - markdown: docs/cicd_github.md
-  - markdown: docs/yaml_spec.md
-  - markdown: docs/markdown_syntax.md
-  - markdown: docs/upload_image.md
-  - directory: "CLI Commands"
+  - type: markdown
+    filepath: docs/index.en.md
+  - type: markdown
+    filepath: docs/install.md
+  - type: markdown
+    filepath: docs/quick_start.md
+  - type: markdown
+    filepath: docs/cicd_github.md
+  - type: markdown
+    filepath: docs/yaml_spec.md
+  - type: markdown
+    filepath: docs/markdown_syntax.md
+  - type: markdown
+    filepath: docs/upload_image.md
+  - type: section
+    title: "CLI Commands"
     children:
-      - markdown: docs/command_init.md
-      - markdown: docs/command_upload.md
-      - markdown: docs/command_preview.md
-      - markdown: docs/command_check.md
-      - markdown: docs/command_touch.md
-      - markdown: docs/command_read.md
-      - markdown: docs/command_mcp.md
-  - directory: "Best Practices"
+      - type: markdown
+        filepath: docs/command_init.md
+      - type: markdown
+        filepath: docs/command_upload.md
+      - type: markdown
+        filepath: docs/command_preview.md
+      - type: markdown
+        filepath: docs/command_check.md
+      - type: markdown
+        filepath: docs/command_touch.md
+      - type: markdown
+        filepath: docs/command_read.md
+      - type: markdown
+        filepath: docs/command_mcp.md
+  - type: section
+    title: "Best Practices"
     children:
-      - markdown: docs/best_practice_keep_document_clean.md
-  - markdown: docs/release_note.md
-  - markdown: docs/roadmap.md
-  - directory: "For Developers"
+      - type: markdown
+        filepath: docs/best_practice_keep_document_clean.md
+  - type: markdown
+    filepath: docs/release_note.md
+  - type: markdown
+    filepath: docs/roadmap.md
+  - type: directory
+    title: "For Developers"
     children:
-      - markdown: docs/for_contributors/getting_started.md
-      - markdown: docs/for_contributors/guidelines.md
-      - markdown: docs/for_contributors/release.md
+      - type: markdown
+        filepath: docs/for_contributors/getting_started.md
+      - type: markdown
+        filepath: docs/for_contributors/guidelines.md
+      - type: markdown
+        filepath: docs/for_contributors/release.md
 assets:
   - "assets/**"
- 
