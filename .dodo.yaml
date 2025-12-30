@@ -9,11 +9,7 @@ project:
   default_language: "en"
 pages:
   - type: markdown
-    lang:
-      en:
-        filepath: docs/index.en.md
-      ja:
-        filepath: docs/index.ja.md
+    filepath: docs/index.en.md
   - type: markdown
     filepath: docs/install.md
   - type: markdown
@@ -26,7 +22,7 @@ pages:
     filepath: docs/markdown_syntax.md
   - type: markdown
     filepath: docs/upload_image.md
-  - type: directory
+  - type: section
     title: "CLI Commands"
     children:
       - type: markdown
@@ -43,7 +39,7 @@ pages:
         filepath: docs/command_read.md
       - type: markdown
         filepath: docs/command_mcp.md
-  - type: directory
+  - type: section
     title: "Best Practices"
     children:
       - type: markdown
