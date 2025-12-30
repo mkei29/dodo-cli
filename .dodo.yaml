@@ -9,7 +9,11 @@ project:
   default_language: "en"
 pages:
   - type: markdown
-    filepath: docs/index.md
+    lang:
+      en:
+        filepath: docs/index.en.md
+      ja:
+        filepath: docs/index.ja.md
   - type: markdown
     filepath: docs/install.md
   - type: markdown

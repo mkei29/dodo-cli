@@ -98,6 +98,7 @@ matchによるパターンマッチ.
 - ✅ matchで言語毎のパスを指定（buildConfigPageFromMatchStatementV2で実装）
 - ✅ validateConfigPageSection/DirectoryでDefaultLanguageの存在確認（validateLangKeySetV2経由）
 - ✅ 各validationでvalidateLangKeySetV2を呼び出し
+- ✅ pathのduplicateのチェック（多言語対応含む）
 
 ### 未完了・検討中の項目
-* language_group_idの必須を緩和する（frontmatter仕様の変更が必要）
+* language_group_idの必須を緩和する

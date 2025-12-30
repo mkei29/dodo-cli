@@ -16,6 +16,7 @@ const (
 	PageTypeLeafNode        = "LeafNode"
 	PageTypeDirNode         = "DirNodeWithoutPage"
 	PageTypeDirNodeWithPage = "DirNodeWithPage"
+	PageTypeSectionNode     = "SectionNode"
 )
 
 type PageLanguageWiseInfo struct {
@@ -23,6 +24,8 @@ type PageLanguageWiseInfo struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Path        string `json:"path"`
+	Hash        string `json:"hash"`
+	Filepath    string `json:"filepath"`
 }
 
 type PageSummary struct {
@@ -73,18 +76,15 @@ type Page struct {
 
 func NewLeafNodeFromConfigPage(configProject *config.ConfigProjectV1, configPage *config.ConfigPageV1) Page {
 	page := Page{
-		Type:        PageTypeLeafNode,
-		Filepath:    configPage.Markdown,
-		Hash:        fmt.Sprintf("%x", sha256.Sum256([]byte(configPage.Markdown))),
-		Path:        configPage.Path,
-		Title:       configPage.Title,
-		Description: configPage.Description,
+		Type: PageTypeLeafNode,
 		Language: []PageLanguageWiseInfo{
 			{
 				Language:    configProject.DefaultLanguage,
 				Title:       configPage.Title,
 				Description: configPage.Description,
 				Path:        configPage.Path,
+				Filepath:    configPage.Markdown,
+				Hash:        fmt.Sprintf("%x", sha256.Sum256([]byte(configPage.Markdown))),
 			},
 		},
 		UpdatedAt: configPage.UpdatedAt,
@@ -121,7 +121,7 @@ func (p *Page) IsValid(defaultLang string) *appErrors.MultiError {
 
 	// Check if there are duplicated paths.
 	pathMap := make(map[string]int)
-	p.duplicationCount(pathMap, "")
+	p.duplicationCount(pathMap)
 	for path, value := range pathMap {
 		if value > 1 {
 			errorSet.Add(appErrors.NewAppError(fmt.Sprintf("duplicated path was found. path: `%s`", path)))
@@ -146,8 +146,12 @@ func (p *Page) isValid(isRoot bool, errorSet *appErrors.MultiError) {
 		errorSet.Add(appErrors.NewAppError("Type for non-root node should not be RootNode"))
 		return
 	}
-	if p.Type == PageTypeLeafNode && p.Path == "" {
-		errorSet.Add(appErrors.NewAppError("'path' is required for leaf node"))
+	if p.Type == PageTypeLeafNode {
+		for _, langInfo := range p.Language {
+			if langInfo.Path == "" {
+				errorSet.Add(appErrors.NewAppError("'path' is required for leaf node"))
+			}
+		}
 	}
 	for _, c := range p.Children {
 		c.isValid(false, errorSet)
@@ -172,13 +176,16 @@ func (p *Page) isImplementDefaultLanguage(lang string, errorSet *appErrors.Multi
 	errorSet.Add(appErrors.NewAppError(fmt.Sprintf("there is no default language page corresponding to: %+v", otherLanguage.Title)))
 }
 
-func (p *Page) duplicationCount(pathMap map[string]int, parentPath string) {
-	path := filepath.Join(parentPath, p.Path)
-	if p.Path != "" {
-		pathMap[path]++
+func (p *Page) duplicationCount(pathMap map[string]int) {
+	if p.Type == PageTypeLeafNode {
+		for _, langInfo := range p.Language {
+			if langInfo.Path != "" {
+				pathMap[langInfo.Path]++
+			}
+		}
 	}
 	for _, c := range p.Children {
-		c.duplicationCount(pathMap, path)
+		c.duplicationCount(pathMap)
 	}
 }
 
@@ -281,8 +288,7 @@ func transformDirectory(rootDir string, configProject *config.ConfigProjectV1, c
 	}
 
 	p := Page{
-		Type:  PageTypeDirNode,
-		Title: configPage.Directory,
+		Type: PageTypeDirNode,
 		Language: []PageLanguageWiseInfo{
 			{
 				Language:    configProject.DefaultLanguage,
@@ -364,18 +370,15 @@ func transformMarkdownV2(rootDir, defaultLang string, configPage *config.ConfigP
 			Title:       lp.Title,
 			Description: lp.Description,
 			Path:        lp.Link,
+			Filepath:    lp.Filepath,
+			Hash:        fmt.Sprintf("%x", sha256.Sum256([]byte(lp.Filepath))),
 		})
 	}
 
 	p := Page{
-		Type:        PageTypeLeafNode,
-		Filepath:    langPage.Filepath,
-		Hash:        fmt.Sprintf("%x", sha256.Sum256([]byte(langPage.Filepath))),
-		Path:        langPage.Link,
-		Title:       langPage.Title,
-		Description: langPage.Description,
-		Language:    languageInfo,
-		Children:    []Page{},
+		Type:     PageTypeLeafNode,
+		Language: languageInfo,
+		Children: []Page{},
 	}
 
 	log.Debugf("Node Found. Type: Markdown, Filepath: '%s', Title: '%s', Path: '%s'", p.Filepath, p.Title, p.Path)
@@ -384,14 +387,6 @@ func transformMarkdownV2(rootDir, defaultLang string, configPage *config.ConfigP
 
 func transformSectionV2(rootDir string, configProject *config.ConfigProjectV2, configPage *config.ConfigPageV2) ([]Page, *appErrors.MultiError) {
 	merr := appErrors.NewMultiError()
-	defaultLang := configProject.GetDefaultLanguageOrFallback()
-
-	// Get default language section info
-	langSection, ok := configPage.LangSection[defaultLang]
-	if !ok {
-		merr.Add(fmt.Errorf("default language (%s) not found in section", defaultLang))
-		return nil, &merr
-	}
 
 	children := make([]Page, 0, len(configPage.Children))
 	for _, child := range configPage.Children {
@@ -413,13 +408,10 @@ func transformSectionV2(rootDir string, configProject *config.ConfigProjectV2, c
 			Path:        "",
 		})
 	}
-
 	p := Page{
-		Type:        PageTypeDirNode,
-		Title:       langSection.Title,
-		Description: langSection.Description,
-		Language:    languageInfo,
-		Children:    children,
+		Type:     PageTypeSectionNode,
+		Language: languageInfo,
+		Children: children,
 	}
 
 	if merr.HasError() {
@@ -431,14 +423,6 @@ func transformSectionV2(rootDir string, configProject *config.ConfigProjectV2, c
 
 func transformDirectoryV2(rootDir string, configProject *config.ConfigProjectV2, configPage *config.ConfigPageV2) ([]Page, *appErrors.MultiError) {
 	merr := appErrors.NewMultiError()
-	defaultLang := configProject.GetDefaultLanguageOrFallback()
-
-	// Get default language directory info
-	langDir, ok := configPage.LangDirectory[defaultLang]
-	if !ok {
-		merr.Add(fmt.Errorf("default language (%s) not found in directory", defaultLang))
-		return nil, &merr
-	}
 
 	children := make([]Page, 0, len(configPage.Children))
 	for _, child := range configPage.Children {
@@ -460,13 +444,10 @@ func transformDirectoryV2(rootDir string, configProject *config.ConfigProjectV2,
 			Path:        "",
 		})
 	}
-
 	p := Page{
-		Type:        PageTypeDirNode,
-		Title:       langDir.Title,
-		Description: langDir.Description,
-		Language:    languageInfo,
-		Children:    children,
+		Type:     PageTypeDirNode,
+		Language: languageInfo,
+		Children: children,
 	}
 
 	if merr.HasError() {

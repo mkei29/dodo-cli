@@ -115,11 +115,11 @@ func TestParseConfigV2(t *testing.T) {
 				require.NotNil(t, child2.LangPage["en"])
 				assert.Equal(t, "file2.en.md", child2.LangPage["en"].Filepath)
 				assert.Equal(t, "File2", child2.LangPage["en"].Title)
-				assert.Equal(t, "file2", child2.LangPage["en"].Link)
+				assert.Equal(t, "file2_en", child2.LangPage["en"].Link)
 				require.NotNil(t, child2.LangPage["ja"])
 				assert.Equal(t, "file2.ja.md", child2.LangPage["ja"].Filepath)
 				assert.Equal(t, "File2", child2.LangPage["ja"].Title)
-				assert.Equal(t, "file2", child2.LangPage["ja"].Link)
+				assert.Equal(t, "file2_ja", child2.LangPage["ja"].Link)
 
 				// Directory (single locale)
 				page = conf.Pages[1]

@@ -76,10 +76,13 @@ func (a *Archive) Archive(metadata *Metadata) *appErrors.MultiError {
 		if page.Type != PageTypeLeafNode {
 			continue
 		}
-		from := page.Filepath
-		to := filepath.Join(BlobsDir, filepath.Base(page.Hash))
-		if err := addFile(from, to, zipWriter); err != nil {
-			merr.Add(err)
+
+		for _, lang := range page.Language {
+			from := lang.Filepath
+			to := filepath.Join(BlobsDir, lang.Hash)
+			if err := addFile(from, to, zipWriter); err != nil {
+				merr.Add(err)
+			}
 		}
 	}
 

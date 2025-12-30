@@ -233,7 +233,7 @@ func TestNewMetadataFromConfigV2(t *testing.T) {
 		require.NotNil(t, metadata)
 
 		// Verify metadata version
-		assert.Equal(t, "2", metadata.Version)
+		assert.Equal(t, "1", metadata.Version)
 
 		// Verify project metadata
 		assert.Equal(t, "project_id", metadata.Project.ProjectID)
@@ -250,8 +250,8 @@ func TestNewMetadataFromConfigV2(t *testing.T) {
 
 		// First child should be the section
 		section := metadata.Page.Children[0]
-		assert.Equal(t, PageTypeDirNode, section.Type)
-		assert.Equal(t, "Section", section.Title)
+		assert.Equal(t, PageTypeSectionNode, section.Type)
+		assert.Equal(t, "Section", section.Language[0].Title)
 
 		// Section is single language (only en)
 		require.Len(t, section.Language, 1)
@@ -276,7 +276,7 @@ func TestNewMetadataFromConfigV2(t *testing.T) {
 		// Second child should be the directory
 		directory := metadata.Page.Children[1]
 		assert.Equal(t, PageTypeDirNode, directory.Type)
-		assert.Equal(t, "Docs", directory.Title)
+		assert.Equal(t, "Docs", directory.Language[0].Title)
 
 		// Directory is single language (only en)
 		require.Len(t, directory.Language, 1)
@@ -316,7 +316,7 @@ func TestNewMetadataFromConfigV2(t *testing.T) {
 		require.NotNil(t, metadata)
 
 		// Verify metadata version
-		assert.Equal(t, "2", metadata.Version)
+		assert.Equal(t, "1", metadata.Version)
 
 		// Verify project metadata
 		assert.Equal(t, "project_id", metadata.Project.ProjectID)
