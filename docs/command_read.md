@@ -1,6 +1,6 @@
 ---
 title: read
-path: command_read
+link: command_read
 description: "A document about read command"
 created_at: "2025-09-06T17:04:46+09:00"
 updated_at: "2025-09-06T17:04:46+09:00"

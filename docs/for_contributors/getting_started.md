@@ -1,6 +1,6 @@
 ---
 title: "Getting Started"
-path: "for_contributors_getting_started"
+link: "for_contributors_getting_started"
 description: ""
 created_at: "2025-09-15T19:27:45+09:00"
 updated_at: "2025-09-15T19:27:45+09:00"

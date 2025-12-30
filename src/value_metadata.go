@@ -92,7 +92,7 @@ func NewMetadataFromConfigV2(conf *config.ConfigV2) (*Metadata, error) {
 	log.Debugf("successfully created assets from the config. found %d assets", len(assets))
 
 	metadata := Metadata{
-		Version: "2",
+		Version: "1",
 		Project: project,
 		Page:    *page,
 		Asset:   assets,

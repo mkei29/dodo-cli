@@ -1,23 +1,42 @@
-version: 1
+version: 2
 project:
   project_id: {{ .ProjectID }} # !Important: This value must match the project_id that you create in dodo-doc.
   name: {{ .ProjectName }} # your project name
   version: "{{ .Version }}" # your project version
   description: {{ .Description }} # your project description
   logo: "" # (optional) your project logo path. e.g. "assets/logo.png"
+default_language: "en" # The default language for your documentation
 pages:
-  ## You can add pages in two patterns.
+  ## You can add pages in four patterns.
   ## Pattern1: Specify the specific file path and title
-  - markdown: README.md
-    path: "README" # The URL path to access the page. e.g. https://your-domain/README
+  - type: markdown
+    link: "README" # The URL path to access the page. e.g. https://your-domain/README
     title: "README" # The title that will be shown in the sidebar and the page header.
-  ## Pattern2: Using the glob pattern to match multiple files.
-  #- match: "docs/*.md"
+    filepath: "README.md" # The file path to the markdown file
 
-  ## You can create a directory with `directory` parameter.
-  #- directory: "Directory Name"
+  ## Pattern2: Using the glob pattern to match multiple files.
+  #- type: match
+  #  pattern: "docs/*.md" # Glob pattern to match files
+  #  sort_key: "title" # Sort by title or link
+  #  sort_order: "asc" # asc or desc
+
+  ## Directory Example
+  #- type: directory
+  #  title: "Directory Name"
+  #  description: "" # (optional) Description of this directory
   #  children:
-  #    - markdown: docs/child1.md
+  #    - type: markdown
+  #      link: "child1"
   #      title: "Child 1"
-  #      path: "child1"
+  #      filepath: "docs/child1.md"
+
+  ## Section Example
+  #- type: section
+  #  title: "Section Name"
+  #  description: "" # (optional) Description of this section
+  #  children:
+  #    - type: markdown
+  #      link: "child2"
+  #      title: "Child 2"
+  #      filepath: "docs/child2.md"
  

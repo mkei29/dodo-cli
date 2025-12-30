@@ -1,6 +1,6 @@
 ---
 title: upload
-path: command_upload
+link: command_upload
 description: 
 created_at: 2025-02-27T20:51:20+09:00
 updated_at: 2025-02-27T20:51:20+09:00

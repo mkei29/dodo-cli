@@ -1,6 +1,6 @@
 ---
 title: "init"
-path: "command_init"
+link: "command_init"
 description: 
 created_at: "2025-02-27T21:09:00+09:00"
 updated_at: "2025-02-27T21:09:00+09:00"

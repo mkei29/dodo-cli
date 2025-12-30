@@ -1,6 +1,6 @@
 ---
 title: "Guideline"
-path: "for_contributors_guidelines"
+link: "for_contributors_guidelines"
 description: ""
 created_at: "2025-09-15T19:27:45+09:00"
 updated_at: "2025-09-15T19:27:45+09:00"

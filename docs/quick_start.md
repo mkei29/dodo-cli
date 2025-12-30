@@ -1,6 +1,6 @@
 ---
 title: "Quick Start"
-path: "quick_start"
+link: "quick_start"
 description: ""
 created_at: "2025-09-15T23:48:10+09:00"
 updated_at: "2025-09-15T23:48:10+09:00"
