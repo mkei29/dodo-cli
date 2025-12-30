@@ -64,7 +64,7 @@ func CreateCheckCmd() *cobra.Command {
 	return checkCmd
 }
 
-func checkCmdEntrypoint(args CheckArgs) error {
+func checkCmdEntrypoint(args CheckArgs) error { //nolint: cyclop
 	// Read config file
 	log.Debugf("config file: %s", args.configPath)
 	configFile, err := os.Open(args.configPath)
