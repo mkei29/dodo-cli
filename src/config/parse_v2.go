@@ -685,14 +685,17 @@ func validateConfigPageMarkdown(state *ParseStateV2, page *ConfigPageV2, mapping
 	validateLangKeySetV2(state, mapping, keySet)
 
 	for _, langItem := range page.LangPage {
-		if langItem.Title == "" {
-			state.errorSet.Add(state.buildParseError("the `title` field is required", mapping))
-		}
-		if langItem.Link == "" {
-			state.errorSet.Add(state.buildParseError("the `link` field is required", mapping))
-		}
+		// Check filepath first, as other fields may depend on it.
 		if langItem.Filepath == "" {
 			state.errorSet.Add(state.buildParseError("the `filepath` field is required", mapping))
+		}
+		if langItem.Title == "" {
+			message := fmt.Sprintf("the `title` field is required for `%s`", langItem.Filepath)
+			state.errorSet.Add(state.buildParseError(message, mapping))
+		}
+		if langItem.Link == "" {
+			message := fmt.Sprintf("the `link` field is required for %s", langItem.Filepath)
+			state.errorSet.Add(state.buildParseError(message, mapping))
 		}
 	}
 }
