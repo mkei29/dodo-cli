@@ -1,6 +1,6 @@
 version: 2
 project:
-  project_id: "testd"
+  project_id: "document"
   name: dodo-doc
   description: The dodo-doc documentation
   version: 0.1.3
