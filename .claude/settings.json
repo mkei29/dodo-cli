@@ -1,8 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "dodo check",
-      "git diff --name-status *"
+      "mcp__dodo__search",
+      "mcp__dodo__read_document",
+      "Bash(go build:*)",
+      "Bash(dodo check:*)",
+      "Bash(go test:*)",
+      "Bash(make test:*)",
+      "Bash(go run:*)"
     ],
     "deny": [],
     "ask": []

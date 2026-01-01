@@ -9,47 +9,127 @@ project:
   default_language: "en"
 pages:
   - type: markdown
-    filepath: docs/index.en.md
+    lang:
+      en:
+        filepath: docs/index.en.md
+      ja:
+        filepath: docs/index.ja.md
   - type: markdown
-    filepath: docs/install.md
+    lang:
+      en:
+        filepath: docs/install.md
+      ja:
+        filepath: docs/install.ja.md
   - type: markdown
-    filepath: docs/quick_start.md
+    lang:
+      en:
+        filepath: docs/quick_start.md
+      ja:
+        filepath: docs/quick_start.ja.md
   - type: markdown
-    filepath: docs/cicd_github.md
+    lang:
+      en:
+        filepath: docs/cicd_github.md
+      ja:
+        filepath: docs/cicd_github.ja.md
   - type: markdown
-    filepath: docs/yaml_spec.md
+    lang:
+      en:
+        filepath: docs/yaml_spec.md
+      ja:
+        filepath: docs/yaml_spec.ja.md
   - type: markdown
-    filepath: docs/markdown_syntax.md
+    lang:
+      en:
+        filepath: docs/markdown_syntax.md
+      ja:
+        filepath: docs/markdown_syntax.ja.md
   - type: markdown
-    filepath: docs/upload_image.md
+    lang:
+      en:
+        filepath: docs/upload_image.md
+      ja:
+        filepath: docs/upload_image.ja.md
   - type: section
-    title: "CLI Commands"
+    lang:
+      en:
+        title: "CLI Commands"
+      ja:
+        title: "CLIコマンド"
     children:
       - type: markdown
-        filepath: docs/command_init.md
+        lang:
+          en:
+            filepath: docs/command_init.md
+          ja:
+            filepath: docs/command_init.ja.md
       - type: markdown
-        filepath: docs/command_upload.md
+        lang:
+          en:
+            filepath: docs/command_upload.md
+          ja:
+            filepath: docs/command_upload.ja.md
       - type: markdown
-        filepath: docs/command_preview.md
+        lang:
+          en:
+            filepath: docs/command_preview.md
+          ja:
+            filepath: docs/command_preview.ja.md
       - type: markdown
-        filepath: docs/command_check.md
+        lang:
+          en:
+            filepath: docs/command_check.md
+          ja:
+            filepath: docs/command_check.ja.md
       - type: markdown
-        filepath: docs/command_touch.md
+        lang:
+          en:
+            filepath: docs/command_touch.md
+          ja:
+            filepath: docs/command_touch.ja.md
       - type: markdown
-        filepath: docs/command_read.md
+        lang:
+          en:
+            filepath: docs/command_read.md
+          ja:
+            filepath: docs/command_read.ja.md
       - type: markdown
-        filepath: docs/command_mcp.md
+        lang:
+          en:
+            filepath: docs/command_mcp.md
+          ja:
+            filepath: docs/command_mcp.ja.md
   - type: section
-    title: "Best Practices"
+    lang:
+      en:
+        title: "Best Practices"
+      ja:
+        title: "ベストプラクティス"
     children:
       - type: markdown
-        filepath: docs/best_practice_keep_document_clean.md
+        lang:
+          en:
+            filepath: docs/best_practice_keep_document_clean.md
+          ja:
+            filepath: docs/best_practice_keep_document_clean.ja.md
   - type: markdown
-    filepath: docs/release_note.md
+    lang:
+      en:
+        filepath: docs/release_note.md
+      ja:
+        filepath: docs/release_note.ja.md
   - type: markdown
-    filepath: docs/roadmap.md
+    lang:
+      en:
+        filepath: docs/roadmap.md
+      ja:
+        filepath: docs/roadmap.ja.md
   - type: directory
-    title: "For Developers"
+    lang:
+      en:
+        title: "For Developers"
+      ja:
+        title: "開発者向け"
     children:
       - type: markdown
         filepath: docs/for_contributors/getting_started.md
