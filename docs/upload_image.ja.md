@@ -1,5 +1,5 @@
 ---
-title: "画像をアップロード"
+title: "画像のアップロード"
 link: "upload_image_ja"
 description: ""
 created_at: "2025-09-20T00:18:32+09:00"

@@ -1,5 +1,5 @@
 ---
-title: "dodo-docとは"
+title: "Introduction"
 description: "コードと同期するドキュメント"
 link: "what_is_dodo_doc_ja"
 created_at: "2025-09-15T19:49:41+09:00"

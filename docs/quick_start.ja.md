@@ -1,5 +1,5 @@
 ---
-title: "クイックスタート"
+title: "Quick Start"
 link: "quick_start_ja"
 description: ""
 created_at: "2025-09-15T23:48:10+09:00"

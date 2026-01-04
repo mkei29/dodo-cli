@@ -129,7 +129,7 @@ pages:
       en:
         title: "For Developers"
       ja:
-        title: "開発者向け"
+        title: "For Developers"
     children:
       - type: markdown
         filepath: docs/for_contributors/getting_started.md

@@ -1,5 +1,5 @@
 ---
-title: "インストール"
+title: "Install"
 link: "install_ja"
 description: "CLIツールのセットアップ"
 created_at: "2025-09-15T22:01:55+09:00"
