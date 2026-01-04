@@ -1,5 +1,5 @@
 ---
-title: "Yaml仕様"
+title: "YAML仕様"
 link: "yaml_spec_ja"
 description: ""
 created_at: "2025-09-18T23:26:46+09:00"
@@ -147,7 +147,7 @@ link: "what_is_dodo"
 
 ## Annotation
 
-`annotation`を使用して、`project`や`pages`と並んで任意のメタデータを保存します。dodo-docはこのセクションをそのまま保持し、その内容を検証または使用しないため、ワークフロー（パイプラインフラグ、所有権、機能トグルなど）に合わせて形成できます。
+`annotation`を使用して、`project`や`pages`と並んで任意のメタデータを保存します。dodo-docはこのセクションをそのまま保持し、その内容を検証または使用しないため、ワークフロー（パイプラインフラグ、所有権、機能トグルなど）に合わせて自由に構成できます。
 
 ```yaml
 annotation:
