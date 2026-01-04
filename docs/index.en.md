@@ -1,5 +1,5 @@
 ---
-title: "What's dodo-doc"
+title: "What is dodo-doc"
 description: "Docs in sync with your code"
 link: "what_is_dodo_doc"
 created_at: "2025-09-15T19:49:41+09:00"
@@ -7,13 +7,13 @@ updated_at: "2025-09-15T19:49:41+09:00"
 ---
 
 Keeping documentation accurate is hard — teams move fast, pages go stale, and readers tune out. 
-dodo-doc fixes that by keeping docs in step with your code and easy to read. 
+dodo-doc fixes that by keeping docs in step with your code and easy to read.
 
-It’s a lightweight, powerful documentation hosting service built for developers. 
+[dodo-doc](https://www.dodo-doc.com) is a lightweight, powerful documentation hosting service built for developers. 
 Create an account, install a single CLI, and publish Markdown in minutes. 
 
 Browse live examples—including this page—to see what’s possible.
-Ready to try it? Follow the link below to deploy your first documentation.
+Ready to try it? Follow the link below to deploy your first docs.
 
 https://document.do.dodo-doc.com/install
 
@@ -56,19 +56,19 @@ dodo docs
 dodo search
 ```
 
-We’re actively shipping new features to make dodo-doc even better. Check the [roadmap](/roadmap) for what’s coming.
+We’re actively shipping new features to make dodo-doc even better. Check the [roadmap](/roadmap) to see what’s coming.
 
 
-## Other Alternatives
+## Other Options
 
 ### Other Documentation Hosting Services
 Other documentation hosting services such as [GitBook](https://www.gitbook.com/) and [Mintlify](https://www.mintlify.com/) also exist.
-We recommend using these services if you want to leverage reliability and cutting-edge AI technology.
+If you want enterprise-grade reliability or advanced AI features, these may be a better fit.
 
 ### Static File Hosting Services
 You can generate HTML files for documents using tools like [mdBook](https://rust-lang.github.io/mdBook/) or [Fumadocs](https://fumadocs.dev/) and upload them to static hosting services.
-There are various services such as Cloudflare Pages and GitHub Pages,
-and with GitHub Pages, you can also generate private documents that can only be viewed by users within your organization.
+There are various services such as Cloudflare Pages and GitHub Pages.
+With GitHub Pages, you can also host private docs visible only to users within your organization.
 
 ## Next Steps
 Ready to dive in? Create your dodo-doc account and host your first document.

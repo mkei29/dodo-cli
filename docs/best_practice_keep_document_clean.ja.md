@@ -1,19 +1,19 @@
 ---
 title: "Keep Document Clean with LLM"
-link: "best_practice_keep_document_clean"
+link: "best_practice_keep_document_clean_ja"
 description: ""
 created_at: "2025-12-09T23:20:28+09:00"
 updated_at: "2025-12-10T00:24:05+09:00"
 ---
 
-LLMの発展においてこれまで自動化できなかったタスクを自動化できるようになりました。
+LLMの発展により、これまで自動化できなかったタスクも自動化できるようになりました。
 ドキュメントの品質維持はその典型的なタスクです。
 このページではLLMを使ったドキュメントの品質を維持する方法を紹介します。
 
-## Add document-quality-keeper command 
+## document-quality-keeperコマンドを追加する
 
-ドキュメントのFrontmatterの整備や、typoのチェックは人間がやるにはあまり退屈です。
-Claude Codeのコマンド機能を使って細かいミスを検出し自動で修正する仕組みを整えましょう。
+ドキュメントのフロントマターの整備や、誤字脱字のチェックは人間がやるにはあまり退屈です。
+Claude Codeのコマンド機能を使って細かいミスを検出して自動で修正する仕組みを整えましょう。
 
 Claude Codeではレポジトリの.claude/command以下にmarkdownファイルを配置することで、コーディングエージェントに定型的な指示を出すことができます。
 
@@ -23,8 +23,8 @@ https://code.claude.com/docs/en/slash-commands
 このコマンドは大まかに以下のタスクを実行します。
 
 1. 変更したファイルがdodo.yamlに登録されているか確認する。
-2. mainから変更されたmarkdownファイルを読みFrontmatterが正しいか、typoが無いかを検証する。
-3. `dodo check`を使ってdocumentがアップロード可能な状態になっていることを確認する。
+2. mainから変更されたMarkdownファイルを読みフロントマターが正しいか、誤字脱字がないかを検証する。
+3. `dodo check`を使ってドキュメントがアップロード可能な状態になっていることを確認する。
 
 それでは実際にcommandファイルを用意しましょう。
 .claude/command以下に`document-quality-keeper.md`というファイルを作成して以下の内容を貼り付けてください。
@@ -184,14 +184,13 @@ You are thorough, detail-oriented, and take pride in maintaining impeccable docu
 このコマンドを実行すると、Claude Codeが自動で変更のあったドキュメントをチェックして修正してくれます。
 
 ## Tips
-* 今回はCommandとしてClaude Codeにドキュメントチェック機能を追加しましたがAgentとして追加しても便利です。
-* `dodo check`と`git diff --name-status main`はRead Onlyのコマンドで以下のように.claude/settings.jsonに記載することをおすすめします。
+* 今回はコマンドとしてClaude Codeにドキュメントチェック機能を追加しましたが、エージェントとして追加しても便利です。
+* `dodo check`と`git diff --name-status main`は読み取り専用のコマンドで、以下のように.claude/settings.jsonに記載することをおすすめします。
 
 
 ### Codexを利用している場合
 Codexではホームディレクトリ以下の`~/.codex/prompts`にmarkdownファイルを配置することでカスタムプロンプトを与えることが可能です。
 このディレクトリに`document-quality-keeper.md`を配置し、上のプロンプトを貼り付けることでCodexでも`document-quality-keeper`プロンプトが利用可能になります。
 
-ただし2025年12/10現在ではレポジトリ固有のカスタムプロンプトを用意することはできません。
+ただし2025年12月10日現在ではレポジトリ固有のカスタムプロンプトを用意することはできません。
 またコマンドの実行などができず厳密な`.dodo.yaml`のスキーマの確認などができない可能性があります。
-
