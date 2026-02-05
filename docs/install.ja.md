@@ -8,7 +8,7 @@ updated_at: "2025-09-15T22:01:55+09:00"
 
 ## dodo CLIのインストール
 
-**dodo-doc**を使うには、まずdodo CLIをインストールします。セットアップ方法は2つあります：npmでインストールするか、ビルド済みバイナリをダウンロードするかです。
+**dodo-doc**を使うには、まずdodo CLIをインストールします。npmでインストールする方法と、ビルド済みバイナリをダウンロードする方法があります。
 
 :::message warning
 Windowsは現在サポートされていません。
@@ -24,7 +24,7 @@ npm install -g @dodo-doc/cli
 
 ### バイナリをダウンロード
 
-または、リリースページからビルド済みバイナリをダウンロードして、`PATH`が通っている場所（例：`/usr/local/bin`）に配置します：
+リリースページからビルド済みバイナリをダウンロードして、`PATH`の通ったディレクトリ（例: `/usr/local/bin`）に配置する方法もあります：
 
 https://github.com/mkei29/dodo-cli/releases
 
@@ -38,6 +38,6 @@ dodo version
 
 ## 次のステップ
 
-インストールは以上です。次に、dodo-docで最初のドキュメントをアップロードしましょう。[クイックスタート](https://document.do.dodo-doc.com/quick_start)に従って始めてください。
+インストールは以上です。次は[クイックスタート](https://document.do.dodo-doc.com/quick_start)に従って、最初のドキュメントをアップロードしてみましょう。
 
 https://document.do.dodo-doc.com/quick_start

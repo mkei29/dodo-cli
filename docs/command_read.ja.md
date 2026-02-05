@@ -7,11 +7,11 @@ updated_at: "2025-09-06T17:04:46+09:00"
 ---
 
 # `read`コマンド
-このコマンドは、dodo-docからドキュメントの生のMarkdownコンテンツを取得して表示します。サーバーからドキュメントを取得し、標準出力に出力するため、他のツールにパイプすることが簡単にできます。
+このコマンドはdodo-docからドキュメントのMarkdownコンテンツを取得し、標準出力に出力します。パイプで他のツールに渡すこともできます。
 
 ## ユースケース
-* AIエージェントや他の処理ツールに渡すために生のMarkdownを取得
-* ブラウザを開かずにコマンドラインからドキュメントコンテンツを読む
+* AIエージェントや他のツールにMarkdownを渡す
+* ブラウザを開かずにコマンドラインでドキュメントを確認
 
 ## 使い方
 
@@ -21,28 +21,28 @@ dodo read [flags]
 
 ## フラグ
 * `-u, --url string`
-  読み取るドキュメントの完全なURL（設定されている場合、project-idとpathを上書きします）
+  ドキュメントのURL。指定すると`--project-id`と`--path`より優先されます。
 * `-s, --project-id string`
-  ドキュメントを読み取るプロジェクトID（スラッグ）
+  プロジェクトID（スラッグ）
 * `-p, --path string`
-  読み取るドキュメントのパス
+  ドキュメントのパス
 * `--endpoint string`
-  ドキュメント読み取り用のサーバーエンドポイント（デフォルト：「https://contents.dodo-doc.com/」）
+  サーバーエンドポイント（デフォルト: `https://contents.dodo-doc.com/`）
 * `--debug`
-  詳細なロギングのためのデバッグモードを有効にします
+  デバッグモードを有効にします。
 * `--no-color`
-  カラー出力を無効にします
+  カラー出力を無効にします。
 
 ## 例
 
 ```bash
-# プロジェクトIDとパスを使用してドキュメントを読み取る
+# プロジェクトIDとパスを指定してドキュメントを読み取る
 $ dodo-cli read --project-id my-project --path /docs/introduction.md
 # Introduction
 
 Welcome to my project...
 
-# 完全なURLを使用してドキュメントを読み取る
+# URLを指定してドキュメントを読み取る
 $ dodo-cli read --url https://my-project.dodo-doc.com/docs/introduction.md
 # Introduction
 
@@ -53,6 +53,6 @@ $ dodo-cli read --project-id my-project --path /docs/guide.md --debug
 ```
 
 ## 要件
-* 有効なAPIキーを含む`DODO_API_KEY`環境変数を設定する必要があります
-* `--project-id`と`--path`の両方を指定するか、`--url`フラグを使用してください
-* ドキュメントが存在し、提供されたAPIキーでアクセス可能である必要があります
+* 環境変数`DODO_API_KEY`に有効なAPIキーを設定してください
+* `--project-id`と`--path`の両方を指定するか、`--url`を指定してください
+* 指定したドキュメントが存在し、APIキーでアクセス可能である必要があります

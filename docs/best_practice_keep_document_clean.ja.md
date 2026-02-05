@@ -8,14 +8,14 @@ updated_at: "2025-12-10T00:24:05+09:00"
 
 LLMの発展により、これまで自動化できなかったタスクも自動化できるようになりました。
 ドキュメントの品質維持はその典型的なタスクです。
-このページではLLMを使ったドキュメントの品質を維持する方法を紹介します。
+このページでは、LLMを使ってドキュメントの品質を維持する方法を紹介します。
 
 ## document-quality-keeperコマンドを追加する
 
-ドキュメントのフロントマターの整備や、誤字脱字のチェックは人間がやるにはあまり退屈です。
-Claude Codeのコマンド機能を使って細かいミスを検出して自動で修正する仕組みを整えましょう。
+ドキュメントのフロントマターの整備や誤字脱字のチェックは、人間がやるには面倒な作業です。
+Claude Codeのコマンド機能を使って、細かいミスを検出し自動で修正する仕組みを整えましょう。
 
-Claude Codeではレポジトリの.claude/command以下にmarkdownファイルを配置することで、コーディングエージェントに定型的な指示を出すことができます。
+Claude Codeでは、リポジトリの`.claude/commands`以下にMarkdownファイルを配置することで、コーディングエージェントに定型的な指示を出せます。
 
 https://code.claude.com/docs/en/slash-commands
 
@@ -23,11 +23,11 @@ https://code.claude.com/docs/en/slash-commands
 このコマンドは大まかに以下のタスクを実行します。
 
 1. 変更したファイルがdodo.yamlに登録されているか確認する。
-2. mainから変更されたMarkdownファイルを読みフロントマターが正しいか、誤字脱字がないかを検証する。
+2. mainから変更されたMarkdownファイルを読み、フロントマターが正しいか、誤字脱字がないかを検証する。
 3. `dodo check`を使ってドキュメントがアップロード可能な状態になっていることを確認する。
 
 それでは実際にcommandファイルを用意しましょう。
-.claude/command以下に`document-quality-keeper.md`というファイルを作成して以下の内容を貼り付けてください。
+`.claude/commands`以下に`document-quality-keeper.md`というファイルを作成して、以下の内容を貼り付けてください。
 
 ```markdown
 # Document Quality Checker
