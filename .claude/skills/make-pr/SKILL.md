@@ -1,5 +1,5 @@
 ---
-name: create-pr
+name: make-pr
 description: "現在のブランチの変更内容からPRを作成します。コミット履歴と差分を分析し、このリポジトリの規約に沿ったタイトルとサマリーを生成します。ドキュメント変更がある場合は dodo check を事前に実行します。"
 argument-hint: "[base-branch]"
 allowed-tools:
