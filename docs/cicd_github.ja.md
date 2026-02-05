@@ -6,18 +6,17 @@ created_at: "2025-09-16T00:51:21+09:00"
 updated_at: "2025-09-16T00:51:21+09:00"
 ---
 
-このページでは、すぐに使えるGitHub Actionのワークフローファイルテンプレートを紹介します。
-必要に応じて`.github/workflows`にコピーしてください。
+このページではGitHub Actionsのワークフローテンプレートを紹介します。
+`.github/workflows`にコピーしてそのまま使えます。
 
 ## 前提条件
-APIキーを事前にGitHub Actions Secretとして登録する必要があります。
-以下の記事を参照して、DODO_API_KEYという名前のSecretを作成してください。
+APIキーをGitHub Actions Secretとして事前に登録してください。
+以下を参考に`DODO_API_KEY`という名前のSecretを作成します。
 
 https://docs.github.com/ja/actions/security-guides/using-secrets-in-github-actions
 
-## 新しいドキュメントをアップロード
-このワークフローは、mainブランチにマージされたときに自動的にドキュメントをアップロードするCIです。
-ドキュメントの更新を自動化したい場合に使用してください。
+## ドキュメントのアップロード
+mainブランチへのマージ時にドキュメントを自動アップロードするワークフローです。
 
 ```yaml
 name: upload-document
@@ -48,8 +47,8 @@ jobs:
 ```
 
 ## PRでドキュメントをプレビュー
-このワークフローは、PRが作成または更新されたときに自動的にドキュメントのプレビュー版を準備するCIです。
-レビュープロセス中にドキュメントの出力を確認したい場合に使用してください。
+PRの作成・更新時にドキュメントのプレビューを自動生成するワークフローです。
+レビュー中にドキュメントの表示を確認できます。
 
 ```yaml
 name: preview-document

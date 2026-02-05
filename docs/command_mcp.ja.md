@@ -7,12 +7,12 @@ updated_at: "2025-09-06T17:04:46+09:00"
 ---
 
 # `mcp`コマンド
-このコマンドは、dodo-docドキュメントと対話するためのツールを提供するModel Context Protocol（MCP）サーバーを起動します。
-サーバーはstdio上で実行され、ドキュメントの検索と読み取りのための2つのツールを公開します。
+このコマンドはModel Context Protocol（MCP）サーバーを起動します。
+stdio上で動作し、ドキュメントの検索・読み取り用の2つのツールを提供します。
 
 ## 利用可能なツール
-* **search**: クエリに基づいてdodoプラットフォーム全体のドキュメントを検索します。ドキュメントのタイトル、コンテンツ、ID、プロジェクト情報、URLを含む構造化された結果を返します。
-* **read_document**: URLを使用して特定のドキュメントの完全なMarkdownコンテンツを読み取ります。
+* **search**: dodoプラットフォーム全体からドキュメントを検索します。タイトル、コンテンツ、ID、プロジェクト情報、URLを含む結果を返します。
+* **read_document**: URLを指定してドキュメントのMarkdownコンテンツを取得します。
 
 ## 使い方
 
@@ -22,7 +22,7 @@ dodo mcp
 
 ## フラグ
 * `--endpoint string`
-  ドキュメント操作用のサーバーエンドポイント（デフォルト：「https://contents.dodo-doc.com/」）
+  サーバーエンドポイント（デフォルト: `https://contents.dodo-doc.com/`）
 
 ## 例
 
@@ -32,7 +32,7 @@ $ dodo mcp
 ```
 
 ## Claude Codeとの統合
-Claude CodeにMCPサーバーをインストールするには、以下のコマンドを使用します：
+Claude CodeにMCPサーバーを追加するには、以下のコマンドを実行します：
 
 ```bash
 $ claude mcp add dodo --env DODO_API_KEY=<YOUR_API_KEY> -- dodo mcp
@@ -55,5 +55,5 @@ $ claude mcp add dodo --env DODO_API_KEY=<YOUR_API_KEY> -- dodo mcp
 - **出力**: ドキュメントの完全なMarkdownコンテンツ
 
 ## 要件
-* 有効なAPIキーを含む`DODO_API_KEY`環境変数を設定する必要があります
-* サーバーと対話するためのMCP互換クライアント（Claude Codeなど）
+* 環境変数`DODO_API_KEY`に有効なAPIキーを設定してください
+* MCP対応クライアント（Claude Codeなど）が必要です
