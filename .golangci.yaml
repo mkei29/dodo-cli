@@ -1,7 +1,9 @@
+version: "2"
+
 linters:
   # Disable all linters.
   # Default: false
-  disable-all: true
+  default: none
   # Enable specific linter
   # https://golangci-lint.run/usage/linters/#enabled-by-default
   enable:
@@ -31,7 +33,6 @@ linters:
     - forbidigo
     # - forcetypeassert
     - funlen
-    - gci
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecknoglobals
@@ -44,17 +45,13 @@ linters:
     - godot
     # - godox
     # - goerr113
-    - gofmt
-    - gofumpt
     - goheader
-    - goimports
     # - golint  # Deprecated
     # - gomnd
     # - gomoddirectives
     - gomodguard
     - goprintffuncname
     # - gosec  # Too many false positives
-    - gosimple
     - gosmopolitan
     - govet
     - grouper
@@ -97,7 +94,7 @@ linters:
     - sqlclosecheck
     - staticcheck
     # - structcheck  # Deprecated
-    - stylecheck
+    # - stylecheck  # Merged into staticcheck
     - tagalign
     # - tagliatelle
     # - tenv  # Deprecated
@@ -106,7 +103,7 @@ linters:
     - testpackage
     - thelper
     - tparallel
-    - typecheck
+    # - typecheck  # Built-in, not a linter in v2
     - unconvert
     - unparam
     - unused
@@ -119,12 +116,19 @@ linters:
     # - wsl
     - zerologlint
 
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - funlen
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - errcheck
+          - dupl
+          - gosec
+          - funlen
+
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
