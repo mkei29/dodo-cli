@@ -18,13 +18,14 @@ var AvailableFormats = []string{ //nolint: gochecknoglobals
 }
 
 type UploadArgs struct {
-	file     string // config file path
-	output   string // deprecated: the path to locate the archive file
-	endpoint string // server endpoint to upload
-	debug    bool   // server endpoint to upload
-	format   string // output style for the command
-	rootPath string // root path of the project
-	noColor  bool   // disable color output
+	file      string // config file path
+	output    string // deprecated: the path to locate the archive file
+	endpoint  string // server endpoint to upload
+	debug     bool   // server endpoint to upload
+	format    string // output style for the command
+	rootPath  string // root path of the project
+	noColor   bool   // disable color output
+	projectID string // override project_id from config
 }
 
 // Implement LoggingConfig and PrinterConfig interface for UploadArgs.
@@ -61,6 +62,7 @@ func createUploadCommand(use, short, defaultEndpoint string, opts *UploadArgs, r
 	cmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
 	cmd.Flags().StringVar(&opts.endpoint, "endpoint", defaultEndpoint, "endpoint to upload")
 	cmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
+	cmd.Flags().StringVar(&opts.projectID, "project-id", "", "Override the project_id from the config file")
 	return cmd
 }
 
@@ -152,6 +154,11 @@ func executeUpload(args UploadArgs, env EnvArgs) (string, error) { //nolint: cyc
 		}
 	default:
 		return "", fmt.Errorf("unsupported config version: %d", version)
+	}
+
+	// Override project_id if specified via flag
+	if args.projectID != "" {
+		metadata.Project.ProjectID = args.projectID
 	}
 
 	// Prepare archive file
