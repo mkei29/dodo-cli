@@ -24,6 +24,8 @@ func CreateVersionCmd() *cobra.Command {
 }
 
 func executeVersion() error {
-	fmt.Fprintf(os.Stdout, "%s\n", Version)
+	if _, err := fmt.Fprintf(os.Stdout, "%s\n", Version); err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
+	}
 	return nil
 }

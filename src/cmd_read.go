@@ -100,6 +100,8 @@ func readCmdEntrypoint(args *ReadArgs, env *EnvArgs) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stdout, "%s\n", content)
+	if _, err := fmt.Fprintf(os.Stdout, "%s\n", content); err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
+	}
 	return nil
 }

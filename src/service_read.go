@@ -25,7 +25,7 @@ func sendReadDocumentRequest(env *EnvArgs, endpoint Endpoint, slug, path string)
 	if err != nil {
 		return "", fmt.Errorf("failed to send a request to the server: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("the server returned non-200 status code: %d", resp.StatusCode)

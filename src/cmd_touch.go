@@ -111,7 +111,7 @@ func executeTouchNew(args TouchArgs) error {
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	filepath := args.filepath
 	if args.link != "" {

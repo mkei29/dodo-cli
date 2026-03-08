@@ -32,7 +32,7 @@ func NewProjectFromAPI(env *EnvArgs, uri string) ([]Project, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to send a request to the server: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("the server returned non-200 status code: %d", resp.StatusCode)

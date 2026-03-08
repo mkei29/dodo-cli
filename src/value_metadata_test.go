@@ -238,7 +238,7 @@ func TestNewMetadataFromConfigV2(t *testing.T) {
 		// Verify project metadata
 		assert.Equal(t, "project_id", metadata.Project.ProjectID)
 		assert.Equal(t, "Test Project", metadata.Project.Name)
-		assert.Equal(t, "", metadata.Project.Description)
+		assert.Empty(t, metadata.Project.Description)
 		assert.Equal(t, "en", metadata.Project.DefaultLanguage)
 
 		// Verify page structure

@@ -253,7 +253,9 @@ func renderProjectsWithJSON(orgs []Project) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal the output: %w", err)
 	}
-	fmt.Fprintf(os.Stdout, "%s\n", b)
+	if _, err := fmt.Fprintf(os.Stdout, "%s\n", b); err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
+	}
 	return nil
 }
 

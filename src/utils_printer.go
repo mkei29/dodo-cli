@@ -107,10 +107,10 @@ func (p *ErrorPrinter) printParseError(err *appErrors.ParseError) {
 	line := err.Node.GetToken().Position.Line
 	pos := err.Node.GetToken().Position.Column
 	message := p.style.Primary.Render(err.Message)
-	fmt.Fprintf(p.stderr, "%s %s:%d:%d %s\n", listIcon, err.Filepath, line, pos, message)
+	_, _ = fmt.Fprintf(p.stderr, "%s %s:%d:%d %s\n", listIcon, err.Filepath, line, pos, message)
 
 	arrow := p.style.Secondary.Render(fmt.Sprintf("%*s", p.padding+2, ">"))
-	fmt.Fprintf(p.stderr, "%s %s\n", arrow, err.Line)
+	_, _ = fmt.Fprintf(p.stderr, "%s %s\n", arrow, err.Line)
 }
 
 func (p *ErrorPrinter) printError(err error) {
@@ -118,5 +118,5 @@ func (p *ErrorPrinter) printError(err error) {
 	// This function respects the golangci-lint style error format.
 	listIcon := p.style.Primary.Render(fmt.Sprintf("%*s", p.padding, "⨯"))
 	message := p.style.Primary.Render(err.Error())
-	fmt.Fprintf(p.stderr, "%s %s\n", listIcon, message)
+	_, _ = fmt.Fprintf(p.stderr, "%s %s\n", listIcon, message)
 }

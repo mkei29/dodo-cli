@@ -18,13 +18,14 @@ var AvailableFormats = []string{ //nolint: gochecknoglobals
 }
 
 type UploadArgs struct {
-	file     string // config file path
-	output   string // deprecated: the path to locate the archive file
-	endpoint string // server endpoint to upload
-	debug    bool   // server endpoint to upload
-	format   string // output style for the command
-	rootPath string // root path of the project
-	noColor  bool   // disable color output
+	file      string // config file path
+	output    string // deprecated: the path to locate the archive file
+	endpoint  string // server endpoint to upload
+	debug     bool   // server endpoint to upload
+	format    string // output style for the command
+	rootPath  string // root path of the project
+	noColor   bool   // disable color output
+	projectID string // override project_id from config
 }
 
 // Implement LoggingConfig and PrinterConfig interface for UploadArgs.
@@ -61,6 +62,7 @@ func createUploadCommand(use, short, defaultEndpoint string, opts *UploadArgs, r
 	cmd.Flags().StringVarP(&opts.output, "output", "o", "", "archive file path") // Deprecated
 	cmd.Flags().StringVar(&opts.endpoint, "endpoint", defaultEndpoint, "endpoint to upload")
 	cmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
+	cmd.Flags().StringVar(&opts.projectID, "project-id", "", "Override the project_id from the config file")
 	return cmd
 }
 
@@ -108,50 +110,23 @@ func uploadCmdEntrypoint(args UploadArgs, env EnvArgs, jsonWriter *JSONWriter) e
 	return nil
 }
 
-func executeUpload(args UploadArgs, env EnvArgs) (string, error) { //nolint: cyclop
+func executeUpload(args UploadArgs, env EnvArgs) (string, error) {
 	// Read config file
 	log.Debugf("config file: %s", args.file)
 	configFile, err := os.Open(args.file)
 	if err != nil {
 		return "", fmt.Errorf("failed to open the config file: %w", err)
 	}
-	defer configFile.Close()
+	defer configFile.Close() //nolint:errcheck
 
-	// Detect config version and parse the config file
-	version, err := config.DetectConfigVersion(configFile)
+	metadata, err := parseConfigFileToMetadata(configFile, args)
 	if err != nil {
-		return "", fmt.Errorf("failed to detect the config version: %w", err)
+		return "", err
 	}
 
-	// Reset file pointer to the beginning for subsequent parsing
-	if _, err := configFile.Seek(0, 0); err != nil {
-		return "", fmt.Errorf("failed to reset file pointer: %w", err)
-	}
-
-	var metadata *Metadata
-	switch version {
-	case 1:
-		state := config.NewParseStateV1(args.file, "./")
-		conf, err := config.ParseConfigV1(state, configFile)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse the config file: %w", err)
-		}
-		metadata, err = NewMetadataFromConfigV1(conf)
-		if err != nil {
-			return "", err
-		}
-	case 2:
-		state := config.NewParseStateV2(args.file, "./")
-		conf, err := config.ParseConfigV2(state, configFile)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse the config file: %w", err)
-		}
-		metadata, err = NewMetadataFromConfigV2(conf)
-		if err != nil {
-			return "", err
-		}
-	default:
-		return "", fmt.Errorf("unsupported config version: %d", version)
+	// Override project_id if specified via flag
+	if args.projectID != "" {
+		metadata.Project.ProjectID = args.projectID
 	}
 
 	// Prepare archive file
@@ -159,7 +134,7 @@ func executeUpload(args UploadArgs, env EnvArgs) (string, error) { //nolint: cyc
 	if err != nil {
 		return "", err
 	}
-	defer archive.Close()
+	defer archive.Close() //nolint:errcheck
 	if merr := archive.Archive(metadata); merr != nil {
 		return "", merr
 	}
@@ -170,6 +145,38 @@ func executeUpload(args UploadArgs, env EnvArgs) (string, error) { //nolint: cyc
 		return "", err
 	}
 	return resp.DocumentURL, nil
+}
+
+func parseConfigFileToMetadata(configFile *os.File, args UploadArgs) (*Metadata, error) {
+	// Detect config version and parse the config file
+	version, err := config.DetectConfigVersion(configFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to detect the config version: %w", err)
+	}
+
+	// Reset file pointer to the beginning for subsequent parsing
+	if _, err := configFile.Seek(0, 0); err != nil {
+		return nil, fmt.Errorf("failed to reset file pointer: %w", err)
+	}
+
+	switch version {
+	case 1:
+		state := config.NewParseStateV1(args.file, "./")
+		conf, err := config.ParseConfigV1(state, configFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse the config file: %w", err)
+		}
+		return NewMetadataFromConfigV1(conf)
+	case 2:
+		state := config.NewParseStateV2(args.file, "./")
+		conf, err := config.ParseConfigV2(state, configFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse the config file: %w", err)
+		}
+		return NewMetadataFromConfigV2(conf)
+	default:
+		return nil, fmt.Errorf("unsupported config version: %d", version)
+	}
 }
 
 func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
