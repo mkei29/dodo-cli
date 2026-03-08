@@ -398,8 +398,8 @@ func (d searchItemDelegate) Render(w io.Writer, m list.Model, index int, item li
 		description = d.styles.Description.Render(adjustedDescription)
 		hostname = d.styles.Hostname.Render(sitem.domain)
 	}
-	fmt.Fprintf(w, "%s %s\n", title, hostname)
-	fmt.Fprintf(w, "%s\n", description)
+	_, _ = fmt.Fprintf(w, "%s %s\n", title, hostname)
+	_, _ = fmt.Fprintf(w, "%s\n", description)
 }
 
 func (d searchItemDelegate) Height() int {

@@ -147,7 +147,7 @@ func executeUpload(args UploadArgs, env EnvArgs) (string, error) {
 	return resp.DocumentURL, nil
 }
 
-func parseConfigFileToMetadata(configFile *os.File, args UploadArgs) (*Metadata, error) { //nolint: cyclop
+func parseConfigFileToMetadata(configFile *os.File, args UploadArgs) (*Metadata, error) {
 	// Detect config version and parse the config file
 	version, err := config.DetectConfigVersion(configFile)
 	if err != nil {
