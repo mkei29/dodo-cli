@@ -68,7 +68,6 @@ func (a *Archive) Close() error {
 func (a *Archive) Archive(metadata *Metadata) *appErrors.MultiError {
 	// Archive documents
 	zipWriter := zip.NewWriter(a.File)
-	defer zipWriter.Close()
 
 	// New docs logics
 	merr := appErrors.NewMultiError()
@@ -98,8 +97,10 @@ func (a *Archive) Archive(metadata *Metadata) *appErrors.MultiError {
 
 	// Add metadata
 	a.Metadata = metadata
-	err := addMetadata(metadata, zipWriter)
-	if err != nil {
+	if err := addMetadata(metadata, zipWriter); err != nil {
+		merr.Add(err)
+	}
+	if err := zipWriter.Close(); err != nil {
 		merr.Add(err)
 	}
 	if merr.HasError() {
@@ -121,7 +122,7 @@ func (a *Archive) Upload(url string, apiKey string) (*UploadResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error occurred during communication with the server: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	data, err := ParseUploadResponse(resp.Body)
 	if err != nil {
@@ -139,7 +140,7 @@ func addFile(from, to string, writer *zip.Writer) error {
 	if err != nil {
 		return fmt.Errorf("failed to open the file. File: %s: %w", from, err)
 	}
-	defer targetFile.Close()
+	defer targetFile.Close() //nolint:errcheck
 
 	log.Debug(fmt.Sprintf("add %s to archive", from))
 	w, err := writer.Create(to)
@@ -179,7 +180,7 @@ func newFileUploadRequest(uri string, metadata *Metadata, zipFile *os.File, apiK
 	// If we break this rule, the request will not be sent properly.
 	writer, err := func() (*multipart.Writer, error) {
 		writer := multipart.NewWriter(body)
-		defer writer.Close()
+		defer writer.Close() //nolint:errcheck
 
 		// Write metadata
 		serialized, err := metadata.Serialize()

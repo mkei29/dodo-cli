@@ -1,3 +1,4 @@
+// Package main provides the CLI tool for dodo-doc document hosting service.
 package main
 
 import (
@@ -71,7 +72,7 @@ func checkCmdEntrypoint(args CheckArgs) error { //nolint: cyclop
 	if err != nil {
 		return fmt.Errorf("failed to open the config file: %w", err)
 	}
-	defer configFile.Close()
+	defer configFile.Close() //nolint:errcheck
 
 	// Detect config version and parse the config file
 	version, err := config.DetectConfigVersion(configFile)

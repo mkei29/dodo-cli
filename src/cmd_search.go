@@ -136,7 +136,9 @@ func executeSearchJSON(args SearchArgs, env EnvArgs) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal the search response: %w", err)
 	}
-	fmt.Fprintf(os.Stdout, "%s\n", string(outputBytes))
+	if _, err := fmt.Fprintf(os.Stdout, "%s\n", string(outputBytes)); err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
+	}
 	return nil
 }
 
