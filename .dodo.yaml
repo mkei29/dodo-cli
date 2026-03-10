@@ -93,12 +93,6 @@ pages:
             filepath: docs/command_read.md
           ja:
             filepath: docs/command_read.ja.md
-      - type: markdown
-        lang:
-          en:
-            filepath: docs/command_mcp.md
-          ja:
-            filepath: docs/command_mcp.ja.md
   - type: section
     lang:
       en:

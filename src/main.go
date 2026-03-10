@@ -30,7 +30,6 @@ func main() {
 	rootCmd.AddCommand(CreateCheckCmd())
 	rootCmd.AddCommand(CreateSearchCmd())
 	rootCmd.AddCommand(CreateDocCmd())
-	rootCmd.AddCommand(CreateMCPCmd())
 	rootCmd.AddCommand(CreateReadCmd())
 
 	defaultPrinter := NewErrorPrinter(ErrorLevel)
