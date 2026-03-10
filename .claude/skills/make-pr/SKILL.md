@@ -1,69 +1,171 @@
 ---
 name: make-pr
-description: "現在のブランチの変更内容からPRを作成します。コミット履歴と差分を分析し、このリポジトリの規約に沿ったタイトルとサマリーを生成します。ドキュメント変更がある場合は dodo check を事前に実行します。"
-argument-hint: "[base-branch]"
-allowed-tools:
-  - Bash(git:*)
-  - Bash(gh pr:*)
-  - Bash(dodo check)
+description: Create a release PR with auto-generated changelog from current branch to main
+argument-hint: [base-branch]
+disable-model-invocation: true
 ---
 
-現在のブランチからPRを作成する。引数でベースブランチを指定できる（デフォルト: `main`）。
+You are a release PR creator that automatically generates a pull request with a comprehensive changelog.
 
-ベースブランチ: $ARGUMENTS（未指定なら `main`）
+## Release PR Workflow:
 
-## 手順
+1. **Parse Arguments**:
+   - `base-branch` (optional): The target branch for the PR (default: `main`)
+   - If no arguments provided, use `main` as the base branch
 
-### 1. 事前チェック
+2. **Validate Current State**:
+   ```bash
+   git status
+   git branch --show-current
+   ```
+   - Ensure you're not on the base branch (main)
+   - Check for uncommitted changes and warn the user if any exist
+   - Get the current branch name for the PR
 
-- `git status` で未コミットの変更がないか確認する。未コミットの変更がある場合はユーザーに報告し、コミットするか確認する。
-- `git log <base>..HEAD --oneline` でこのブランチのコミット一覧を取得する。
-- `git diff <base>...HEAD --stat` で変更ファイルの統計を取得する。
-- `git diff <base>...HEAD` で差分の詳細を取得する。
-- リモートブランチが最新か確認する。push が必要なら push する。
+3. **Get Commit Range**:
+   ```bash
+   git fetch origin <base-branch>
+   git merge-base origin/<base-branch> HEAD
+   ```
+   - Find the common ancestor with the base branch
+   - This determines the starting point for the changelog
 
-### 2. ドキュメントの検証
+4. **Fetch Commit History**:
+   ```bash
+   git log <merge-base>..HEAD --oneline --no-merges
+   git log <merge-base>..HEAD --format="%s" --no-merges
+   ```
+   - Get list of all commits in the range
+   - Exclude merge commits to avoid duplication
 
-`docs/` 配下または `.dodo.yaml` に変更がある場合：
-1. `dodo check` を実行して設定の整合性を確認する
-2. エラーがあればユーザーに報告し、修正を促す
+5. **Analyze Changes**:
+   ```bash
+   git diff origin/<base-branch>...HEAD --stat
+   ```
+   - Categorize commits by type (feat, fix, docs, refactor, etc.)
+   - Identify affected services/components
+   - Note breaking changes (BREAKING CHANGE in commit messages)
+   - Track file changes and their scope
 
-### 3. PRタイトルとサマリーの生成
+6. **Generate PR Description**:
+   Create a well-formatted PR description with the following sections:
 
-コミット履歴と差分を分析して、以下のルールでPRを作成する。
+   ```markdown
+   ## Summary
+   <1-3 sentence summary of the overall changes>
 
-**タイトル:**
-- このリポジトリのコミットメッセージ規約に従う（`feat:`, `fix:`, `docs:` 等のプレフィックス）
-- 70文字以内
-- 変更の本質を簡潔に表現する
+   ## Changes
 
-**ボディ:**
-```
-## Summary
-<変更内容を1〜3行の箇条書きで>
+   ### Features
+   - List new features (commits starting with "feat:")
 
-## Test plan
-<テスト方法を箇条書きで>
-```
+   ### Bug Fixes
+   - List bug fixes (commits starting with "fix:")
 
-### 4. PR作成
+   ### Documentation
+   - List documentation changes (commits starting with "docs:")
 
-```bash
-gh pr create --title "<title>" --body "$(cat <<'EOF'
-## Summary
-<bullets>
+   ### Refactoring
+   - List refactoring (commits starting with "refactor:")
 
-## Test plan
-<bullets>
-EOF
-)"
-```
+   ### Other Changes
+   - List other commits that don't fit above categories
 
-- PR作成後、URLをユーザーに表示する。
+   ## Breaking Changes
+   - Highlight any breaking changes mentioned in commit messages
+   - If none, omit this section
 
-## 注意事項
+   ## Affected Services
+   - List services/components that were modified:
+     - Frontend
+     - Backend
+     - Contents Frontend
+     - Contents Backend
+     - Core
+     - etc.
 
-- すべてのコミット（最新だけでなく）を分析してタイトルとサマリーを作成する
-- `--force` や `--no-verify` は使わない
-- main/masterへの force push は絶対にしない
-- PRのタイトルは英語で書く
+   ## Statistics
+   - Commits: <count>
+   - Files changed: <count>
+   - Insertions: <count>
+   - Deletions: <count>
+
+   ## Test Plan
+   - [ ] All existing tests pass
+   - [ ] New features have been tested
+   - [ ] No regressions observed
+
+   ---
+   Generated with [Claude Code](https://claude.ai/code)
+   ```
+
+7. **Determine PR Title**:
+   - Analyze the commits to determine the appropriate title
+   - If mostly features: `feat: <main feature description>`
+   - If mostly fixes: `fix: <main fix description>`
+   - If mixed: `release: <brief description of changes>`
+   - Keep the title under 70 characters
+
+8. **Push Branch if Needed**:
+   ```bash
+   git push -u origin <current-branch>
+   ```
+   - Ensure the branch is pushed to remote before creating PR
+
+9. **Create the Pull Request**:
+   ```bash
+   gh pr create --base <base-branch> --title "<pr-title>" --body "<generated-description>"
+   ```
+   - Use the generated title and description
+   - Target the specified base branch
+
+10. **Report Result**:
+    - Show the PR URL to the user
+    - Summarize the key changes included in the PR
+    - Mention any action items or review considerations
+
+**Key Features**:
+- Automatic changelog generation from commit history
+- Smart PR title based on commit types
+- Service-based change grouping for this monorepo
+- Statistics on code changes
+- Professional formatting for release notes
+- Support for custom base branches
+
+**Commit Format Recognition**:
+- `feat: add new feature` → Features section
+- `fix: resolve bug` → Bug Fixes section
+- `docs: update readme` → Documentation section
+- `refactor: improve code structure` → Refactoring section
+- `perf: optimize query` → Performance section (grouped with Other)
+- `feat!: breaking change` or `BREAKING CHANGE:` → Breaking Changes section
+
+**Service Detection**:
+Based on file paths, detect affected services:
+- `services/frontend/` → Frontend
+- `services/contents_frontend/` → Contents Frontend
+- `services/backend/` → Backend
+- `services/contents_backend/` → Contents Backend
+- `services/core/` → Core
+- `services/sync_job/` → Sync Job
+- `services/ui_component/` → UI Component
+- `k8s/` → Infrastructure
+- `database/` → Database
+- `openapi/` → API Specs
+
+**Usage Examples**:
+- `/make-pr` - Create PR from current branch to main
+- `/make-pr develop` - Create PR from current branch to develop
+- `/make-pr release/v1.0` - Create PR to a release branch
+
+**Error Handling**:
+- If on base branch, prompt user to switch to a feature branch
+- If no commits to include, inform user and abort
+- If branch not pushed, push it automatically
+- If PR already exists, show the existing PR URL
+
+**Tips**:
+- Ensure all changes are committed before running
+- Use conventional commit format for better changelog generation
+- Review the generated PR description before finalizing
+- Add reviewers manually if needed: `gh pr edit --add-reviewer username`
