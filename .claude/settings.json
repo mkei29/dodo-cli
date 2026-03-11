@@ -1,15 +1,41 @@
 {
   "permissions": {
     "allow": [
-      "mcp__dodo__search",
-      "mcp__dodo__read_document",
-      "Bash(go build:*)",
-      "Bash(dodo check:*)",
-      "Bash(go test:*)",
-      "Bash(make test:*)",
-      "Bash(go run:*)"
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(go get:*)",
+      "Bash(go mod tidy:*)",
+      "Bash(make:*)",
+      "Bash(bazel build:*)",
+      "Bash(bazel test:*)",
+      "Bash(git switch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git status:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git show:*)",
+      "Bash(git log:*)",
+      "Bash(gh issue:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh pr:*)",
+      "Bash(pnpm frontend run test:*)",
+      "Bash(pnpm frontend run typecheck:*)",
+      "Bash(pnpm contents-frontend run test:*)",
+      "Bash(pnpm contents-frontend run typecheck:*)",
+      "Bash(pnpm ui-component run test:*)",
+      "Bash(pnpm ui-component run typecheck:*)",
+      "Bash(pnpm edge run test:*)",
+      "Bash(pnpm edge run typecheck:*)",
+      "Search",
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit"
     ],
-    "deny": [],
-    "ask": []
-  }
+    "deny": []
+  },
+  "hooks": {}
 }
