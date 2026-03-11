@@ -1,8 +1,6 @@
 module github.com/toritoritori29/dodo-cli
 
-go 1.23
-
-toolchain go1.24.6
+go 1.25.0
 
 require (
 	github.com/adrg/frontmatter v0.2.0
@@ -41,6 +39,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sahilm/fuzzy v0.1.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
