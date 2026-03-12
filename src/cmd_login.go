@@ -27,21 +27,18 @@ var loginSuccessHTML string
 var loginErrorHTML string
 
 const (
-	oauthClientID     = "cli"
-	oauthAuthURL      = "https://api.dodo-doc.com/oauth2/auth"
-	oauthTokenURL     = "https://api.dodo-doc.com/oauth2/token"
-	oauthCallbackPath = "/callback"
-	oauthTimeout      = 5 * time.Minute
+	oauthClientID       = "cli"
+	oauthAuthPath       = "/oauth2/auth"
+	oauthTokenPath      = "/oauth2/token"
+	oauthCallbackPath   = "/callback"
+	oauthTimeout        = 5 * time.Minute
+	oauthDefaultBaseURL = "https://api.dodo-doc.com"
 )
 
-var oauthEndpoint = oauth2.Endpoint{ //nolint:gochecknoglobals
-	AuthURL:  oauthAuthURL,
-	TokenURL: oauthTokenURL,
-}
-
 type LoginArgs struct {
-	debug   bool
-	noColor bool
+	endpoint string
+	debug    bool
+	noColor  bool
 }
 
 func (opts *LoginArgs) DisableLogging() bool  { return false }
@@ -55,12 +52,12 @@ func CreateLoginCmd() *cobra.Command {
 		Short:         "Login to dodo-doc using OAuth2",
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			printer := NewErrorPrinter(ErrorLevel)
 			if err := InitLogger(&opts); err != nil {
 				return printer.HandleError(err)
 			}
-			if err := loginCmdEntrypoint(); err != nil {
+			if err := loginCmdEntrypoint(cmd.Context(), opts); err != nil {
 				return printer.HandleError(err)
 			}
 			return nil
@@ -68,10 +65,15 @@ func CreateLoginCmd() *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&opts.debug, "debug", false, "Enable debug mode")
 	cmd.Flags().BoolVar(&opts.noColor, "no-color", false, "Disable color output")
+	cmd.Flags().StringVar(&opts.endpoint, "endpoint", oauthDefaultBaseURL, "Base URL for OAuth2 endpoints (for testing only)")
 	return cmd
 }
 
-func loginCmdEntrypoint() error {
+func loginCmdEntrypoint(ctx context.Context, args LoginArgs) error {
+	if args.endpoint != oauthDefaultBaseURL {
+		log.Warnf("using non-default endpoint: %s", args.endpoint)
+	}
+
 	// Generate PKCE verifier (oauth2 package handles base64url encoding)
 	verifier := oauth2.GenerateVerifier()
 
@@ -90,9 +92,12 @@ func loginCmdEntrypoint() error {
 	redirectURI := fmt.Sprintf("http://localhost:%d%s", port, oauthCallbackPath)
 
 	cfg := &oauth2.Config{
-		ClientID:    oauthClientID,
-		Scopes:      []string{"read", "write"},
-		Endpoint:    oauthEndpoint,
+		ClientID: oauthClientID,
+		Scopes:   []string{"read", "write"},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  args.endpoint + oauthAuthPath,
+			TokenURL: args.endpoint + oauthTokenPath,
+		},
 		RedirectURL: redirectURI,
 	}
 
@@ -105,7 +110,7 @@ func loginCmdEntrypoint() error {
 	}
 
 	// Wait for the OAuth2 callback
-	code, receivedState, err := waitForCallback(listener, oauthTimeout)
+	code, receivedState, err := waitForCallback(ctx, listener, oauthTimeout)
 	if err != nil {
 		return fmt.Errorf("authorization failed: %w", err)
 	}
@@ -115,9 +120,9 @@ func loginCmdEntrypoint() error {
 
 	// Exchange authorization code for token (oauth2 package handles PKCE verifier)
 	log.Debugf("exchanging authorization code for token")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	exchangeCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	token, err := cfg.Exchange(ctx, code, oauth2.VerifierOption(verifier))
+	token, err := cfg.Exchange(exchangeCtx, code, oauth2.VerifierOption(verifier))
 	if err != nil {
 		return fmt.Errorf("failed to exchange code for token: %w", err)
 	}
@@ -145,7 +150,7 @@ type callbackResult struct {
 	err   error
 }
 
-func waitForCallback(listener net.Listener, timeout time.Duration) (string, string, error) {
+func waitForCallback(ctx context.Context, listener net.Listener, timeout time.Duration) (string, string, error) {
 	resultCh := make(chan callbackResult, 1)
 
 	mux := http.NewServeMux()
@@ -172,14 +177,14 @@ func waitForCallback(listener net.Listener, timeout time.Duration) (string, stri
 		srv.Serve(listener) //nolint:errcheck
 	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	select {
 	case result := <-resultCh:
 		srv.Shutdown(context.Background()) //nolint:errcheck
 		return result.code, result.state, result.err
-	case <-ctx.Done():
+	case <-timeoutCtx.Done():
 		srv.Shutdown(context.Background()) //nolint:errcheck
 		return "", "", fmt.Errorf("timed out waiting for authorization (timeout: %s)", timeout)
 	}
