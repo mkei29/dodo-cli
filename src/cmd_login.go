@@ -5,14 +5,11 @@ import (
 	"crypto/rand"
 	_ "embed"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
 	"net"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/caarlos0/log"
@@ -190,43 +187,3 @@ func waitForCallback(ctx context.Context, listener net.Listener, timeout time.Du
 	}
 }
 
-type credentials struct {
-	AccessToken  string    `json:"access_token"`
-	TokenType    string    `json:"token_type"`
-	ExpiresAt    time.Time `json:"expires_at"`
-	RefreshToken string    `json:"refresh_token,omitempty"`
-}
-
-func credentialsPath() (string, error) {
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get user config dir: %w", err)
-	}
-	return filepath.Join(configDir, "dodo", "credentials.json"), nil
-}
-
-func saveCredentials(token *oauth2.Token) error {
-	creds := credentials{
-		AccessToken:  token.AccessToken,
-		TokenType:    token.TokenType,
-		ExpiresAt:    token.Expiry,
-		RefreshToken: token.RefreshToken,
-	}
-
-	path, err := credentialsPath()
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return fmt.Errorf("failed to create credentials directory: %w", err)
-	}
-
-	data, err := json.MarshalIndent(creds, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal credentials: %w", err)
-	}
-	if err := os.WriteFile(path, data, 0o600); err != nil {
-		return fmt.Errorf("failed to write credentials file: %w", err)
-	}
-	return nil
-}
