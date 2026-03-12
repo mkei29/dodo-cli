@@ -22,6 +22,7 @@ func main() {
 		Long:          longDescRoot,
 		SilenceErrors: true,
 	}
+	rootCmd.AddCommand(CreateLoginCmd())
 	rootCmd.AddCommand(CreateInitCmd())
 	rootCmd.AddCommand(CreateUploadCmd())
 	rootCmd.AddCommand(CreatePreviewCmd())
