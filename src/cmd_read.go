@@ -42,6 +42,9 @@ func CreateReadCmd() *cobra.Command {
 		Short: "Read a document",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			printer := NewErrorPrinter(ErrorLevel)
+			if err := InitLogger(&opts); err != nil {
+				return printer.HandleError(err)
+			}
 			env := NewEnvArgs()
 			err := CheckArgsAndEnvForRead(opts, &env)
 			if err != nil {
