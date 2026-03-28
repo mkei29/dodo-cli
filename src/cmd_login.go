@@ -28,7 +28,7 @@ const (
 	oauthAuthPath       = "/oauth2/auth"
 	oauthTokenPath      = "/oauth2/token"
 	oauthCallbackPath   = "/callback"
-	oauthTimeout        = 5 * time.Minute
+	oauthTimeout        = 1 * time.Minute
 	oauthDefaultBaseURL = "https://api.dodo-doc.com"
 )
 
@@ -86,7 +86,7 @@ func loginCmdEntrypoint(ctx context.Context, args LoginArgs) error {
 		return fmt.Errorf("failed to find available port: %w", err)
 	}
 	port := listener.Addr().(*net.TCPAddr).Port
-	redirectURI := fmt.Sprintf("http://localhost:%d%s", port, oauthCallbackPath)
+	redirectURI := fmt.Sprintf("http://127.0.0.1:%d%s", port, oauthCallbackPath)
 
 	cfg := &oauth2.Config{
 		ClientID: oauthClientID,
@@ -124,8 +124,8 @@ func loginCmdEntrypoint(ctx context.Context, args LoginArgs) error {
 		return fmt.Errorf("failed to exchange code for token: %w", err)
 	}
 
-	// Save credentials to disk
-	if err := saveCredentials(token); err != nil {
+	// Save credentials to keyring
+	if err := saveCredentials(token, cfg.Endpoint.TokenURL); err != nil {
 		return fmt.Errorf("failed to save credentials: %w", err)
 	}
 
@@ -179,11 +179,10 @@ func waitForCallback(ctx context.Context, listener net.Listener, timeout time.Du
 
 	select {
 	case result := <-resultCh:
-		srv.Shutdown(context.Background()) //nolint:errcheck
+		srv.Shutdown(context.Background()) //nolint:errcheck,contextcheck
 		return result.code, result.state, result.err
 	case <-timeoutCtx.Done():
-		srv.Shutdown(context.Background()) //nolint:errcheck
+		srv.Shutdown(context.Background()) //nolint:errcheck,contextcheck
 		return "", "", fmt.Errorf("timed out waiting for authorization (timeout: %s)", timeout)
 	}
 }
-
