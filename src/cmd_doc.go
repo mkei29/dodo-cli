@@ -94,8 +94,8 @@ func docCmdEntrypoint(args *DocArgs, env *EnvArgs) error {
 }
 
 func CheckArgsAndEnvForDocs(args *DocArgs, env *EnvArgs) error {
-	if env.APIKey == "" {
-		return errors.New("DODO_API_KEY environment variable is not set")
+	if !env.IsAuthenticated() {
+		return errors.New("not authenticated. Please run 'dodo login' or set the DODO_API_KEY environment variable")
 	}
 	if args.endpoint == "" {
 		return errors.New("endpoint is not set")

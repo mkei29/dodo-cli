@@ -122,9 +122,9 @@ func CheckArgsAndEnvForCheck(args CheckArgs, env EnvArgs) error {
 		return fmt.Errorf("specified `configPath` argument is invalid. Path: %s", args.configPath)
 	}
 
-	// Check if the api key exists
-	if env.APIKey == "" {
-		return errors.New("the API key is empty. Please set the environment variable DODO_API_KEY")
+	// Check if any auth credential is available
+	if !env.IsAuthenticated() {
+		return errors.New("not authenticated. Please run 'dodo login' or set the DODO_API_KEY environment variable")
 	}
 	return nil
 }

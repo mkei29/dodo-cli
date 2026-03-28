@@ -23,7 +23,7 @@ func NewProjectFromAPI(env *EnvArgs, uri string) ([]Project, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a new request from the body: %w", err)
 	}
-	bearer := "Bearer " + env.APIKey
+	bearer := "Bearer " + env.BearerToken()
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", bearer)
 

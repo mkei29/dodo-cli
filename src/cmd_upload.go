@@ -140,7 +140,7 @@ func executeUpload(args UploadArgs, env EnvArgs) (string, error) {
 	}
 
 	// Upload the archive file
-	resp, err := archive.Upload(args.endpoint, env.APIKey)
+	resp, err := archive.Upload(args.endpoint, env.BearerToken())
 	if err != nil {
 		return "", err
 	}
@@ -213,9 +213,9 @@ func CheckArgsAndEnv(args UploadArgs, env EnvArgs) error { //nolint: cyclop
 		return fmt.Errorf("the provided `root` argument is invalid. Path: %s", args.rootPath)
 	}
 
-	// Check if the api key exists
-	if env.APIKey == "" {
-		return errors.New("the API key is empty. Please set the environment variable DODO_API_KEY")
+	// Check if any auth credential is available
+	if !env.IsAuthenticated() {
+		return errors.New("not authenticated. Please run 'dodo login' or set the DODO_API_KEY environment variable")
 	}
 
 	// Check if the format is valid
