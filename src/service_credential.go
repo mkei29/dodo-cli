@@ -2,18 +2,22 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/caarlos0/log"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
 
 const (
-	keyringService = "dodo-doc"
-	keyringUser    = "access_token"
+	keyringService           = "dodo-doc"
+	keyringUser              = "access_token"
+	proactiveRefreshLeadTime = 5 * time.Minute
 )
 
 type storedToken struct {
@@ -59,23 +63,57 @@ func loadCredentials() (string, error) {
 		Expiry:       stored.Expiry,
 	}
 
-	if token.Valid() {
+	needsRefresh := !token.Valid() || jwtExpiresWithin(stored.AccessToken, proactiveRefreshLeadTime)
+
+	if !needsRefresh {
 		return token.AccessToken, nil
 	}
 
 	if stored.RefreshToken == "" {
-		return "", errors.New("access token expired, please run 'dodo login' again")
+		if !token.Valid() {
+			return "", errors.New("access token expired, please run 'dodo login' again")
+		}
+		// Expiring soon but no refresh token — return as-is
+		return token.AccessToken, nil
 	}
 
+	log.Debugf("refreshing access token")
 	newToken, err := refreshToken(token, stored.TokenURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to refresh access token, please run 'dodo login' again: %w", err)
+		if !token.Valid() {
+			return "", fmt.Errorf("failed to refresh access token, please run 'dodo login' again: %w", err)
+		}
+		// Proactive refresh failed — return current token as fallback
+		log.Debugf("proactive token refresh failed, using current token: %v", err)
+		return token.AccessToken, nil
 	}
 
+	log.Debugf("access token refreshed successfully")
 	// Best-effort save; non-fatal if it fails
 	_ = saveCredentials(newToken, stored.TokenURL)
 
 	return newToken.AccessToken, nil
+}
+
+// jwtExpiresWithin reports whether the JWT access token's exp claim
+// falls within the given duration from now.
+// Returns false if the token is not a JWT or has no exp claim.
+func jwtExpiresWithin(accessToken string, d time.Duration) bool {
+	parts := strings.SplitN(accessToken, ".", 3)
+	if len(parts) != 3 {
+		return false
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return false
+	}
+	var claims struct {
+		Exp int64 `json:"exp"`
+	}
+	if err := json.Unmarshal(payload, &claims); err != nil || claims.Exp == 0 {
+		return false
+	}
+	return time.Until(time.Unix(claims.Exp, 0)) < d
 }
 
 func refreshToken(token *oauth2.Token, tokenURL string) (*oauth2.Token, error) {

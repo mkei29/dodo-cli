@@ -42,16 +42,16 @@ func CreateCheckCmd() *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			env := NewEnvArgs()
 			printer := NewErrorPrinter(ErrorLevel)
+			if err := InitLogger(&opts); err != nil {
+				return printer.HandleError(err)
+			}
+			env := NewEnvArgs()
 			err := CheckArgsAndEnvForCheck(opts, env)
 			if err != nil {
 				return printer.HandleError(err)
 			}
 			printer = NewPrinterFromArgs(&opts)
-			if err := InitLogger(&opts); err != nil {
-				return printer.HandleError(err)
-			}
 
 			if err := checkCmdEntrypoint(opts); err != nil {
 				return printer.HandleError(err)
