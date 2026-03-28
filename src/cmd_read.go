@@ -64,8 +64,8 @@ func CreateReadCmd() *cobra.Command {
 }
 
 func CheckArgsAndEnvForRead(_ ReadArgs, env *EnvArgs) error {
-	if env.APIKey == "" {
-		return errors.New("DODO_API_KEY is not set")
+	if !env.IsAuthenticated() {
+		return errors.New("not authenticated. Please run 'dodo login' or set the DODO_API_KEY environment variable")
 	}
 	return nil
 }

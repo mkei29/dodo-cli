@@ -109,11 +109,11 @@ func (a *Archive) Archive(metadata *Metadata) *appErrors.MultiError {
 	return nil
 }
 
-func (a *Archive) Upload(url string, apiKey string) (*UploadResponse, error) {
+func (a *Archive) Upload(url string, bearerToken string) (*UploadResponse, error) {
 	if a.Metadata == nil {
 		return nil, errors.New("metadata is not set. Please call Archive() before Upload()")
 	}
-	req, err := newFileUploadRequest(url, a.Metadata, a.File, apiKey)
+	req, err := newFileUploadRequest(url, a.Metadata, a.File, bearerToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create upload request: %w", err)
 	}
@@ -172,7 +172,7 @@ func addMetadata(metadata *Metadata, writer *zip.Writer) error {
 	return nil
 }
 
-func newFileUploadRequest(uri string, metadata *Metadata, zipFile *os.File, apiKey string) (*http.Request, error) {
+func newFileUploadRequest(uri string, metadata *Metadata, zipFile *os.File, bearerToken string) (*http.Request, error) {
 	body := &bytes.Buffer{}
 	// Try to create a new multipart writer in a closure.
 	// This is to ensure that the multipart writer is closed properly.
@@ -221,7 +221,7 @@ func newFileUploadRequest(uri string, metadata *Metadata, zipFile *os.File, apiK
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a new upload request from body: %w", err)
 	}
-	bearer := "Bearer " + apiKey
+	bearer := "Bearer " + bearerToken
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("Authorization", bearer)
 	return req, nil
