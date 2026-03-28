@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/caarlos0/log"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
@@ -76,15 +77,18 @@ func loadCredentials() (string, error) {
 		return token.AccessToken, nil
 	}
 
+	log.Debugf("refreshing access token")
 	newToken, err := refreshToken(token, stored.TokenURL)
 	if err != nil {
 		if !token.Valid() {
 			return "", fmt.Errorf("failed to refresh access token, please run 'dodo login' again: %w", err)
 		}
 		// Proactive refresh failed — return current token as fallback
+		log.Debugf("proactive token refresh failed, using current token: %v", err)
 		return token.AccessToken, nil
 	}
 
+	log.Debugf("access token refreshed successfully")
 	// Best-effort save; non-fatal if it fails
 	_ = saveCredentials(newToken, stored.TokenURL)
 
