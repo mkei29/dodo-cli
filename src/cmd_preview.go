@@ -13,9 +13,11 @@ func CreatePreviewCmd() *cobra.Command {
 		"https://api.dodo-doc.com/project/upload/demo",
 		&opts,
 		func(_ *cobra.Command, _ []string) error {
-			env := NewEnvArgs()
-
 			printer := NewErrorPrinter(ErrorLevel)
+			if err := InitLogger(&opts); err != nil {
+				return printer.HandleError(err)
+			}
+			env := NewEnvArgs()
 			err := CheckArgsAndEnv(opts, env)
 			if err != nil {
 				return printer.HandleError(err)

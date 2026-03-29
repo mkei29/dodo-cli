@@ -2,18 +2,22 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/caarlos0/log"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
 
 const (
-	keyringService = "dodo-doc"
-	keyringUser    = "access_token"
+	keyringService           = "dodo-doc"
+	keyringUser              = "access_token"
+	proactiveRefreshLeadTime = 5 * time.Minute
 )
 
 type storedToken struct {
@@ -58,24 +62,71 @@ func loadCredentials() (string, error) {
 		RefreshToken: stored.RefreshToken,
 		Expiry:       stored.Expiry,
 	}
+	return resolveToken(stored, token)
+}
 
-	if token.Valid() {
+func resolveToken(stored storedToken, token *oauth2.Token) (string, error) {
+	needsRefresh := !token.Valid() || jwtExpiresWithin(stored.AccessToken, proactiveRefreshLeadTime)
+
+	if !needsRefresh {
+		if ttl, ok := jwtTTL(stored.AccessToken); ok {
+			log.Debugf("access token is valid (expires in %s), skipping refresh", ttl.Round(time.Second))
+		}
 		return token.AccessToken, nil
 	}
 
-	if stored.RefreshToken == "" {
+	if stored.RefreshToken == "" && !token.Valid() {
 		return "", errors.New("access token expired, please run 'dodo login' again")
 	}
-
-	newToken, err := refreshToken(token, stored.TokenURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to refresh access token, please run 'dodo login' again: %w", err)
+	if stored.RefreshToken == "" {
+		// Expiring soon but no refresh token — return as-is
+		return token.AccessToken, nil
 	}
 
+	log.Debugf("refreshing access token")
+	newToken, err := refreshToken(token, stored.TokenURL)
+	if err != nil && !token.Valid() {
+		return "", fmt.Errorf("failed to refresh access token, please run 'dodo login' again: %w", err)
+	}
+	if err != nil {
+		// Proactive refresh failed — return current token as fallback
+		log.Debugf("proactive token refresh failed, using current token: %v", err)
+		return token.AccessToken, nil
+	}
+
+	log.Debugf("access token refreshed successfully")
 	// Best-effort save; non-fatal if it fails
 	_ = saveCredentials(newToken, stored.TokenURL)
-
 	return newToken.AccessToken, nil
+}
+
+// jwtTTL returns the remaining lifetime of the JWT access token derived
+// from its exp claim. The second return value is false if the token is
+// not a JWT or has no exp claim.
+func jwtTTL(accessToken string) (time.Duration, bool) {
+	parts := strings.SplitN(accessToken, ".", 3)
+	if len(parts) != 3 {
+		return 0, false
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return 0, false
+	}
+	var claims struct {
+		Exp int64 `json:"exp"`
+	}
+	if err := json.Unmarshal(payload, &claims); err != nil || claims.Exp == 0 {
+		return 0, false
+	}
+	return time.Until(time.Unix(claims.Exp, 0)), true
+}
+
+// jwtExpiresWithin reports whether the JWT access token's exp claim
+// falls within the given duration from now.
+// Returns false if the token is not a JWT or has no exp claim.
+func jwtExpiresWithin(accessToken string, d time.Duration) bool {
+	ttl, ok := jwtTTL(accessToken)
+	return ok && ttl < d
 }
 
 func refreshToken(token *oauth2.Token, tokenURL string) (*oauth2.Token, error) {

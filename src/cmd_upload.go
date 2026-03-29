@@ -75,6 +75,9 @@ func CreateUploadCmd() *cobra.Command {
 		&opts,
 		func(_ *cobra.Command, _ []string) error {
 			printer := NewErrorPrinter(ErrorLevel)
+			if err := InitLogger(&opts); err != nil {
+				return printer.HandleError(err)
+			}
 			env := NewEnvArgs()
 			err := CheckArgsAndEnv(opts, env)
 			if err != nil {

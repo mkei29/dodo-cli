@@ -90,7 +90,7 @@ func loginCmdEntrypoint(ctx context.Context, args LoginArgs) error {
 
 	cfg := &oauth2.Config{
 		ClientID: oauthClientID,
-		Scopes:   []string{"read", "write"},
+		Scopes:   []string{"read", "write", "offline_access"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  args.endpoint + oauthAuthPath,
 			TokenURL: args.endpoint + oauthTokenPath,

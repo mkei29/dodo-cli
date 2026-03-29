@@ -47,6 +47,9 @@ func CreateDocCmd() *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			printer := NewErrorPrinter(ErrorLevel)
+			if err := InitLogger(&opts); err != nil {
+				return printer.HandleError(err)
+			}
 			env := NewEnvArgs()
 			err := CheckArgsAndEnvForDocs(&opts, &env)
 			if err != nil {
