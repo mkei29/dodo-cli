@@ -17,7 +17,7 @@ func NewEnvArgs() EnvArgs {
 	}
 	token, err := loadCredentials()
 	if err != nil {
-		log.Debugf("no credentials found in keyring: %v", err)
+		log.Warnf("keyring credentials unavailable: %v", err)
 		if env.APIKey != "" {
 			log.Debugf("using auth: API key (DODO_API_KEY)")
 		}
