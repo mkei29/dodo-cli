@@ -63,13 +63,12 @@ func loadCredentials() (string, error) {
 		Expiry:       stored.Expiry,
 	}
 
-	if ttl, ok := jwtTTL(stored.AccessToken); ok {
-		log.Debugf("access token TTL: %s", ttl.Round(time.Second))
-	}
-
 	needsRefresh := !token.Valid() || jwtExpiresWithin(stored.AccessToken, proactiveRefreshLeadTime)
 
 	if !needsRefresh {
+		if ttl, ok := jwtTTL(stored.AccessToken); ok {
+			log.Debugf("access token is valid (expires in %s), skipping refresh", ttl.Round(time.Second))
+		}
 		return token.AccessToken, nil
 	}
 
