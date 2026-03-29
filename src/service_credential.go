@@ -63,6 +63,10 @@ func loadCredentials() (string, error) {
 		Expiry:       stored.Expiry,
 	}
 
+	if ttl, ok := jwtTTL(stored.AccessToken); ok {
+		log.Debugf("access token TTL: %s", ttl.Round(time.Second))
+	}
+
 	needsRefresh := !token.Valid() || jwtExpiresWithin(stored.AccessToken, proactiveRefreshLeadTime)
 
 	if !needsRefresh {
@@ -95,25 +99,33 @@ func loadCredentials() (string, error) {
 	return newToken.AccessToken, nil
 }
 
-// jwtExpiresWithin reports whether the JWT access token's exp claim
-// falls within the given duration from now.
-// Returns false if the token is not a JWT or has no exp claim.
-func jwtExpiresWithin(accessToken string, d time.Duration) bool {
+// jwtTTL returns the remaining lifetime of the JWT access token derived
+// from its exp claim. The second return value is false if the token is
+// not a JWT or has no exp claim.
+func jwtTTL(accessToken string) (time.Duration, bool) {
 	parts := strings.SplitN(accessToken, ".", 3)
 	if len(parts) != 3 {
-		return false
+		return 0, false
 	}
 	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil {
-		return false
+		return 0, false
 	}
 	var claims struct {
 		Exp int64 `json:"exp"`
 	}
 	if err := json.Unmarshal(payload, &claims); err != nil || claims.Exp == 0 {
-		return false
+		return 0, false
 	}
-	return time.Until(time.Unix(claims.Exp, 0)) < d
+	return time.Until(time.Unix(claims.Exp, 0)), true
+}
+
+// jwtExpiresWithin reports whether the JWT access token's exp claim
+// falls within the given duration from now.
+// Returns false if the token is not a JWT or has no exp claim.
+func jwtExpiresWithin(accessToken string, d time.Duration) bool {
+	ttl, ok := jwtTTL(accessToken)
+	return ok && ttl < d
 }
 
 func refreshToken(token *oauth2.Token, tokenURL string) (*oauth2.Token, error) {
