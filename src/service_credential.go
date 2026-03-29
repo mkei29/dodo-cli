@@ -62,7 +62,10 @@ func loadCredentials() (string, error) {
 		RefreshToken: stored.RefreshToken,
 		Expiry:       stored.Expiry,
 	}
+	return resolveToken(stored, token)
+}
 
+func resolveToken(stored storedToken, token *oauth2.Token) (string, error) {
 	needsRefresh := !token.Valid() || jwtExpiresWithin(stored.AccessToken, proactiveRefreshLeadTime)
 
 	if !needsRefresh {
@@ -72,20 +75,20 @@ func loadCredentials() (string, error) {
 		return token.AccessToken, nil
 	}
 
+	if stored.RefreshToken == "" && !token.Valid() {
+		return "", errors.New("access token expired, please run 'dodo login' again")
+	}
 	if stored.RefreshToken == "" {
-		if !token.Valid() {
-			return "", errors.New("access token expired, please run 'dodo login' again")
-		}
 		// Expiring soon but no refresh token — return as-is
 		return token.AccessToken, nil
 	}
 
 	log.Debugf("refreshing access token")
 	newToken, err := refreshToken(token, stored.TokenURL)
+	if err != nil && !token.Valid() {
+		return "", fmt.Errorf("failed to refresh access token, please run 'dodo login' again: %w", err)
+	}
 	if err != nil {
-		if !token.Valid() {
-			return "", fmt.Errorf("failed to refresh access token, please run 'dodo login' again: %w", err)
-		}
 		// Proactive refresh failed — return current token as fallback
 		log.Debugf("proactive token refresh failed, using current token: %v", err)
 		return token.AccessToken, nil
@@ -94,7 +97,6 @@ func loadCredentials() (string, error) {
 	log.Debugf("access token refreshed successfully")
 	// Best-effort save; non-fatal if it fails
 	_ = saveCredentials(newToken, stored.TokenURL)
-
 	return newToken.AccessToken, nil
 }
 
