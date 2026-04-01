@@ -44,3 +44,12 @@ $ dodo-cli preview
 ```
 
 If there is additional information that you should notify users about, please write additional sections after the examples section.
+
+## Release Notes Guidelines
+
+Whenever you make changes to `CLAUDE.md`, you must also update the release notes files:
+
+- `docs/draft/release_draft.md` (English)
+- `docs/draft/release_draft.ja.md` (Japanese)
+
+Add a brief description of what was changed and why.
