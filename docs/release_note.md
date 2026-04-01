@@ -5,6 +5,10 @@ description: ""
 created_at: "2025-09-19T00:36:29+09:00"
 updated_at: "2025-09-19T00:36:29+09:00"
 ---
+# 2026/04/02 - version 0.1.5
+* Added the `dodo login` command.
+* Previously, only API Key authentication was available, but now you can securely authorize via OAuth2 without issuing an API Key.
+* To install this update, run `npm install -g "@dodo-doc/cli@0.1.5"`.
 
 # 2025/10/08 - version 0.1.1
 * Released the beta version.
